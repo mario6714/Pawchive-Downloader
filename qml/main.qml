@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: "Pawchive Downloader v1.0.5"
+    title: "Pawchive Downloader v1.0.6"
     color: "#0F1117"
 
     // Stop active downloads and persist session gracefully when user closes the app
@@ -285,7 +285,7 @@ ApplicationWindow {
                     Text {
                         id: verText
                         anchors.centerIn: parent
-                        text: "v1.0.5"
+                        text: "v1.0.6"
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
@@ -1436,12 +1436,29 @@ ApplicationWindow {
         bridge: appBridge
     }
 
+    // Queue State Export Confirmation Modal
+    ExportConfirmModal {
+        id: exportConfirmModal
+        bridge: appBridge
+    }
+
+    // Queue State Import Confirmation Modal
+    ImportConfirmModal {
+        id: importConfirmModal
+        bridge: appBridge
+    }
+
     // Wire: when bridge emits postActionCountdownStarted, open the modal with the action label
     Connections {
         target: appBridge
         function onPostActionCountdownStarted(actionLabel) {
             countdownModal.actionLabel = actionLabel
             countdownModal.isOpen = true
+        }
+        function onExportCompleted(filePath, wasDownloading) {
+            exportConfirmModal.exportedFilePath = filePath
+            exportConfirmModal.wasDownloading = wasDownloading
+            exportConfirmModal.isOpen = true
         }
     }
 }

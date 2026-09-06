@@ -9,6 +9,9 @@ Rectangle {
     property var bridge: null
     color: "#0F1117"
 
+    readonly property bool isNarrow: root.width < 780
+    readonly property bool isVeryNarrow: root.width < 520
+
     function tr(key, fallback) {
         if (!Lang) return fallback !== undefined ? fallback : key
         var _ = Lang.activeLanguage
@@ -37,178 +40,298 @@ Rectangle {
         anchors.margins: 12
         spacing: 10
 
-        // 1. Header toolbar
-        RowLayout {
+        // 1. Header Toolbar
+        ColumnLayout {
             Layout.fillWidth: true
             spacing: 8
 
-            Text {
-                text: "📋 " + root.tr("title_task_queue", "Task Queue")
-                font.family: "Segoe UI, Inter, sans-serif"
-                font.pixelSize: 14
-                font.weight: Font.Bold
-                color: "#F8FAFC"
-            }
+            // Row 1: Title, Count Badge, and Primary Queue Actions
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
 
-            // Total count badge
-            Rectangle {
-                width: Math.max(24, totalCountText.implicitWidth + 12)
-                height: 20; radius: 10; color: "#242A38"
                 Text {
-                    id: totalCountText
-                    anchors.centerIn: parent
-                    text: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.totalCount.toString() : "0"
-                    font.pixelSize: 10; font.bold: true; color: "#38BDF8"
+                    text: "📋 " + root.tr("title_task_queue", "Task Queue")
+                    font.family: "Segoe UI, Inter, sans-serif"
+                    font.pixelSize: 14
+                    font.weight: Font.Bold
+                    color: "#F8FAFC"
+                }
+
+                // Total count badge
+                Rectangle {
+                    width: Math.max(24, totalCountText.implicitWidth + 12)
+                    height: 20; radius: 10; color: "#242A38"
+                    Text {
+                        id: totalCountText
+                        anchors.centerIn: parent
+                        text: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.totalCount.toString() : "0"
+                        font.pixelSize: 10; font.bold: true; color: "#38BDF8"
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                // Quick Action: Retry Failed (prominent when errors exist)
+                StyledButton {
+                    id: retryFailedBtn
+                    visible: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.failedCount > 0)
+                    text: root.tr("btn_retry_failed", "Retry Failed")
+                    iconText: "🔁"
+                    variant: "danger"
+                    implicitHeight: 28
+                    tooltip: root.tr("tip_retry_failed", "Open selective retry dialog to inspect and re-download failed files")
+                    onClicked: retryModal.isOpen = true
+                }
+
+                // Quick Action: Clear Queue
+                StyledButton {
+                    text: root.tr("btn_clear_queue", "Clear")
+                    iconText: "🗑"
+                    variant: "ghost"
+                    implicitHeight: 28
+                    tooltip: root.tr("tip_clear_queue", "Remove all tasks from queue")
+                    onClicked: if (root.bridge && root.bridge.queueModel) root.bridge.queueModel.clear()
                 }
             }
 
-            Item { Layout.fillWidth: true }
-
-            // Prominent "Retry Failed" Action Button with Real-time Count Badge
-            RowLayout {
+            // Row 2: Secondary Queue Utility Actions in an auto-wrapping Flow
+            Flow {
+                Layout.fillWidth: true
                 spacing: 6
 
                 StyledButton {
-                    id: retryFailedBtn
+                    text: root.tr("btn_download_links", "Download Links")
+                    iconText: "☁️"
+                    variant: (root.bridge && root.bridge.hasHarvestedLinks) ? "primary" : "outline"
+                    implicitHeight: 26
+                    tooltip: root.tr("tip_download_links", "Open dialog to download harvested links via Mega.nz, Google Drive, Dropbox, or GoFile")
+                    opacity: (root.bridge && root.bridge.hasHarvestedLinks) ? 1.0 : 0.6
+                    onClicked: cloudModal.isOpen = true
+                }
+
+                StyledButton {
+                    text: root.tr("btn_export_links", "Export Links")
+                    iconText: "🔗"
+                    variant: "outline"
+                    implicitHeight: 26
+                    tooltip: root.tr("tip_export_links", "Export harvested external cloud links to text file")
+                    onClicked: if (root.bridge) root.bridge.exportAllLinks()
+                }
+
+                StyledButton {
+                    text: root.tr("btn_export_queue", "Export State")
+                    iconText: "💾"
+                    variant: "outline"
+                    implicitHeight: 26
+                    tooltip: root.tr("tip_export_queue", "Export queue snapshot with progress and settings to a backup JSON file")
+                    onClicked: if (root.bridge) root.bridge.exportQueueState()
+                }
+
+                StyledButton {
+                    text: root.tr("btn_import_queue", "Import State")
+                    iconText: "📂"
+                    variant: "outline"
+                    implicitHeight: 26
+                    tooltip: root.tr("tip_import_queue", "Load a saved queue backup file (Merge or Replace)")
+                    onClicked: importModal.isOpen = true
+                }
+
+                // If failedCount is 0, show Retry Failed as ghost button here so it's always accessible
+                StyledButton {
+                    visible: !(root.bridge && root.bridge.queueModel && root.bridge.queueModel.failedCount > 0)
                     text: root.tr("btn_retry_failed", "Retry Failed")
                     iconText: "🔁"
-                    variant: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.failedCount > 0) ? "danger" : "ghost"
-                    implicitHeight: 28
+                    variant: "ghost"
+                    implicitHeight: 26
                     tooltip: root.tr("tip_retry_failed", "Open selective retry dialog to inspect and re-download failed files")
-                    opacity: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.failedCount > 0) ? 1.0 : 0.45
-                    Behavior on opacity { NumberAnimation { duration: 180 } }
-                    onClicked: {
-                        retryModal.isOpen = true
-                    }
+                    opacity: 0.45
+                    onClicked: retryModal.isOpen = true
                 }
-            }
-
-            StyledButton {
-                text: root.tr("btn_download_links", "Download Links")
-                iconText: "☁️"
-                variant: (root.bridge && root.bridge.hasHarvestedLinks) ? "primary" : "outline"
-                implicitHeight: 28
-                tooltip: root.tr("tip_download_links", "Open dialog to download harvested links via Mega.nz, Google Drive, Dropbox, or GoFile")
-                opacity: (root.bridge && root.bridge.hasHarvestedLinks) ? 1.0 : 0.6
-                onClicked: cloudModal.isOpen = true
-            }
-
-            StyledButton {
-                text: root.tr("btn_export_links", "Export Links")
-                iconText: "🔗"
-                variant: "outline"
-                implicitHeight: 28
-                tooltip: root.tr("tip_export_links", "Export harvested external cloud links to text file")
-                onClicked: if (root.bridge) root.bridge.exportAllLinks()
-            }
-
-            StyledButton {
-                text: root.tr("btn_clear_queue", "Clear Queue")
-                iconText: "🗑"
-                variant: "ghost"
-                implicitHeight: 28
-                tooltip: root.tr("tip_clear_queue", "Remove all tasks from queue")
-                onClicked: if (root.bridge && root.bridge.queueModel) root.bridge.queueModel.clear()
             }
         }
 
-        // 2. Status Filter Tabs (All / Active / Completed / Failed)
-        RowLayout {
+        // 2. Status Filter Tabs & View Mode Switcher
+        Flow {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 8
 
-            // Filter Tab Component
-            Repeater {
-                model: [
-                    { key: "all", labelKey: "qtab_all", defaultLabel: "All", icon: "📁", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.totalCount : 0, color: "#38BDF8", tipKey: "qtab_all_tip", defaultTip: "Show all download tasks in queue" },
-                    { key: "downloading", labelKey: "qtab_active", defaultLabel: "Active", icon: "⚡", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.downloadingCount : 0, color: "#0EA5E9", tipKey: "qtab_active_tip", defaultTip: "Show active/in-progress downloads" },
-                    { key: "completed", labelKey: "qtab_completed", defaultLabel: "Completed", icon: "✔", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.completedCount : 0, color: "#10B981", tipKey: "qtab_completed_tip", defaultTip: "Show successfully completed downloads" },
-                    { key: "failed", labelKey: "qtab_failed", defaultLabel: "Errors / Failed", icon: "✖", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.failedCount : 0, color: "#EF4444", tipKey: "qtab_failed_tip", defaultTip: "Show failed download tasks" }
-                ]
+            // Filter Tabs in a non-overlapping Row
+            Row {
+                id: filterTabsRow
+                spacing: 6
 
-                delegate: Rectangle {
-                    id: tabRect
-                    height: 26
-                    width: Math.max(75, tabRow.implicitWidth + 16)
-                    radius: 5
+                Repeater {
+                    model: [
+                        { key: "all", labelKey: "qtab_all", defaultLabel: "All", icon: "📁", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.totalCount : 0, color: "#38BDF8", tipKey: "qtab_all_tip", defaultTip: "Show all download tasks in queue" },
+                        { key: "downloading", labelKey: "qtab_active", defaultLabel: "Active", icon: "⚡", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.downloadingCount : 0, color: "#0EA5E9", tipKey: "qtab_active_tip", defaultTip: "Show active/in-progress downloads" },
+                        { key: "completed", labelKey: "qtab_completed", defaultLabel: "Completed", icon: "✔", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.completedCount : 0, color: "#10B981", tipKey: "qtab_completed_tip", defaultTip: "Show successfully completed downloads" },
+                        { key: "failed", labelKey: "qtab_failed", defaultLabel: "Errors / Failed", icon: "✖", count: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.failedCount : 0, color: "#EF4444", tipKey: "qtab_failed_tip", defaultTip: "Show failed download tasks" }
+                    ]
 
-                    property bool isSelected: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.filterStatus === modelData.key : false
+                    delegate: Rectangle {
+                        id: tabRect
+                        height: 26
+                        property bool isSelected: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.filterStatus === modelData.key : false
+                        property bool showLabel: root.width >= 560
 
-                    color: isSelected ? (modelData.key === "failed" ? "#3B181E" : "#1A2638") : (tabMouse.containsMouse ? "#1E2430" : "#141720")
-                    border.color: isSelected ? (modelData.key === "failed" ? "#EF4444" : modelData.color) : (modelData.key === "failed" && modelData.count > 0 ? "#7F1D1D" : "#242A38")
-                    border.width: isSelected ? 1.5 : 1
+                        // Direct intrinsic calculation with NO cyclic bindings
+                        width: tabIconText.implicitWidth + (showLabel ? (tabLabelText.implicitWidth + 6) : 0) + countPill.width + 18
+                        radius: 5
 
-                    scale: tabMouse.pressed ? 0.93 : (tabMouse.containsMouse ? 1.04 : 1.0)
-                    transformOrigin: Item.Center
+                        color: isSelected ? (modelData.key === "failed" ? "#3B181E" : "#1A2638") : (tabMouse.containsMouse ? "#1E2430" : "#141720")
+                        border.color: isSelected ? (modelData.key === "failed" ? "#EF4444" : modelData.color) : (modelData.key === "failed" && modelData.count > 0 ? "#7F1D1D" : "#242A38")
+                        border.width: isSelected ? 1.5 : 1
 
-                    Behavior on scale {
-                        NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
-                    }
-                    Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
-                    Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        scale: tabMouse.pressed ? 0.93 : (tabMouse.containsMouse ? 1.04 : 1.0)
+                        transformOrigin: Item.Center
 
-                    Row {
-                        id: tabRow
-                        anchors.centerIn: parent
-                        spacing: 5
+                        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.5 } }
+                        Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                        Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
 
-                        Text {
-                            text: modelData.icon
-                            font.pixelSize: 10
-                            color: isSelected ? modelData.color : "#94A3B8"
-                        }
-
-                        Text {
-                            text: root.tr(modelData.labelKey, modelData.defaultLabel)
-                            font.family: "Segoe UI, sans-serif"
-                            font.pixelSize: 11
-                            font.weight: isSelected ? Font.DemiBold : Font.Normal
-                            color: isSelected ? "#F8FAFC" : "#94A3B8"
-                        }
-
-                        // Count pill
-                        Rectangle {
-                            height: 16
-                            width: Math.max(16, cntText.implicitWidth + 6)
-                            radius: 8
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: modelData.key === "failed" && modelData.count > 0 ? "#EF4444" : (isSelected ? "#2E3B50" : "#1E2330")
-
-                            Behavior on color { ColorAnimation { duration: 150 } }
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 5
 
                             Text {
-                                id: cntText
-                                anchors.centerIn: parent
-                                text: modelData.count.toString()
-                                font.pixelSize: 9
-                                font.bold: true
-                                color: modelData.key === "failed" && modelData.count > 0 ? "#FFFFFF" : (isSelected ? modelData.color : "#64748B")
+                                id: tabIconText
+                                text: modelData.icon
+                                font.pixelSize: 10
+                                color: isSelected ? modelData.color : "#94A3B8"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                id: tabLabelText
+                                visible: tabRect.showLabel
+                                text: root.tr(modelData.labelKey, modelData.defaultLabel)
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 11
+                                font.weight: isSelected ? Font.DemiBold : Font.Normal
+                                color: isSelected ? "#F8FAFC" : "#94A3B8"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            // Count pill
+                            Rectangle {
+                                id: countPill
+                                height: 16
+                                width: Math.max(16, cntText.implicitWidth + 8)
+                                radius: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: modelData.key === "failed" && modelData.count > 0 ? "#EF4444" : (isSelected ? "#2E3B50" : "#1E2330")
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+
+                                Text {
+                                    id: cntText
+                                    anchors.centerIn: parent
+                                    text: modelData.count.toString()
+                                    font.pixelSize: 9
+                                    font.bold: true
+                                    color: modelData.key === "failed" && modelData.count > 0 ? "#FFFFFF" : (isSelected ? modelData.color : "#64748B")
+                                }
                             }
                         }
-                    }
 
-                    MouseArea {
-                        id: tabMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        ToolTip.visible: containsMouse
-                        ToolTip.delay: 400
-                        ToolTip.text: root.tr(modelData.tipKey, modelData.defaultTip)
-                        onClicked: {
-                            if (root.bridge && root.bridge.queueModel) {
-                                root.bridge.queueModel.filterStatus = modelData.key
+                        MouseArea {
+                            id: tabMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            ToolTip.visible: containsMouse
+                            ToolTip.delay: 300
+                            ToolTip.text: root.tr(modelData.tipKey, modelData.defaultTip)
+                            onClicked: {
+                                if (root.bridge && root.bridge.queueModel) {
+                                    root.bridge.queueModel.filterStatus = modelData.key
+                                }
                             }
                         }
                     }
                 }
             }
 
+            // View Mode Switcher (Grouped vs Flat)
+            Rectangle {
+                height: 26
+                width: modeRow.implicitWidth + 8
+                radius: 5
+                color: "#161A24"
+                border.color: "#282E3D"
+                border.width: 1
 
-            Item { Layout.fillWidth: true }
+                Row {
+                    id: modeRow
+                    anchors.centerIn: parent
+                    spacing: 3
+
+                    // Grouped Mode Button
+                    Rectangle {
+                        height: 20
+                        width: grpText.implicitWidth + 12
+                        radius: 3
+                        color: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.viewMode === "grouped") ? "#2563EB" : (grpHover.containsMouse ? "#222736" : "transparent")
+                        Text {
+                            id: grpText
+                            anchors.centerIn: parent
+                            text: "👥 " + root.tr("view_grouped", "Grouped")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.viewMode === "grouped") ? Font.Bold : Font.Normal
+                            color: "#FFFFFF"
+                        }
+                        MouseArea {
+                            id: grpHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            ToolTip.visible: containsMouse
+                            ToolTip.text: root.tr("view_grouped", "Grouped")
+                            onClicked: {
+                                if (root.bridge && root.bridge.queueModel) {
+                                    root.bridge.queueModel.viewMode = "grouped"
+                                }
+                            }
+                        }
+                    }
+
+                    // Flat Mode Button
+                    Rectangle {
+                        height: 20
+                        width: flatText.implicitWidth + 12
+                        radius: 3
+                        color: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.viewMode === "flat") ? "#2563EB" : (flatHover.containsMouse ? "#222736" : "transparent")
+                        Text {
+                            id: flatText
+                            anchors.centerIn: parent
+                            text: "📄 " + root.tr("view_flat", "Flat List")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: (root.bridge && root.bridge.queueModel && root.bridge.queueModel.viewMode === "flat") ? Font.Bold : Font.Normal
+                            color: "#FFFFFF"
+                        }
+                        MouseArea {
+                            id: flatHover
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            ToolTip.visible: containsMouse
+                            ToolTip.text: root.tr("view_flat", "Flat List")
+                            onClicked: {
+                                if (root.bridge && root.bridge.queueModel) {
+                                    root.bridge.queueModel.viewMode = "flat"
+                                    root.bridge.queueModel.selectedBatchId = ""
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        // 3. Tasks ListView
+        // 3. Tasks Container
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -218,12 +341,383 @@ Rectangle {
             radius: 8
             clip: true
 
-            ListView {
-                id: queueList
+            ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 6
                 spacing: 6
-                model: root.bridge ? root.bridge.queueModel : null
+
+                // Drilldown Breadcrumb Header when inspecting a specific batch
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 32
+                    radius: 6
+                    color: "#1A2333"
+                    border.color: "#38BDF8"
+                    border.width: 1
+                    visible: root.bridge && root.bridge.queueModel && root.bridge.queueModel.selectedBatchId !== ""
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 8
+
+                        Rectangle {
+                            height: 22
+                            width: backBtnText.implicitWidth + 14
+                            radius: 4
+                            color: backMouse.containsMouse ? "#0284C7" : "#0EA5E9"
+                            Text {
+                                id: backBtnText
+                                anchors.centerIn: parent
+                                text: "⬅ " + root.tr("btn_back_to_groups", "Back to Batches")
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: "#FFFFFF"
+                            }
+                            MouseArea {
+                                id: backMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (root.bridge && root.bridge.queueModel) {
+                                        root.bridge.queueModel.selectedBatchId = ""
+                                    }
+                                }
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: "📁 " + (root.bridge && root.bridge.queueModel ? root.bridge.queueModel.selectedBatchId : "")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 12
+                            font.bold: true
+                            color: "#F8FAFC"
+                            elide: Text.ElideMiddle
+                        }
+                    }
+                }
+
+                // Grouped Batches ListView
+                ListView {
+                    id: groupsList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 8
+                    clip: true
+                    visible: root.bridge && root.bridge.queueModel && root.bridge.queueModel.viewMode === "grouped" && root.bridge.queueModel.selectedBatchId === ""
+                    model: root.bridge && root.bridge.queueModel ? root.bridge.queueModel.groups : []
+                    ScrollBar.vertical: ScrollBar { active: true; policy: ScrollBar.AsNeeded }
+
+                    delegate: Rectangle {
+                        id: groupCard
+                        width: groupsList.width - 12
+                        implicitHeight: cardInnerCol.implicitHeight + 20
+                        radius: 8
+                        color: modelData.status === "failed" ? "#22161A" : (modelData.status === "downloading" ? "#131E30" : (cardMouse.containsMouse ? "#1D2332" : "#171B26"))
+                        border.color: modelData.status === "downloading" ? "#0EA5E9" : (modelData.status === "failed" ? "#EF4444" : (cardMouse.containsMouse ? "#3B465E" : "#283042"))
+                        border.width: 1.5
+
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                        MouseArea {
+                            id: cardMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            z: -1
+                        }
+
+                        ColumnLayout {
+                            id: cardInnerCol
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            // Top line: Service badge, Creator, Post title, Status pill
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Rectangle {
+                                    height: 20
+                                    width: svcText.implicitWidth + 10
+                                    radius: 4
+                                    color: "#222C3D"
+                                    Text {
+                                        id: svcText
+                                        anchors.centerIn: parent
+                                        text: (modelData.service || "kemono").toUpperCase()
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: "#38BDF8"
+                                    }
+                                }
+
+                                Text {
+                                    text: modelData.creatorName
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 13
+                                    font.weight: Font.Bold
+                                    color: "#F8FAFC"
+                                }
+
+                                Text {
+                                    text: "•"
+                                    color: "#64748B"
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.postTitle
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 12
+                                    color: "#94A3B8"
+                                    elide: Text.ElideRight
+                                }
+
+                                // Status Badge
+                                Rectangle {
+                                    height: 20
+                                    width: stText.implicitWidth + 10
+                                    radius: 4
+                                    color: modelData.status === "completed" ? "#064E3B" : (modelData.status === "downloading" ? "#0C4A6E" : (modelData.status === "failed" ? "#7F1D1D" : "#1E293B"))
+                                    border.color: modelData.status === "completed" ? "#10B981" : (modelData.status === "downloading" ? "#0EA5E9" : (modelData.status === "failed" ? "#EF4444" : "#475569"))
+                                    border.width: 1
+
+                                    Text {
+                                        id: stText
+                                        anchors.centerIn: parent
+                                        text: modelData.status.toUpperCase()
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: modelData.status === "completed" ? "#6EE7B7" : (modelData.status === "downloading" ? "#7DD3FC" : (modelData.status === "failed" ? "#FCA5A5" : "#94A3B8"))
+                                    }
+                                }
+                            }
+
+                            // Progress Bar & Stats
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 6
+                                    radius: 3
+                                    color: "#1F2636"
+
+                                    Rectangle {
+                                        height: parent.height
+                                        width: parent.width * Math.min(1.0, Math.max(0.0, modelData.progress))
+                                        radius: 3
+                                        color: modelData.status === "completed" ? "#10B981" : (modelData.status === "failed" ? "#EF4444" : "#0EA5E9")
+                                    }
+                                }
+
+                                Text {
+                                    text: Math.round(modelData.progress * 100) + "%"
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    color: "#F8FAFC"
+                                }
+                            }
+
+                            // Bottom Row: Responsive File Counts, Data Size, and Control Buttons
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                visible: root.isNarrow
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+
+                                    Text {
+                                        text: modelData.completedFiles + " / " + modelData.totalFiles + " files" + (modelData.failedFiles > 0 ? (" (" + modelData.failedFiles + " failed)") : "")
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 11
+                                        color: modelData.failedFiles > 0 ? "#F87171" : "#94A3B8"
+                                    }
+
+                                    Text { text: "•"; color: "#475569"; font.pixelSize: 10 }
+
+                                    Text {
+                                        text: modelData.downloadedBytesStr + " / " + modelData.totalBytesStr
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 11
+                                        color: "#94A3B8"
+                                    }
+                                }
+
+                                Flow {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    StyledButton {
+                                        text: root.isVeryNarrow ? "" : root.tr("btn_view_files", "View Files")
+                                        iconText: "🔍"
+                                        variant: "outline"
+                                        implicitHeight: 24
+                                        tooltip: root.tr("btn_view_files", "View Files")
+                                        onClicked: {
+                                            if (root.bridge && root.bridge.queueModel) {
+                                                root.bridge.queueModel.selectedBatchId = modelData.batchId
+                                            }
+                                        }
+                                    }
+
+                                    StyledButton {
+                                        visible: modelData.failedFiles > 0
+                                        text: root.isVeryNarrow ? "" : root.tr("btn_retry_batch", "Retry Failed")
+                                        iconText: "🔁"
+                                        variant: "danger"
+                                        implicitHeight: 24
+                                        tooltip: root.tr("btn_retry_batch", "Retry Failed")
+                                        onClicked: {
+                                            if (root.bridge && root.bridge.queueModel) {
+                                                root.bridge.queueModel.retryBatch(modelData.batchId)
+                                            }
+                                        }
+                                    }
+
+                                    StyledButton {
+                                        visible: modelData.downloadingFiles > 0 || modelData.pendingFiles > 0
+                                        text: root.isVeryNarrow ? "" : root.tr("btn_cancel_batch", "Cancel")
+                                        iconText: "⏸"
+                                        variant: "ghost"
+                                        implicitHeight: 24
+                                        tooltip: root.tr("btn_cancel_batch", "Cancel")
+                                        onClicked: {
+                                            if (root.bridge && root.bridge.queueModel) {
+                                                root.bridge.queueModel.cancelBatch(modelData.batchId)
+                                            }
+                                        }
+                                    }
+
+                                    StyledButton {
+                                        text: root.isVeryNarrow ? "" : root.tr("btn_remove_batch", "Remove")
+                                        iconText: "🗑"
+                                        variant: "ghost"
+                                        implicitHeight: 24
+                                        tooltip: root.tr("btn_remove_batch", "Remove")
+                                        onClicked: {
+                                            if (root.bridge && root.bridge.queueModel) {
+                                                root.bridge.queueModel.removeBatch(modelData.batchId)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Wide mode single-row layout
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                visible: !root.isNarrow
+
+                                Text {
+                                    text: modelData.completedFiles + " / " + modelData.totalFiles + " files" + (modelData.failedFiles > 0 ? (" (" + modelData.failedFiles + " failed)") : "")
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 11
+                                    color: modelData.failedFiles > 0 ? "#F87171" : "#94A3B8"
+                                }
+
+                                Text { text: "•"; color: "#475569"; font.pixelSize: 10 }
+
+                                Text {
+                                    text: modelData.downloadedBytesStr + " / " + modelData.totalBytesStr
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 11
+                                    color: "#94A3B8"
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                // Action buttons
+                                StyledButton {
+                                    text: root.tr("btn_view_files", "View Files")
+                                    iconText: "🔍"
+                                    variant: "outline"
+                                    implicitHeight: 24
+                                    tooltip: root.tr("btn_view_files", "View Files")
+                                    onClicked: {
+                                        if (root.bridge && root.bridge.queueModel) {
+                                            root.bridge.queueModel.selectedBatchId = modelData.batchId
+                                        }
+                                    }
+                                }
+
+                                StyledButton {
+                                    visible: modelData.failedFiles > 0
+                                    text: root.tr("btn_retry_batch", "Retry Failed")
+                                    iconText: "🔁"
+                                    variant: "danger"
+                                    implicitHeight: 24
+                                    tooltip: root.tr("btn_retry_batch", "Retry Failed")
+                                    onClicked: {
+                                        if (root.bridge && root.bridge.queueModel) {
+                                            root.bridge.queueModel.retryBatch(modelData.batchId)
+                                        }
+                                    }
+                                }
+
+                                StyledButton {
+                                    visible: modelData.downloadingFiles > 0 || modelData.pendingFiles > 0
+                                    text: root.tr("btn_cancel_batch", "Cancel")
+                                    iconText: "⏸"
+                                    variant: "ghost"
+                                    implicitHeight: 24
+                                    tooltip: root.tr("btn_cancel_batch", "Cancel")
+                                    onClicked: {
+                                        if (root.bridge && root.bridge.queueModel) {
+                                            root.bridge.queueModel.cancelBatch(modelData.batchId)
+                                        }
+                                    }
+                                }
+
+                                StyledButton {
+                                    text: root.tr("btn_remove_batch", "Remove")
+                                    iconText: "🗑"
+                                    variant: "ghost"
+                                    implicitHeight: 24
+                                    tooltip: root.tr("btn_remove_batch", "Remove")
+                                    onClicked: {
+                                        if (root.bridge && root.bridge.queueModel) {
+                                            root.bridge.queueModel.removeBatch(modelData.batchId)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Empty state for groups
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.tr("empty_no_batches", "No creator or post batches in queue.\nEnter a creator or post link and click 'Add to Queue'.")
+                        color: "#475569"
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 13
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: groupsList.count === 0
+                    }
+                }
+
+                // 3. Individual Files ListView
+                ListView {
+                    id: queueList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 6
+                    clip: true
+                    visible: root.bridge && root.bridge.queueModel && (root.bridge.queueModel.viewMode === "flat" || root.bridge.queueModel.selectedBatchId !== "")
+                    model: root.bridge ? root.bridge.queueModel : null
 
                 ScrollBar.vertical: ScrollBar { active: true; policy: ScrollBar.AsNeeded }
 
@@ -488,6 +982,7 @@ Rectangle {
             }
         }
     }
+}
 
     // Modal popup dialog for selectively retrying failed downloads
     RetryModal {
@@ -498,6 +993,12 @@ Rectangle {
     // Modal popup dialog for downloading harvested external cloud links
     CloudDownloadModal {
         id: cloudModal
+        bridge: root.bridge
+    }
+
+    // Modal popup dialog for importing queue state snapshot
+    ImportConfirmModal {
+        id: importModal
         bridge: root.bridge
     }
 }

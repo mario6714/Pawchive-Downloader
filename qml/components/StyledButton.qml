@@ -32,7 +32,7 @@ Button {
     font.pixelSize: 12
     font.weight: Font.Medium
     implicitHeight: 34
-    implicitWidth: Math.max(90, contentItem.implicitWidth + 24)
+    implicitWidth: Math.max(control.text.length > 0 ? 80 : 32, contentItem.implicitWidth + (control.text.length > 0 ? 20 : 12))
 
     // Fluid Newtonian Spring Scale on Hover & Press
     scale: control.down ? 0.945 : (control.hovered ? 1.025 : 1.0)

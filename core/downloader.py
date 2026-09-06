@@ -45,7 +45,8 @@ class DownloadTask:
         file_id: str,
         file_size: int = 0,
         expected_sha256: str = "",
-        is_ytdlp: bool = False
+        is_ytdlp: bool = False,
+        batch_id: str = ""
     ):
         self.url = url
         self.target_path = target_path
@@ -57,6 +58,7 @@ class DownloadTask:
         self.file_size = file_size
         self.expected_sha256 = expected_sha256
         self.is_ytdlp = is_ytdlp
+        self.batch_id = batch_id or (f"{service}_{creator_name}_{post_id}".strip("_") if (service or creator_name or post_id) else "batch_default")
         self.downloaded_bytes = 0
         self.status = "pending"  # "pending", "downloading", "completed", "failed", "cancelled"
         self.error_msg = ""
@@ -86,8 +88,30 @@ class DownloadTask:
             "status": self.status,
             "error_msg": self.error_msg,
             "retry_count": self.retry_count,
-            "is_ytdlp": self.is_ytdlp
+            "is_ytdlp": self.is_ytdlp,
+            "batch_id": getattr(self, "batch_id", "")
         }
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "DownloadTask":
+        t = cls(
+            url=d.get("url", ""),
+            target_path=d.get("target_path", ""),
+            post_title=d.get("post_title", ""),
+            creator_name=d.get("creator_name", ""),
+            service=d.get("service", ""),
+            post_id=str(d.get("post_id", "")),
+            file_id=d.get("file_id", ""),
+            file_size=int(d.get("file_size", 0)),
+            expected_sha256=d.get("expected_sha256", ""),
+            is_ytdlp=bool(d.get("is_ytdlp", False)),
+            batch_id=d.get("batch_id", "")
+        )
+        t.downloaded_bytes = int(d.get("downloaded_bytes", 0))
+        t.status = d.get("status", "pending")
+        t.error_msg = d.get("error_msg", "")
+        t.retry_count = int(d.get("retry_count", 0))
+        return t
 
 class KemonoDownloader:
     """
@@ -167,7 +191,8 @@ class KemonoDownloader:
         service: str,
         domain: str,
         base_dir: str,
-        options: FilterOptions
+        options: FilterOptions,
+        batch_id: Optional[str] = None
     ) -> List[DownloadTask]:
         """
         Filters posts and attachments, building the list of download tasks with structured paths.
@@ -535,7 +560,8 @@ class KemonoDownloader:
                     post_id=post_id,
                     file_id=file_id,
                     file_size=int(file_bytes or 0),  # pre-populate from API metadata for progress
-                    expected_sha256=expected_sha
+                    expected_sha256=expected_sha,
+                    batch_id=batch_id
                 )
                 task.fallback_urls = candidate_urls[1:]
                 new_tasks.append(task)
@@ -560,7 +586,8 @@ class KemonoDownloader:
                         service=service,
                         post_id=post_id,
                         file_id=e_file_id,
-                        is_ytdlp=True
+                        is_ytdlp=True,
+                        batch_id=batch_id
                     )
                     new_tasks.append(e_task)
 
@@ -618,6 +645,76 @@ class KemonoDownloader:
             args=(options, cookie_str),
             daemon=True
         ).start()
+
+    def append_tasks(self, new_tasks: List[DownloadTask], options: Optional[FilterOptions] = None, cookie_str: str = "") -> int:
+        """
+        Thread-safely appends new tasks with deduplication.
+        If worker loop is running, new pending tasks will be dynamically scheduled.
+        If idle and options are provided, launches download loop.
+        """
+        if not new_tasks:
+            return 0
+
+        existing_signatures = set()
+        for t in self.tasks:
+            existing_signatures.add((t.url, t.target_path))
+            if t.file_id:
+                existing_signatures.add(t.file_id)
+
+        deduped = []
+        for t in new_tasks:
+            sig1 = (t.url, t.target_path)
+            sig2 = t.file_id
+            if sig1 in existing_signatures or (sig2 and sig2 in existing_signatures):
+                continue
+            existing_signatures.add(sig1)
+            if sig2:
+                existing_signatures.add(sig2)
+            deduped.append(t)
+
+        if not deduped:
+            logger.info("All new tasks were duplicates and already exist in the queue.", category="downloader")
+            return 0
+
+        self.tasks.extend(deduped)
+        logger.info(f"Appended {len(deduped)} new tasks to download queue (total in queue: {len(self.tasks)}).", category="downloader")
+
+        if not self._is_running and options is not None:
+            self.start_download_queue(self.tasks, options, cookie_str)
+
+        return len(deduped)
+
+    def cancel_batch(self, batch_id: str) -> int:
+        """Cancels all pending tasks belonging to a specific batch_id."""
+        cancelled = 0
+        for t in self.tasks:
+            if getattr(t, "batch_id", "") == batch_id and t.status == "pending":
+                t.status = "cancelled"
+                cancelled += 1
+                if self.on_task_status_changed:
+                    self.on_task_status_changed(t)
+        return cancelled
+
+    def retry_batch_failed(self, batch_id: str, options: Optional[FilterOptions] = None, cookie_str: str = "") -> int:
+        """Resets failed/cancelled tasks in a specific batch to pending."""
+        failed = [t for t in self.tasks if getattr(t, "batch_id", "") == batch_id and t.status in ("failed", "cancelled")]
+        for t in failed:
+            t.status = "pending"
+            t.error_msg = ""
+            t.downloaded_bytes = 0
+            t.progress_pct = 0
+            t.retry_count = getattr(t, "retry_count", 0) + 1
+            if self.on_task_status_changed:
+                self.on_task_status_changed(t)
+        if failed and not self._is_running and options:
+            self.start_download_queue(self.tasks, options, cookie_str)
+        return len(failed)
+
+    def remove_batch(self, batch_id: str) -> int:
+        """Removes non-active tasks belonging to a batch from the queue."""
+        initial_count = len(self.tasks)
+        self.tasks = [t for t in self.tasks if getattr(t, "batch_id", "") != batch_id or t.status == "downloading"]
+        return initial_count - len(self.tasks)
 
     def _trigger_rate_limit_backoff(self, threads_locked: bool = False):
         with self._rate_limit_lock:
