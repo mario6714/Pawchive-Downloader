@@ -25,24 +25,39 @@ class QueueModel(QAbstractListModel):
     OriginalIndexRole = Qt.UserRole + 14
     FileIdRole = Qt.UserRole + 15
     RetryCountRole = Qt.UserRole + 16
+    BatchIdRole = Qt.UserRole + 17
 
     countChanged = Signal()
     filterStatusChanged = Signal()
     minFileSizeChanged = Signal()
     countsChanged = Signal()
     failedCountChanged = Signal()
+    groupsChanged = Signal()
+    selectedBatchIdChanged = Signal()
+    viewModeChanged = Signal()
     retryRequested = Signal()
     singleRetryRequested = Signal(str)
     retrySelectedRequested = Signal(list)
+    batchRetryRequested = Signal(str)
+    batchCancelRequested = Signal(str)
+    batchRemoveRequested = Signal(str)
+    cleared = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._tasks: List[DownloadTask] = []
         self._filter_status: str = "all" # "all", "downloading", "completed", "failed", "pending"
         self._min_file_size: int = 0
+        self._selected_batch_id: str = ""
+        self._view_mode: str = "grouped" # "grouped" or "flat"
         self._visible_tasks: List[DownloadTask] = []
 
     def _matches_filter(self, task: DownloadTask) -> bool:
+        if self._selected_batch_id:
+            task_batch = getattr(task, "batch_id", "") or f"{task.service}_{task.creator_name}_{task.post_id}"
+            if task_batch != self._selected_batch_id:
+                return False
+
         if self._min_file_size > 0:
             effective_size = max(task.file_size, task.downloaded_bytes)
             if effective_size < self._min_file_size:
@@ -163,6 +178,8 @@ class QueueModel(QAbstractListModel):
             return task.file_id
         elif role == self.RetryCountRole:
             return getattr(task, "retry_count", 0)
+        elif role == self.BatchIdRole:
+            return getattr(task, "batch_id", "") or f"{task.service}_{task.creator_name}_{task.post_id}"
 
         return None
 
@@ -183,8 +200,97 @@ class QueueModel(QAbstractListModel):
             self.PercentageRole: b"percentage",
             self.OriginalIndexRole: b"originalIndex",
             self.FileIdRole: b"fileId",
-            self.RetryCountRole: b"retryCount"
+            self.RetryCountRole: b"retryCount",
+            self.BatchIdRole: b"batchId"
         }
+
+    # ── Grouping & Batch View Properties ──────────────────────────────────────
+    @Property(str, notify=selectedBatchIdChanged)
+    def selectedBatchId(self) -> str:
+        return self._selected_batch_id
+
+    @selectedBatchId.setter
+    def selectedBatchId(self, val: str):
+        if self._selected_batch_id != val:
+            self.beginResetModel()
+            self._selected_batch_id = val
+            self._rebuild_visible()
+            self.endResetModel()
+            self.selectedBatchIdChanged.emit()
+            self.countChanged.emit()
+
+    @Property(str, notify=viewModeChanged)
+    def viewMode(self) -> str:
+        return self._view_mode
+
+    @viewMode.setter
+    def viewMode(self, val: str):
+        if self._view_mode != val:
+            self._view_mode = val
+            self.viewModeChanged.emit()
+
+    @Property(int, notify=groupsChanged)
+    def groupsCount(self) -> int:
+        return len(self.groups)
+
+    @Property("QVariantList", notify=groupsChanged)
+    def groups(self) -> List[Dict[str, Any]]:
+        groups_dict: Dict[str, Dict[str, Any]] = {}
+        for t in self._tasks:
+            bid = getattr(t, "batch_id", "") or f"{t.service}_{t.creator_name}_{t.post_id}".strip("_")
+            if not bid:
+                bid = "batch_default"
+            if bid not in groups_dict:
+                post_title = t.post_title or "Media Collection"
+                if bid.startswith("artist_") or bid.startswith("creator_"):
+                    post_title = "All Works / Posts"
+                groups_dict[bid] = {
+                    "batchId": bid,
+                    "creatorName": t.creator_name or "Unknown Creator",
+                    "postTitle": post_title,
+                    "service": t.service or "kemono",
+                    "postId": t.post_id or "",
+                    "totalFiles": 0,
+                    "completedFiles": 0,
+                    "failedFiles": 0,
+                    "downloadingFiles": 0,
+                    "pendingFiles": 0,
+                    "totalBytes": 0,
+                    "downloadedBytes": 0,
+                    "status": "pending"
+                }
+            g = groups_dict[bid]
+            g["totalFiles"] += 1
+            eff_size = max(t.file_size, t.downloaded_bytes)
+            g["totalBytes"] += eff_size
+            g["downloadedBytes"] += t.downloaded_bytes
+            if t.status == "completed":
+                g["completedFiles"] += 1
+            elif t.status == "failed":
+                g["failedFiles"] += 1
+            elif t.status in ("downloading", "retrying"):
+                g["downloadingFiles"] += 1
+            else:
+                g["pendingFiles"] += 1
+
+        result = []
+        for g in groups_dict.values():
+            if g["completedFiles"] == g["totalFiles"] and g["totalFiles"] > 0:
+                g["status"] = "completed"
+            elif g["downloadingFiles"] > 0:
+                g["status"] = "downloading"
+            elif g["failedFiles"] > 0 and (g["completedFiles"] + g["failedFiles"] == g["totalFiles"]):
+                g["status"] = "failed"
+            elif g["completedFiles"] > 0:
+                g["status"] = "partial"
+            else:
+                g["status"] = "pending"
+
+            g["progress"] = (g["downloadedBytes"] / g["totalBytes"]) if g["totalBytes"] > 0 else (1.0 if g["status"] == "completed" else 0.0)
+            g["totalBytesStr"] = self._format_size(g["totalBytes"])
+            g["downloadedBytesStr"] = self._format_size(g["downloadedBytes"])
+            result.append(g)
+        return result
 
     def _format_size(self, b: int) -> str:
         if b <= 0:
@@ -205,16 +311,85 @@ class QueueModel(QAbstractListModel):
         self.countChanged.emit()
         self.countsChanged.emit()
         self.failedCountChanged.emit()
+        self.groupsChanged.emit()
 
-    def addTasks(self, tasks: List[DownloadTask]):
+    def appendTasks(self, tasks: List[DownloadTask]) -> int:
         if not tasks:
-            return
+            return 0
+        existing_signatures = set()
+        for t in self._tasks:
+            existing_signatures.add((t.url, t.target_path))
+            if t.file_id:
+                existing_signatures.add(t.file_id)
+
+        deduped = []
+        for t in tasks:
+            sig1 = (t.url, t.target_path)
+            sig2 = t.file_id
+            if sig1 in existing_signatures or (sig2 and sig2 in existing_signatures):
+                continue
+            existing_signatures.add(sig1)
+            if sig2:
+                existing_signatures.add(sig2)
+            deduped.append(t)
+
+        if not deduped:
+            return 0
+
         self.beginResetModel()
-        self._tasks.extend(tasks)
+        self._tasks.extend(deduped)
         self._rebuild_visible()
         self.endResetModel()
         self.countChanged.emit()
         self.countsChanged.emit()
+        self.failedCountChanged.emit()
+        self.groupsChanged.emit()
+        return len(deduped)
+
+    def addTasks(self, tasks: List[DownloadTask]):
+        self.appendTasks(tasks)
+
+    @Slot(str)
+    def removeBatch(self, batch_id: str):
+        if not batch_id:
+            return
+        self.beginResetModel()
+        self._tasks = [t for t in self._tasks if (getattr(t, "batch_id", "") or f"{t.service}_{t.creator_name}_{t.post_id}".strip("_")) != batch_id or t.status == "downloading"]
+        if self._selected_batch_id == batch_id:
+            self._selected_batch_id = ""
+            self.selectedBatchIdChanged.emit()
+        self._rebuild_visible()
+        self.endResetModel()
+        self.countChanged.emit()
+        self.countsChanged.emit()
+        self.failedCountChanged.emit()
+        self.groupsChanged.emit()
+        self.batchRemoveRequested.emit(batch_id)
+
+    @Slot(str)
+    def cancelBatch(self, batch_id: str):
+        if not batch_id:
+            return
+        for t in self._tasks:
+            bid = getattr(t, "batch_id", "") or f"{t.service}_{t.creator_name}_{t.post_id}".strip("_")
+            if bid == batch_id and t.status == "pending":
+                t.status = "cancelled"
+                self.updateTask(t)
+        self.groupsChanged.emit()
+        self.batchCancelRequested.emit(batch_id)
+
+    @Slot(str)
+    def retryBatch(self, batch_id: str):
+        if not batch_id:
+            return
+        for t in self._tasks:
+            bid = getattr(t, "batch_id", "") or f"{t.service}_{t.creator_name}_{t.post_id}".strip("_")
+            if bid == batch_id and t.status in ("failed", "cancelled"):
+                t.status = "pending"
+                t.error_msg = ""
+                t.retry_count = getattr(t, "retry_count", 0) + 1
+                self.updateTask(t)
+        self.groupsChanged.emit()
         self.failedCountChanged.emit()
 
     def updateTask(self, task: DownloadTask):
@@ -228,7 +403,6 @@ class QueueModel(QAbstractListModel):
                     idx = self.index(row, 0)
                     self.dataChanged.emit(idx, idx)
                 else:
-                    # Task no longer belongs in this filtered view (e.g. completed)
                     row = self._visible_tasks.index(task)
                     self.beginRemoveRows(QModelIndex(), row, row)
                     self._visible_tasks.pop(row)
@@ -236,7 +410,6 @@ class QueueModel(QAbstractListModel):
                     self.countChanged.emit()
             else:
                 if matches:
-                    # Task now belongs in this filtered view (e.g. started downloading)
                     row = len(self._visible_tasks)
                     self.beginInsertRows(QModelIndex(), row, row)
                     self._visible_tasks.append(task)
@@ -245,6 +418,7 @@ class QueueModel(QAbstractListModel):
 
             self.countsChanged.emit()
             self.failedCountChanged.emit()
+            self.groupsChanged.emit()
         except (ValueError, RuntimeError):
             pass
 
@@ -257,6 +431,8 @@ class QueueModel(QAbstractListModel):
         self.countChanged.emit()
         self.countsChanged.emit()
         self.failedCountChanged.emit()
+        self.groupsChanged.emit()
+        self.cleared.emit()
 
     @Slot()
     def retryFailed(self):

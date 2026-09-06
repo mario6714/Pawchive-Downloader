@@ -101,13 +101,18 @@ class AppBridge(QObject):
     knownRecognitionModeChanged = Signal()
     languageChanged = Signal()
     postActionCountdownStarted = Signal(str)  # carries human label e.g. "Shutdown"
+    exportCompleted = Signal(str, bool)       # (filePath, wasDownloading)
+    importCompleted = Signal(int, int)        # (taskCount, creatorCount)
+    exportFailed = Signal(str)
+    importFailed = Signal(str)
 
-    _progressSignal  = Signal(dict)    # carries progress info dict
-    _taskSignal      = Signal(object)  # carries a DownloadTask object
-    _finishedSignal  = Signal(bool, str)
-    _throttledSignal = Signal(int)     # carries new worker concurrency count
-    _creatorSignal   = Signal(str)     # carries resolved creator name
-    _setTasksSignal  = Signal(list)    # safely sends new task list to GUI thread
+    _progressSignal    = Signal(dict)    # carries progress info dict
+    _taskSignal        = Signal(object)  # carries a DownloadTask object
+    _finishedSignal    = Signal(bool, str)
+    _throttledSignal   = Signal(int)     # carries new worker concurrency count
+    _creatorSignal     = Signal(str)     # carries resolved creator name
+    _setTasksSignal    = Signal(list)    # safely sends new task list to GUI thread
+    _appendTasksSignal = Signal(list)    # safely appends new tasks to GUI thread queue
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -220,11 +225,17 @@ class AppBridge(QObject):
         self._throttledSignal.connect(self._handle_throttled,  Qt.QueuedConnection)
         self._creatorSignal.connect(self._handle_creator_resolved, Qt.QueuedConnection)
         self._setTasksSignal.connect(self._handle_set_tasks,       Qt.QueuedConnection)
+        self._appendTasksSignal.connect(self._handle_append_tasks, Qt.QueuedConnection)
 
-        # Hook queue model retry signals
+        # Hook queue model retry & batch signals
         self._queue_model.retryRequested.connect(self.retryFailed)
         self._queue_model.singleRetryRequested.connect(self.retrySingleTask)
         self._queue_model.retrySelectedRequested.connect(self.retrySelectedTasks)
+        self._queue_model.batchRetryRequested.connect(self._handle_batch_retry)
+        self._queue_model.batchCancelRequested.connect(self._handle_batch_cancel)
+        self._queue_model.batchRemoveRequested.connect(self._handle_batch_remove)
+        self._queue_model.cleared.connect(self._handle_queue_cleared)
+        self._queued_links: set[str] = set()
 
         # Apply initial client config
         if self._cookie_string:
@@ -831,24 +842,116 @@ class AppBridge(QObject):
             download_embeds=self._download_embeds
         )
 
+    def _get_link_identity(self, parsed: URLParseResult) -> tuple[str, str, Optional[str], str]:
+        """
+        Returns (link_type, identity_key, parent_artist_key, display_name).
+        link_type: 'artist' | 'post' | 'external'
+        identity_key: unique canonical string for this link
+        parent_artist_key: artist key if this is a single post, else None
+        display_name: human-readable name for logging
+        """
+        if parsed.is_external_provider:
+            pid = parsed.post_id or parsed.raw_url
+            key = f"{parsed.provider.lower()}:{pid}"
+            display = f"{parsed.provider.capitalize()} ({pid})"
+            return "external", key, None, display
+
+        service = (parsed.service or "").lower()
+        user_id = (parsed.user_id or "").lower()
+        artist_key = f"artist:{service}:{user_id}"
+
+        if parsed.is_single_post and parsed.post_id:
+            post_id = str(parsed.post_id).lower()
+            post_key = f"post:{service}:{user_id}:{post_id}"
+            display = f"post {parsed.post_id} ({parsed.service} / user {parsed.user_id})"
+            return "post", post_key, artist_key, display
+        else:
+            display = f"artist {parsed.user_id} ({parsed.service})"
+            return "artist", artist_key, None, display
+
     # Actions / Slots
     @Slot()
     def startDownload(self):
         """
-        Parses URL, fetches posts from API or external providers, builds download queue, and starts downloading.
+        Starts downloading queued works, or parses URL, fetches posts, and starts download.
+        If tasks are already queued and current URL is blank or already queued, directly starts the queue.
         """
         if self._is_downloading:
             logger.warning("Download process is already running!", category="system")
             return
 
-        parsed = KemonoURLParser.parse(self._current_url)
-        if not parsed.is_valid:
-            self._has_error = True
-            self._last_error_message = parsed.error_msg
+        # Ensure downloader tasks list is synced with queue model if needed
+        if not self.downloader.tasks and self._queue_model.tasks:
+            self.downloader.tasks = list(self._queue_model.tasks)
+
+        has_pending = any(t.status in ("pending", "failed", "cancelled") for t in self.downloader.tasks) or (self._queue_model.pendingCount > 0)
+        url_input = (self._current_url or "").strip()
+
+        # Check if URL input matches an already queued item
+        url_is_already_queued = False
+        parsed_current = None
+        if url_input:
+            parsed_current = KemonoURLParser.parse(url_input)
+            if parsed_current.is_valid:
+                _, identity_key, parent_artist_key, _ = self._get_link_identity(parsed_current)
+                if identity_key in self._queued_links or (parent_artist_key and parent_artist_key in self._queued_links):
+                    url_is_already_queued = True
+
+        # Case 1: Start existing queue directly if URL is empty or already queued
+        if has_pending and (not url_input or url_is_already_queued):
+            options = self._get_filter_options()
+            self._scan_cancel_event.clear()
+            self._has_error = False
             self.hasErrorChanged.emit()
-            self.lastErrorMessageChanged.emit()
-            logger.error(f"Invalid URL: {parsed.error_msg}", category="parser")
+            self._is_downloading = True
+            self.isDownloadingChanged.emit()
+            self._status_text = "Starting download queue..."
+            self.statusTextChanged.emit()
+            logger.info(f"Starting download for {len(self.downloader.tasks)} queued task(s)...", category="downloader")
+            self.downloader.start_download_queue(
+                tasks=self.downloader.tasks,
+                options=options,
+                cookie_str=self._cookie_string
+            )
             return
+
+        # Case 2: No pending tasks and no URL provided
+        if not url_input:
+            if self._queue_model.rowCount() > 0:
+                logger.info("All tasks in queue are already completed. Use 'Retry Failed' to re-download failed items.", category="downloader")
+            else:
+                logger.warning("Please enter a URL to start download or add to queue.", category="parser")
+            return
+
+        # Case 3: URL provided but invalid
+        if not parsed_current or not parsed_current.is_valid:
+            if has_pending:
+                logger.warning(f"URL is invalid ({parsed_current.error_msg if parsed_current else 'empty'}). Starting existing queued tasks...", category="downloader")
+                options = self._get_filter_options()
+                self._scan_cancel_event.clear()
+                self._has_error = False
+                self.hasErrorChanged.emit()
+                self._is_downloading = True
+                self.isDownloadingChanged.emit()
+                self._status_text = "Starting download queue..."
+                self.statusTextChanged.emit()
+                self.downloader.start_download_queue(
+                    tasks=self.downloader.tasks,
+                    options=options,
+                    cookie_str=self._cookie_string
+                )
+                return
+            else:
+                self._has_error = True
+                self._last_error_message = parsed_current.error_msg if parsed_current else "Invalid URL"
+                self.hasErrorChanged.emit()
+                self.lastErrorMessageChanged.emit()
+                logger.error(f"Invalid URL: {self._last_error_message}", category="parser")
+                return
+
+        # Case 4: Valid new URL -> mark queued, fetch and start
+        _, identity_key, _, _ = self._get_link_identity(parsed_current)
+        self._queued_links.add(identity_key)
 
         self._scan_cancel_event.clear()
         self._has_error = False
@@ -860,24 +963,50 @@ class AppBridge(QObject):
 
         threading.Thread(
             target=self._async_fetch_and_start,
-            args=(parsed, True),
+            args=(parsed_current, True),
             daemon=True
         ).start()
 
     @Slot()
     def addToQueue(self):
         """
-        Parses URL, fetches posts, and appends to the queue without immediate download.
+        Parses URL(s), fetches posts, and appends to the queue without immediate download.
+        Supports pasting multiple URLs (comma or newline separated).
+        Deduplicates against already queued artist or post links.
         """
-        parsed = KemonoURLParser.parse(self._current_url)
-        if not parsed.is_valid:
-            logger.error(f"Invalid URL: {parsed.error_msg}", category="parser")
+        raw_urls = [u.strip() for u in self._current_url.replace(",", "\n").splitlines() if u.strip()]
+        if not raw_urls:
+            logger.warning("Please enter a URL to add to queue.", category="parser")
             return
 
         self._scan_cancel_event.clear()
+
+        def _batch_queue_worker():
+            for u in raw_urls:
+                if self._scan_cancel_event.is_set():
+                    break
+                parsed = KemonoURLParser.parse(u)
+                if not parsed.is_valid:
+                    logger.error(f"Invalid URL: {parsed.error_msg} ({u})", category="parser")
+                    continue
+
+                link_type, identity_key, parent_artist_key, display_name = self._get_link_identity(parsed)
+
+                # Check duplicate link
+                if identity_key in self._queued_links:
+                    logger.warning(f"Skipping duplicate {link_type}: {display_name} is already in queue.", category="queue")
+                    continue
+
+                # Check if this is a single post whose parent artist is already in queue
+                if parent_artist_key and parent_artist_key in self._queued_links:
+                    logger.info(f"Skipping post: entire artist ({parsed.user_id}) is already in queue.", category="queue")
+                    continue
+
+                self._queued_links.add(identity_key)
+                self._async_fetch_and_start(parsed, auto_start=False)
+
         threading.Thread(
-            target=self._async_fetch_and_start,
-            args=(parsed, False),
+            target=_batch_queue_worker,
             daemon=True
         ).start()
 
@@ -909,7 +1038,8 @@ class AppBridge(QObject):
                             creator_name="Bunkr",
                             service="bunkr",
                             post_id=parsed.post_id or "bunkr",
-                            file_id=f["url"]
+                            file_id=f["url"],
+                            batch_id=f"bunkr_{parsed.post_id or 'bunkr'}"
                         )
                         tasks.append(t)
 
@@ -925,7 +1055,8 @@ class AppBridge(QObject):
                             creator_name="Erome",
                             service="erome",
                             post_id=parsed.post_id or "erome",
-                            file_id=f["url"]
+                            file_id=f["url"],
+                            batch_id=f"erome_{parsed.post_id or 'erome'}"
                         )
                         tasks.append(t)
 
@@ -941,7 +1072,8 @@ class AppBridge(QObject):
                             creator_name="nHentai",
                             service="nhentai",
                             post_id=parsed.post_id or "nhentai",
-                            file_id=f["url"]
+                            file_id=f["url"],
+                            batch_id=f"nhentai_{parsed.post_id or 'nhentai'}"
                         )
                         tasks.append(t)
 
@@ -1008,13 +1140,19 @@ class AppBridge(QObject):
                     return
 
                 # 3. Build tasks
+                if parsed.is_single_post and parsed.post_id:
+                    batch_id = f"post_{parsed.service}_{parsed.user_id}_{parsed.post_id}"
+                else:
+                    batch_id = f"artist_{parsed.service}_{parsed.user_id}"
+
                 tasks = self.downloader.build_tasks_from_posts(
                     posts=posts,
                     creator_name=creator_name,
                     service=parsed.service,
                     domain=parsed.domain,
                     base_dir=self._download_dir,
-                    options=options
+                    options=options,
+                    batch_id=batch_id
                 )
 
             if self._scan_cancel_event.is_set():
@@ -1041,37 +1179,41 @@ class AppBridge(QObject):
                 self.statusTextChanged.emit()
                 return
 
-            # Add to queue model safely on GUI main thread
-            self._setTasksSignal.emit(tasks)
-
             # Record to history for History tab
             self.session_manager.record_download_session(
                 creator_name=creator_name,
-                url=self._current_url,
+                url=getattr(parsed, "raw_url", self._current_url),
                 service=parsed.service,
                 file_count=len(tasks)
             )
             self.downloadHistoryChanged.emit()
 
-            # Save session for restore capability
-            self.session_manager.save_session({
-                "url": self._current_url,
-                "creator": creator_name,
-                "service": parsed.service,
-                "total_tasks": len(tasks),
-                "options": vars(options)
-            })
-            self._has_saved_session = True
-            self.hasSavedSessionChanged.emit()
-
             if auto_start:
-                self.downloader.start_download_queue(
-                    tasks=tasks,
-                    options=options,
-                    cookie_str=self._cookie_string
-                )
+                if self.downloader._is_running:
+                    self._appendTasksSignal.emit(tasks)
+                    self.downloader.append_tasks(tasks, options=options, cookie_str=self._cookie_string)
+                else:
+                    if len(self.downloader.tasks) > 0 or self._queue_model.rowCount() > 0:
+                        if not self.downloader.tasks and self._queue_model.tasks:
+                            self.downloader.tasks = list(self._queue_model.tasks)
+                        self._appendTasksSignal.emit(tasks)
+                        self.downloader.append_tasks(tasks)
+                        self.downloader.start_download_queue(
+                            tasks=self.downloader.tasks,
+                            options=options,
+                            cookie_str=self._cookie_string
+                        )
+                    else:
+                        self._setTasksSignal.emit(tasks)
+                        self.downloader.start_download_queue(
+                            tasks=tasks,
+                            options=options,
+                            cookie_str=self._cookie_string
+                        )
             else:
-                self._status_text = f"Queued {len(tasks)} files."
+                self._appendTasksSignal.emit(tasks)
+                self.downloader.append_tasks(tasks)
+                self._status_text = f"Queued {len(tasks)} files ({creator_name})."
                 self.statusTextChanged.emit()
 
         except Exception as e:
@@ -1603,6 +1745,14 @@ class AppBridge(QObject):
         for u in urls:
             parsed = KemonoURLParser.parse(u)
             if parsed.is_valid:
+                link_type, identity_key, parent_artist_key, display_name = self._get_link_identity(parsed)
+                if identity_key in self._queued_links:
+                    logger.warning(f"Skipping duplicate {link_type}: {display_name} is already in queue.", category="batch")
+                    continue
+                if parent_artist_key and parent_artist_key in self._queued_links:
+                    logger.info(f"Skipping post: entire artist ({parsed.user_id}) is already in queue.", category="batch")
+                    continue
+                self._queued_links.add(identity_key)
                 threading.Thread(
                     target=self._async_fetch_and_start,
                     args=(parsed, False),
@@ -1724,6 +1874,201 @@ class AppBridge(QObject):
     def _handle_set_tasks(self, tasks: list):
         self._queue_model.setTasks(tasks)
         self._active_queue_model.setTasks(tasks)
+
+    @Slot(list)
+    def _handle_append_tasks(self, tasks: list):
+        self._queue_model.appendTasks(tasks)
+        self._active_queue_model.appendTasks(tasks)
+
+    @Slot(str)
+    def _handle_batch_cancel(self, batch_id: str):
+        self.downloader.cancel_batch(batch_id)
+
+    @Slot(str)
+    def _handle_batch_retry(self, batch_id: str):
+        options = self._get_filter_options()
+        self.downloader.retry_batch_failed(batch_id, options=options, cookie_str=self._cookie_string)
+
+    @Slot(str)
+    def _handle_batch_remove(self, batch_id: str):
+        self.downloader.remove_batch(batch_id)
+        # Discard batch from _queued_links
+        if batch_id.startswith("artist_"):
+            parts = batch_id.split("_", 2)
+            if len(parts) == 3:
+                self._queued_links.discard(f"artist:{parts[1].lower()}:{parts[2].lower()}")
+        elif batch_id.startswith("post_"):
+            parts = batch_id.split("_", 3)
+            if len(parts) == 4:
+                self._queued_links.discard(f"post:{parts[1].lower()}:{parts[2].lower()}:{parts[3].lower()}")
+
+    @Slot()
+    def _handle_queue_cleared(self):
+        self.downloader.tasks.clear()
+        self._queued_links.clear()
+        logger.info("Download queue cleared.", category="queue")
+
+    @Slot()
+    def exportQueueState(self):
+        """
+        Safely freezes active downloads, serializes queue state with human-readable summary,
+        and prompts the user whether to keep downloads stopped or resume.
+        """
+        import datetime
+        import json
+        was_downloading = self.downloader._is_running and not self.downloader._pause_event.is_set()
+        if was_downloading:
+            logger.info("Auto-pausing active downloads to safely freeze queue state for export...", category="session")
+            self.downloader.pause()
+            time.sleep(0.2)  # Allow socket buffers and chunk writers to flush cleanly
+
+        default_name = f"Pawchive_Queue_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        save_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "Export Queue State Snapshot",
+            os.path.join(self._download_dir, default_name),
+            "JSON Files (*.json);;All Files (*.*)"
+        )
+
+        if not save_path:
+            # User cancelled the file dialog
+            if was_downloading:
+                logger.info("Export cancelled — resuming downloads.", category="session")
+                self.downloader.resume()
+            return
+
+        try:
+            all_tasks = self._queue_model.tasks
+            completed_count = sum(1 for t in all_tasks if t.status == "completed")
+            failed_count = sum(1 for t in all_tasks if t.status == "failed")
+            pending_count = sum(1 for t in all_tasks if t.status in ("pending", "cancelled"))
+            downloading_count = sum(1 for t in all_tasks if t.status in ("downloading", "retrying"))
+
+            total_bytes_sum = sum(max(t.file_size, t.downloaded_bytes) for t in all_tasks)
+            downloaded_bytes_sum = sum(t.downloaded_bytes for t in all_tasks)
+            overall_pct = (downloaded_bytes_sum / total_bytes_sum * 100.0) if total_bytes_sum > 0 else (100.0 if completed_count == len(all_tasks) and all_tasks else 0.0)
+
+            unique_creators = sorted(list(set(t.creator_name for t in all_tasks if t.creator_name)))
+            unique_sources = sorted(list(set(t.url for t in all_tasks if t.url)))
+
+            snapshot = {
+                "_summary": {
+                    "title": "Pawchive Downloader Queue State Backup",
+                    "app_version": "1.0.6",
+                    "exported_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "creators": unique_creators,
+                    "total_batches": len(self._queue_model.groups),
+                    "total_files": len(all_tasks),
+                    "completed_files": completed_count,
+                    "pending_files": pending_count + downloading_count,
+                    "failed_files": failed_count,
+                    "overall_progress": f"{overall_pct:.1f}%",
+                    "current_saved_data": self._queue_model._format_size(downloaded_bytes_sum),
+                    "total_queue_data": self._queue_model._format_size(total_bytes_sum),
+                    "destination_directory": self._download_dir
+                },
+                "settings": {
+                    "download_dir": self._download_dir,
+                    "threads": self._threads_count,
+                    "cookie": self._cookie_string,
+                    "user_agent": self._user_agent,
+                    "manga_mode": self._manga_mode,
+                    "subfolder_per_post": self._subfolder_per_post,
+                    "date_prefix": self._date_prefix,
+                    "separate_by_known": self._separate_folders_by_known
+                },
+                "batches": self._queue_model.groups,
+                "tasks": [t.to_dict() for t in all_tasks]
+            }
+
+            with open(save_path, "w", encoding="utf-8") as f:
+                json.dump(snapshot, f, indent=2, ensure_ascii=False)
+
+            logger.success(f"Queue snapshot exported successfully to: {save_path}", category="session")
+            self.exportCompleted.emit(save_path, was_downloading)
+
+        except Exception as e:
+            logger.error(f"Failed to export queue state: {e}", category="session")
+            if was_downloading:
+                self.downloader.resume()
+            self.exportFailed.emit(str(e))
+
+    @Slot()
+    def resumeAfterExport(self):
+        """Called if user clicks 'Resume Downloading' on the post-export modal."""
+        self.downloader.resume()
+        self._status_text = "Downloading resumed."
+        self.statusTextChanged.emit()
+
+    @Slot()
+    def stopAfterExport(self):
+        """Called if user clicks 'Keep Stopped / Exit Ready' on the post-export modal."""
+        self.downloader.pause()
+        self._status_text = "Downloads paused (Safe to exit or shut down)."
+        self.statusTextChanged.emit()
+
+    @Slot(str)
+    def importQueueState(self, merge_mode: str = "merge"):
+        """
+        Loads a saved queue snapshot file, verifies existing files on disk,
+        and merges or replaces the current queue.
+        """
+        import json
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Import Queue State Snapshot",
+            self._download_dir,
+            "JSON Files (*.json);;All Files (*.*)"
+        )
+
+        if not file_path:
+            return
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            raw_tasks = data.get("tasks", [])
+            if not raw_tasks and not isinstance(raw_tasks, list):
+                raise ValueError("The selected JSON file does not contain a valid 'tasks' list.")
+
+            loaded_tasks: List[DownloadTask] = []
+            for t_dict in raw_tasks:
+                task = DownloadTask.from_dict(t_dict)
+                # Disk verification
+                if os.path.exists(task.target_path):
+                    actual_sz = os.path.getsize(task.target_path)
+                    if task.file_size > 0 and actual_sz >= task.file_size:
+                        task.status = "completed"
+                        task.downloaded_bytes = task.file_size
+                    elif actual_sz > 0:
+                        task.downloaded_bytes = actual_sz
+                        task.status = "pending"
+                elif task.status == "downloading":
+                    task.status = "pending"
+                loaded_tasks.append(task)
+
+            if merge_mode == "replace":
+                self._queue_model.setTasks(loaded_tasks)
+                self._active_queue_model.setTasks(loaded_tasks)
+                self.downloader.tasks = list(loaded_tasks)
+            else:
+                self._queue_model.appendTasks(loaded_tasks)
+                self._active_queue_model.appendTasks(loaded_tasks)
+                self.downloader.append_tasks(loaded_tasks)
+
+            creators = set(t.creator_name for t in loaded_tasks if t.creator_name)
+            logger.success(
+                f"Successfully imported {len(loaded_tasks)} tasks ({len(creators)} creators) from: {os.path.basename(file_path)}",
+                category="session"
+            )
+            self._status_text = f"Imported {len(loaded_tasks)} tasks from backup."
+            self.statusTextChanged.emit()
+            self.importCompleted.emit(len(loaded_tasks), len(creators))
+
+        except Exception as e:
+            logger.error(f"Failed to import queue state: {e}", category="session")
+            self.importFailed.emit(str(e))
 
     def _execute_post_action(self):
         """Shows 15-second countdown modal — actual action runs only if user doesn't cancel."""
