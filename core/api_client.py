@@ -7,6 +7,7 @@ with exponential backoff, rate limiting recovery, and diagnostic logging.
 import os
 import sys
 import time
+import threading
 import requests
 from urllib.parse import urljoin
 from typing import Dict, Any, List, Optional, Callable
