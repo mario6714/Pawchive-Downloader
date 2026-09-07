@@ -63,6 +63,9 @@
 - 🛡️ **SSD Stall & Disk Saturation Protection:** Hardened speed estimation engine prevents freeze glitches and auto-pauses gracefully upon out-of-disk space (`WinError 112` / `Errno 28`) without crashing worker threads.
 - 🎯 **Advanced Smart Filtering:** Filter by character names, series, keywords, file categories (images, videos, audio, archives), or minimum file size thresholds.
 - 🗂️ **Automated Organization & Franchise Recognition:** Automatically structures downloaded files into clean creator/franchise folders using an integrated franchise database and custom `Known.txt` rules.
+- 📌 **Artist Watchlist** *(WIP — not yet thoroughly tested):* Track followed creators and automatically check for new posts since your last download. Per-artist manual checks, auto-check on startup, and a live counter badge on the tab.
+- 🏷️ **Tag-Based Folder Sorting:** Organise downloads by their primary tag into sub-folders (`Artist / Tag / ...`) with sequential file indexing (`001_`, `002_`, ...) so related content stays cleanly grouped.
+- 📋 **Failed Download Export:** The retry modal now lets you export a full report of failed files — including direct download links and source post URLs — so you can audit or manually recover any missed content.
 - 📖 **Manga & Comic Order:** Chronologically sequences files and folders (`001 - Title`) so chapters stay in proper sequential order in image viewers.
 - 🔗 **Link Harvesting & Export:** Extracts external cloud drive links and embedded player URLs from post bodies and comments; download them immediately or export to text files.
 - 🎬 **Embedded Player Downloads:** Auto-updating `yt-dlp` integration grabs videos from Vimeo, YouTube, Streamable, RedGifs, Twitter/X, and more.
@@ -98,7 +101,7 @@
 ### Option A: Pre-compiled Windows Binary (Recommended for most users)
 
 1. Head over to the **[Latest Release](https://github.com/whyamihere773/Pawchive-Downloader/releases/latest)** page.
-2. Download `Pawchive-Downloader-v1.0.6-Windows.zip`.
+2. Download `Pawchive-Downloader-v1.0.7-Windows.zip`.
 3. Extract the ZIP archive anywhere on your computer.
 4. Run `Pawchive Downloader.exe` — that's it!
 

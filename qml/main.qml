@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: "Pawchive Downloader v1.0.6"
+    title: "Pawchive Downloader v1.0.7"
     color: "#0F1117"
 
     // Stop active downloads and persist session gracefully when user closes the app
@@ -23,7 +23,7 @@ ApplicationWindow {
     }
 
     property bool showConsole: true
-    property int currentTab: 0 // 0: Downloader, 1: Queue, 2: Known, 3: History, 4: Settings
+    property int currentTab: 0 // 0: Downloader, 1: Queue, 2: Watchlist, 3: Known, 4: History, 5: Settings
 
     function tr(key, fallback) {
         if (!Lang) return fallback !== undefined ? fallback : key
@@ -139,13 +139,14 @@ ApplicationWindow {
                     }
                 }
 
-                // Tab: Known Characters
+                // Tab: Watchlist (3rd — tracks followed artists)
                 Rectangle {
-                    width: Math.max(120, tab2Row.implicitWidth + 24)
+                    id: watchlistTabCard
+                    width: Math.max(110, tab2Row.implicitWidth + 24)
                     height: 30
                     radius: 6
                     color: appWindow.currentTab === 2 ? "#181B22" : (tab2Mouse.containsMouse ? "#141720" : "transparent")
-                    border.color: appWindow.currentTab === 2 ? "#38BDF8" : "transparent"
+                    border.color: appWindow.currentTab === 2 ? "#A78BFA" : "transparent"
                     border.width: 1
 
                     scale: tab2Mouse.pressed ? 0.94 : (tab2Mouse.containsMouse ? 1.035 : 1.0)
@@ -161,13 +162,41 @@ ApplicationWindow {
                         id: tab2Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "🏷️"; font.pixelSize: 12 }
+                        Text { text: "📌"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_known", "Known Series")
+                            text: appWindow.tr("tab_watchlist", "Watchlist")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 2 ? Font.DemiBold : Font.Normal
                             color: appWindow.currentTab === 2 ? "#F8FAFC" : "#94A3B8"
+                        }
+                    }
+
+                    // Live counter badge — artists that have new posts since last download
+                    Rectangle {
+                        id: watchlistBadge
+                        property int updCount: appBridge && appBridge.watchlistModel ? appBridge.watchlistModel.updatedCount : 0
+                        visible: updCount > 0
+                        width: Math.max(16, badgeText.implicitWidth + 8)
+                        height: 16
+                        radius: 8
+                        color: "#7C3AED"
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.topMargin: -5
+                        anchors.rightMargin: -5
+                        z: 10
+
+                        Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
+
+                        Text {
+                            id: badgeText
+                            anchors.centerIn: parent
+                            text: watchlistBadge.updCount
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            color: "#FFFFFF"
                         }
                     }
 
@@ -178,14 +207,14 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_known_tip", "Known character and series directory rules (Known.txt)")
+                        ToolTip.text: appWindow.tr("tab_watchlist_tip", "Followed artists — track and download new posts automatically")
                         onClicked: appWindow.currentTab = 2
                     }
                 }
 
-                // Tab: History
+                // Tab: Known Characters
                 Rectangle {
-                    width: Math.max(90, tab3Row.implicitWidth + 24)
+                    width: Math.max(120, tab3Row.implicitWidth + 24)
                     height: 30
                     radius: 6
                     color: appWindow.currentTab === 3 ? "#181B22" : (tab3Mouse.containsMouse ? "#141720" : "transparent")
@@ -205,9 +234,9 @@ ApplicationWindow {
                         id: tab3Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "📜"; font.pixelSize: 12 }
+                        Text { text: "🏷️"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_history", "History")
+                            text: appWindow.tr("tab_known", "Known Series")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 3 ? Font.DemiBold : Font.Normal
@@ -222,12 +251,12 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_history_tip", "Completed downloads and past batch sessions")
+                        ToolTip.text: appWindow.tr("tab_known_tip", "Known character and series directory rules (Known.txt)")
                         onClicked: appWindow.currentTab = 3
                     }
                 }
 
-                // Tab: Settings
+                // Tab: History
                 Rectangle {
                     width: Math.max(90, tab4Row.implicitWidth + 24)
                     height: 30
@@ -249,9 +278,9 @@ ApplicationWindow {
                         id: tab4Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "⚙️"; font.pixelSize: 12 }
+                        Text { text: "📜"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_settings", "Settings")
+                            text: appWindow.tr("tab_history", "History")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 4 ? Font.DemiBold : Font.Normal
@@ -266,8 +295,52 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_settings_tip", "Global application and network configuration")
+                        ToolTip.text: appWindow.tr("tab_history_tip", "Completed downloads and past batch sessions")
                         onClicked: appWindow.currentTab = 4
+                    }
+                }
+
+                // Tab: Settings
+                Rectangle {
+                    width: Math.max(90, tab5Row.implicitWidth + 24)
+                    height: 30
+                    radius: 6
+                    color: appWindow.currentTab === 5 ? "#181B22" : (tab5Mouse.containsMouse ? "#141720" : "transparent")
+                    border.color: appWindow.currentTab === 5 ? "#38BDF8" : "transparent"
+                    border.width: 1
+
+                    scale: tab5Mouse.pressed ? 0.94 : (tab5Mouse.containsMouse ? 1.035 : 1.0)
+                    transformOrigin: Item.Center
+
+                    Behavior on scale {
+                        NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+                    }
+                    Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                    Row {
+                        id: tab5Row
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text { text: "⚙️"; font.pixelSize: 12 }
+                        Text {
+                            text: appWindow.tr("tab_settings", "Settings")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 12
+                            font.weight: appWindow.currentTab === 5 ? Font.DemiBold : Font.Normal
+                            color: appWindow.currentTab === 5 ? "#F8FAFC" : "#94A3B8"
+                        }
+                    }
+
+                    MouseArea {
+                        id: tab5Mouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 400
+                        ToolTip.text: appWindow.tr("tab_settings_tip", "Global application and network configuration")
+                        onClicked: appWindow.currentTab = 5
                     }
                 }
 
@@ -285,7 +358,7 @@ ApplicationWindow {
                     Text {
                         id: verText
                         anchors.centerIn: parent
-                        text: "v1.0.6"
+                        text: "v1.0.7"
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
@@ -341,7 +414,7 @@ ApplicationWindow {
                 if (appBridge) appBridge.addToQueue()
             }
             onSettingsRequested: {
-                appWindow.currentTab = 4
+                appWindow.currentTab = 5
             }
         }
 
@@ -1141,8 +1214,10 @@ ApplicationWindow {
 
 
             SplitView {
+                id: mainSplitView
                 anchors.fill: parent
                 orientation: Qt.Horizontal
+                property bool isHandleDragging: false
 
                 // Custom drag handle — visible, glows on hover
                 handle: Rectangle {
@@ -1150,6 +1225,7 @@ ApplicationWindow {
                     implicitWidth: 6
                     property bool isHovered: SplitHandle.hovered || SplitHandle.pressed
                     color: isHovered ? "#38BDF8" : "#1E2330"
+                    visible: appWindow.showConsole && consoleContainer.width > 20
 
                     Behavior on color { ColorAnimation { duration: 150 } }
 
@@ -1157,6 +1233,7 @@ ApplicationWindow {
                     Connections {
                         target: SplitHandle
                         function onPressedChanged() {
+                            mainSplitView.isHandleDragging = SplitHandle.pressed
                             if (!SplitHandle.pressed && splitHandle.wasPressed) {
                                 if (consoleContainer.visible && consoleContainer.width >= 320 && appBridge) {
                                     appBridge.consoleWidth = Math.round(consoleContainer.width)
@@ -1219,7 +1296,7 @@ ApplicationWindow {
                             QueueView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 2: Known Manager View with Newtonian slide & fade transition
+                        // Tab 2: Watchlist View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 2 ? 1.0 : 0.0
                             y: appWindow.currentTab === 2 ? 0 : 10
@@ -1229,10 +1306,10 @@ ApplicationWindow {
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                             Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
 
-                            KnownManagerView { anchors.fill: parent; bridge: appBridge }
+                            WatchlistView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 3: History View with Newtonian slide & fade transition
+                        // Tab 3: Known Manager View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 3 ? 1.0 : 0.0
                             y: appWindow.currentTab === 3 ? 0 : 10
@@ -1242,14 +1319,27 @@ ApplicationWindow {
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                             Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
 
-                            HistoryView { anchors.fill: parent; bridge: appBridge }
+                            KnownManagerView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 4: Settings View with Newtonian slide & fade transition
+                        // Tab 4: History View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 4 ? 1.0 : 0.0
                             y: appWindow.currentTab === 4 ? 0 : 10
                             scale: appWindow.currentTab === 4 ? 1.0 : 0.985
+                            transformOrigin: Item.Center
+                            Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                            Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+                            Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+
+                            HistoryView { anchors.fill: parent; bridge: appBridge }
+                        }
+
+                        // Tab 5: Settings View with Newtonian slide & fade transition
+                        Item {
+                            opacity: appWindow.currentTab === 5 ? 1.0 : 0.0
+                            y: appWindow.currentTab === 5 ? 0 : 10
+                            scale: appWindow.currentTab === 5 ? 1.0 : 0.985
                             transformOrigin: Item.Center
                             Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
@@ -1263,15 +1353,51 @@ ApplicationWindow {
                 // Right Panel: Live Console Log View & Active Downloads Panel
                 Rectangle {
                     id: consoleContainer
-                    SplitView.preferredWidth: appBridge ? appBridge.consoleWidth : 680
-                    SplitView.minimumWidth: 320
-                    visible: appWindow.showConsole
+
+                    readonly property real baseConsoleWidth: appBridge ? appBridge.consoleWidth : 680
+                    property real targetConsoleWidth: appWindow.showConsole ? baseConsoleWidth : 0
+                    property real animConsoleWidth: targetConsoleWidth
+                    property bool isOpeningOrClosing: Math.abs(animConsoleWidth - targetConsoleWidth) > 1
+
+                    Behavior on animConsoleWidth {
+                        enabled: !mainSplitView.isHandleDragging
+                        NumberAnimation {
+                            duration: appWindow.showConsole ? 380 : 300
+                            easing.type: appWindow.showConsole ? Easing.OutBack : Easing.InOutCubic
+                            easing.overshoot: 1.15
+                        }
+                    }
+
+                    SplitView.preferredWidth: mainSplitView.isHandleDragging ? width : animConsoleWidth
+                    SplitView.minimumWidth: (appWindow.showConsole && !isOpeningOrClosing) ? 320 : 0
+                    visible: animConsoleWidth > 2
+                    clip: true
                     color: "#0B0D12"
+
+                    // Fluid Newtonian opacity
+                    opacity: appWindow.showConsole ? 1.0 : 0.0
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: appWindow.showConsole ? 260 : 200
+                            easing.type: Easing.OutCubic
+                        }
+                    }
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 8
                         spacing: 8
+
+                        transform: Translate {
+                            x: appWindow.showConsole ? 0 : 35
+                            Behavior on x {
+                                NumberAnimation {
+                                    duration: appWindow.showConsole ? 380 : 240
+                                    easing.type: appWindow.showConsole ? Easing.OutBack : Easing.InCubic
+                                    easing.overshoot: 1.25
+                                }
+                            }
+                        }
 
                         ActiveDownloadsPanel {
                             id: activeDownloadsPanel

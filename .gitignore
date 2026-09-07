@@ -37,6 +37,7 @@ htmlcov/
 config/settings.json
 config/history.json
 config/session.json
+config/watchlist.json
 config/Known.txt
 
 # Downloaded files, logs & temporary data

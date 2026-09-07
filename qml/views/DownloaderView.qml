@@ -371,6 +371,44 @@ ScrollView {
                     }
 
                     StyledCheckBox {
+                        text: root.tr("opt_file_index_prefix", "Index Prefix (001_...)")
+                        tooltip: root.tr("opt_file_index_prefix_tip", "Prefix downloaded filenames with sequential index numbers (001_, 002_, ...) so they can be browsed in order without relying on time sorting")
+                        checked: root.bridge ? root.bridge.fileIndexPrefix : false
+                        onCheckedChanged: if (root.bridge) root.bridge.fileIndexPrefix = checked
+                    }
+
+                    RowLayout {
+                        spacing: 6
+                        StyledCheckBox {
+                            text: root.tr("opt_tag_folder_mode", "Sort by Tag Folder")
+                            tooltip: root.tr("opt_tag_folder_mode_tip", "(Pawchive & cum.st only) Groups downloaded files into subfolders named after the post's primary tag")
+                            checked: root.bridge ? root.bridge.tagFolderMode : false
+                            onCheckedChanged: if (root.bridge) root.bridge.tagFolderMode = checked
+                        }
+
+                        Rectangle {
+                            readonly property string curUrl: root.bridge ? (root.bridge.currentUrl || "").toLowerCase() : ""
+                            readonly property bool isNonTagDomain: curUrl.length > 0 && curUrl.indexOf("pawchive.pw") === -1 && curUrl.indexOf("cum.st") === -1
+                            visible: isNonTagDomain
+                            implicitHeight: 20
+                            implicitWidth: tagWarnText.implicitWidth + 10
+                            radius: 4
+                            color: "#1E1B18"
+                            border.color: "#854D0E"
+                            border.width: 1
+
+                            Text {
+                                id: tagWarnText
+                                anchors.centerIn: parent
+                                text: "⚠ Pawchive/cum.st only"
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                color: "#FBBF24"
+                            }
+                        }
+                    }
+
+                    StyledCheckBox {
                         text: root.tr("opt_separate_known", "Separate folders by Known.txt")
                         tooltip: root.tr("opt_separate_known_tip", "Sort files into subfolders corresponding to matched characters/series from Known.txt")
                         checked: root.bridge ? root.bridge.separateFoldersByKnown : false

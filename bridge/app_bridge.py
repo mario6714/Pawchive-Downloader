@@ -29,6 +29,8 @@ from core.known_manager import KnownManager
 from bridge.log_model import LogModel
 from bridge.queue_model import QueueModel
 from bridge.known_model import KnownModel
+from bridge.watchlist_model import WatchlistModel
+from core.watchlist_manager import WatchlistManager
 from services.batch_loader import BatchLoader
 from services.link_extractor import LinkExtractor
 from services.text_exporter import TextExporter
@@ -63,6 +65,7 @@ class AppBridge(QObject):
     favoriteModeChanged = Signal()
     subfolderPerPostChanged = Signal()
     datePrefixChanged = Signal()
+    fileIndexPrefixChanged = Signal()
     separateFoldersByKnownChanged = Signal()
     downloadRevisionsChanged = Signal()
     adaptiveThreadingChanged = Signal()
@@ -106,6 +109,13 @@ class AppBridge(QObject):
     exportFailed = Signal(str)
     importFailed = Signal(str)
 
+    tagFolderModeChanged      = Signal()
+    watchlistChanged          = Signal()
+    watchlistCheckStarted     = Signal()
+    watchlistCheckFinished    = Signal(int)  # total new posts found
+    watchlistArtistChecking   = Signal(str, str, bool) # (userId, service, isChecking)
+    watchlistArtistChecked    = Signal(str, str, int)  # (userId, service, newPostCount)
+
     _progressSignal    = Signal(dict)    # carries progress info dict
     _taskSignal        = Signal(object)  # carries a DownloadTask object
     _finishedSignal    = Signal(bool, str)
@@ -113,6 +123,8 @@ class AppBridge(QObject):
     _creatorSignal     = Signal(str)     # carries resolved creator name
     _setTasksSignal    = Signal(list)    # safely sends new task list to GUI thread
     _appendTasksSignal = Signal(list)    # safely appends new tasks to GUI thread queue
+    _watchlistResultSignal = Signal(list)  # carries per-entry new-post lists
+    _watchlistArtistResultSignal = Signal(str, str, int)  # (userId, service, newCount)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -155,6 +167,7 @@ class AppBridge(QObject):
         self._favorite_mode = False
         self._subfolder_per_post = saved_settings.get("subfolder_per_post", True)
         self._date_prefix = saved_settings.get("date_prefix", True)
+        self._file_index_prefix = bool(saved_settings.get("file_index_prefix", False))
         self._separate_folders_by_known = saved_settings.get("separate_by_known", False)
         self._download_revisions = saved_settings.get("download_revisions", False)
         self._adaptive_threading = saved_settings.get("adaptive_threading", False)
@@ -181,6 +194,14 @@ class AppBridge(QObject):
         self._language = str(saved_settings.get("language", "auto"))
         self._console_width = int(saved_settings.get("console_width", 620))
         self._creator_name = ""
+        self._tag_folder_mode = bool(saved_settings.get("tag_folder_mode", False))
+
+        # Watchlist
+        self._watchlist_manager = WatchlistManager(self.session_manager.config_dir)
+        self._watchlist_manager.load()
+        self._watchlist_model = WatchlistModel(self._watchlist_manager, self)
+        self._watchlist_result_signal_connected = False
+        self._watchlistResultSignal.connect(self._handle_watchlist_result, Qt.QueuedConnection)
 
         # Scan & Cloud cancellation state
         self._scan_cancel_event = threading.Event()
@@ -226,6 +247,12 @@ class AppBridge(QObject):
         self._creatorSignal.connect(self._handle_creator_resolved, Qt.QueuedConnection)
         self._setTasksSignal.connect(self._handle_set_tasks,       Qt.QueuedConnection)
         self._appendTasksSignal.connect(self._handle_append_tasks, Qt.QueuedConnection)
+        self._watchlistResultSignal.connect(self._handle_watchlist_result, Qt.QueuedConnection)
+        self._watchlistArtistResultSignal.connect(self._handle_watchlist_artist_result, Qt.QueuedConnection)
+
+        # Auto-check watchlist entries on startup (background, non-blocking)
+        if any(e.auto_check for e in self._watchlist_manager.entries):
+            threading.Thread(target=self._async_watchlist_check, daemon=True).start()
 
         # Hook queue model retry & batch signals
         self._queue_model.retryRequested.connect(self.retryFailed)
@@ -448,6 +475,18 @@ class AppBridge(QObject):
         if self._date_prefix != val:
             self._date_prefix = val
             self.datePrefixChanged.emit()
+            self.saveSettings()
+
+    @Property(bool, notify=fileIndexPrefixChanged)
+    def fileIndexPrefix(self) -> bool:
+        return self._file_index_prefix
+
+    @fileIndexPrefix.setter
+    def fileIndexPrefix(self, val: bool):
+        if self._file_index_prefix != val:
+            self._file_index_prefix = val
+            self.fileIndexPrefixChanged.emit()
+            self.saveSettings()
 
     @Property(bool, notify=separateFoldersByKnownChanged)
     def separateFoldersByKnown(self) -> bool:
@@ -786,6 +825,21 @@ class AppBridge(QObject):
     def knownModel(self) -> KnownModel:
         return self._known_model
 
+    @Property(QObject, constant=True)
+    def watchlistModel(self) -> WatchlistModel:
+        return self._watchlist_model
+
+    @Property(bool, notify=tagFolderModeChanged)
+    def tagFolderMode(self) -> bool:
+        return self._tag_folder_mode
+
+    @tagFolderMode.setter
+    def tagFolderMode(self, val: bool):
+        if self._tag_folder_mode != val:
+            self._tag_folder_mode = val
+            self.tagFolderModeChanged.emit()
+            self.saveSettings()
+
     @Property(bool, notify=harvestedLinksChanged)
     def hasHarvestedLinks(self) -> bool:
         return bool(self.downloader.harvested_links_records)
@@ -827,6 +881,7 @@ class AppBridge(QObject):
             favorite_mode=self._favorite_mode,
             subfolder_per_post=self._subfolder_per_post,
             date_prefix=self._date_prefix,
+            file_index_prefix=self._file_index_prefix,
             separate_by_known=self._separate_folders_by_known,
             download_revisions=self._download_revisions,
             adaptive_threading=self._adaptive_threading,
@@ -839,7 +894,8 @@ class AppBridge(QObject):
             page_end=self._page_end,
             download_delay=self._download_delay,
             save_post_metadata=self._save_post_metadata,
-            download_embeds=self._download_embeds
+            download_embeds=self._download_embeds,
+            tag_folder_mode=self._tag_folder_mode
         )
 
     def _get_link_identity(self, parsed: URLParseResult) -> tuple[str, str, Optional[str], str]:
@@ -1187,6 +1243,43 @@ class AppBridge(QObject):
                 file_count=len(tasks)
             )
             self.downloadHistoryChanged.emit()
+
+            # Auto-track artist in watchlist immediately if not a single post / external provider
+            if not parsed.is_single_post and not parsed.is_external_provider and parsed.user_id:
+                try:
+                    latest_pid = ""
+                    latest_pdate = ""
+                    for p in posts:
+                        pub = p.get("published") or p.get("added") or ""
+                        if isinstance(pub, (int, float)):
+                            try:
+                                d_str = datetime.datetime.fromtimestamp(pub).strftime("%Y-%m-%d")
+                            except Exception:
+                                d_str = str(pub)
+                        else:
+                            p_str = str(pub)
+                            d_str = p_str.split("T")[0] if "T" in p_str else (p_str[:10] if p_str else "")
+                        pid = str(p.get("id", ""))
+                        if d_str and d_str > latest_pdate:
+                            latest_pdate = d_str
+                            latest_pid = pid
+                        elif not latest_pdate and not latest_pid and pid:
+                            latest_pid = pid
+
+                    canonical_url = getattr(parsed, "raw_url", "") or f"https://{parsed.domain}/{parsed.service}/user/{parsed.user_id}"
+                    self._watchlist_manager.add_entry(
+                        url=canonical_url,
+                        creator_name=creator_name or parsed.user_id,
+                        user_id=parsed.user_id,
+                        service=parsed.service,
+                        domain=parsed.domain,
+                        last_post_id=latest_pid,
+                        last_post_date=latest_pdate,
+                    )
+                    self._watchlist_model.refresh()
+                    self.watchlistChanged.emit()
+                except Exception as e:
+                    logger.debug(f"Watchlist auto-track error: {e}", category="watchlist")
 
             if auto_start:
                 if self.downloader._is_running:
@@ -1792,6 +1885,110 @@ class AppBridge(QObject):
                 logger.error(f"Failed to export links: {e}", category="file")
         return ""
 
+    @Slot(list, result=str)
+    def exportFailedTasks(self, selected_file_ids: list = None) -> str:
+        """
+        Exports failed tasks with direct download links, post links, filenames, and error details
+        to a user-chosen text file for manual verification and testing.
+        """
+        all_failed = [t for t in self._queue_model.tasks if t.status == "failed"]
+        if not all_failed:
+            logger.warning("No failed tasks to export.", category="session")
+            return ""
+
+        if selected_file_ids:
+            sel_set = set(str(x) for x in selected_file_ids if x)
+            tasks_to_export = [
+                t for t in all_failed
+                if t.file_id in sel_set or t.url in sel_set or t.filename in sel_set
+            ]
+            if not tasks_to_export:
+                tasks_to_export = all_failed
+        else:
+            tasks_to_export = all_failed
+
+        import datetime
+        default_name = f"failed_downloads_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        save_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "Export Failed Download Links & Post URLs",
+            os.path.join(self._download_dir, default_name),
+            "Text Files (*.txt);;All Files (*.*)"
+        )
+        if not save_path:
+            return ""
+
+        try:
+            lines = [
+                "=" * 80,
+                "Pawchive Downloader — Failed Downloads Manual Inspection & Links Export",
+                f"Export Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                f"Total Failed Tasks Exported: {len(tasks_to_export)}",
+                "=" * 80,
+                "",
+            ]
+
+            for idx, t in enumerate(tasks_to_export, 1):
+                p_url = getattr(t, "post_url", "") or ""
+                if not p_url and t.service and t.post_id:
+                    p_url = f"https://pawchive.pw/{t.service}/user/{t.creator_name}/post/{t.post_id}"
+
+                lines.append(f"[{idx}] File: {t.filename}")
+                lines.append(f"    File Size: {self._queue_model._format_size(t.file_size)}")
+                lines.append(f"    Post Title: {t.post_title or 'Untitled'}")
+                lines.append(f"    Post ID: {t.post_id or 'N/A'}")
+                lines.append(f"    Creator: {t.creator_name or 'Unknown'} [{t.service or 'N/A'}]")
+                lines.append(f"    Post Link: {p_url or 'N/A'}")
+                lines.append(f"    Direct Download Link: {t.url}")
+                lines.append(f"    Target Destination: {t.target_path}")
+                lines.append(f"    Error Reason: {t.error_msg or 'Download failed'}")
+                lines.append(f"    Retries Attempted: {getattr(t, 'retry_count', 0)}")
+                if getattr(t, "fallback_urls", None):
+                    lines.append(f"    Alternative Mirror URLs:")
+                    for fb in t.fallback_urls[:3]:
+                        lines.append(f"      - {fb}")
+                lines.append("")
+
+            lines.extend([
+                "=" * 80,
+                "RAW DIRECT DOWNLOAD URLS (For curl / wget / browser / download manager):",
+                "=" * 80,
+            ])
+            for t in tasks_to_export:
+                if t.url:
+                    lines.append(t.url)
+
+            lines.extend([
+                "",
+                "=" * 80,
+                "RAW CANONICAL POST URLS (For browser inspection):",
+                "=" * 80,
+            ])
+            post_urls_seen = set()
+            for t in tasks_to_export:
+                p_url = getattr(t, "post_url", "") or ""
+                if not p_url and t.service and t.post_id:
+                    p_url = f"https://pawchive.pw/{t.service}/user/{t.creator_name}/post/{t.post_id}"
+                if p_url and p_url not in post_urls_seen:
+                    post_urls_seen.add(p_url)
+                    lines.append(p_url)
+
+            lines.append("")
+
+            with open(save_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+
+            logger.success(f"📤 Exported {len(tasks_to_export)} failed link(s) to: {save_path}", category="session")
+            return save_path
+        except Exception as e:
+            logger.error(f"Failed to export failed links: {e}", category="session")
+            return ""
+
+    @Slot(result=str)
+    def exportAllFailedTasks(self) -> str:
+        """Convenience slot to export all failed tasks without filtering."""
+        return self.exportFailedTasks([])
+
     @Slot()
     def saveSettings(self):
         settings_dict = {
@@ -1805,6 +2002,7 @@ class AppBridge(QObject):
             "skip_scope": self._skip_scope,
             "subfolder_per_post": self._subfolder_per_post,
             "date_prefix": self._date_prefix,
+            "file_index_prefix": self._file_index_prefix,
             "separate_by_known": self._separate_folders_by_known,
             "download_revisions": self._download_revisions,
             "adaptive_threading": self._adaptive_threading,
@@ -1824,7 +2022,8 @@ class AppBridge(QObject):
             "post_download_action": "none",
             "known_recognition_mode": self._known_recognition_mode,
             "language": self._language,
-            "console_width": self._console_width
+            "console_width": self._console_width,
+            "tag_folder_mode": self._tag_folder_mode
         }
         self.session_manager.save_settings(settings_dict, silent=True)
 
@@ -1975,6 +2174,7 @@ class AppBridge(QObject):
                     "manga_mode": self._manga_mode,
                     "subfolder_per_post": self._subfolder_per_post,
                     "date_prefix": self._date_prefix,
+                    "file_index_prefix": self._file_index_prefix,
                     "separate_by_known": self._separate_folders_by_known
                 },
                 "batches": self._queue_model.groups,
@@ -2199,6 +2399,47 @@ class AppBridge(QObject):
             if self._post_download_action and self._post_download_action != "none":
                 self._execute_post_action()
 
+            # 4. Auto-add / update completed artist in watchlist
+            try:
+                tasks_done = self._queue_model.getTasks()
+                last_post_id = ""
+                last_post_date = ""
+                for _t in tasks_done:
+                    t_date = getattr(_t, "post_date", "") or ""
+                    t_pid = getattr(_t, "post_id", "") or ""
+                    if t_date and t_date > last_post_date:
+                        last_post_date = t_date
+                        last_post_id = t_pid
+                    elif t_date == last_post_date and t_pid > last_post_id:
+                        last_post_id = t_pid
+
+                url_clean = (self._current_url or "").strip()
+                from core.parser import KemonoURLParser
+                _parsed = KemonoURLParser.parse(url_clean) if url_clean else None
+                if _parsed and _parsed.is_valid and not _parsed.is_external_provider and not _parsed.is_single_post:
+                    self._watchlist_manager.add_entry(
+                        url=url_clean,
+                        creator_name=self._creator_name or _parsed.user_id,
+                        user_id=_parsed.user_id,
+                        service=_parsed.service,
+                        domain=_parsed.domain,
+                        last_post_id=last_post_id,
+                        last_post_date=last_post_date,
+                    )
+                    self._watchlist_model.refresh()
+                    self.watchlistChanged.emit()
+                elif tasks_done:
+                    t0 = tasks_done[0]
+                    if t0.service and t0.creator_name:
+                        existing = next((e for e in self._watchlist_manager.entries if e.service.lower() == t0.service.lower() and (e.creator_name.lower() == t0.creator_name.lower() or e.user_id == t0.creator_name)), None)
+                        if existing:
+                            if last_post_date or last_post_id:
+                                self._watchlist_manager.update_last_download(existing.user_id, existing.service, last_post_id or existing.last_post_id, last_post_date or existing.last_post_date)
+                            self._watchlist_model.refresh()
+                            self.watchlistChanged.emit()
+            except Exception as e:
+                logger.debug(f"Watchlist update error on finish: {e}", category="watchlist")
+
 
     def _async_resolve_creator_name(self, parsed: URLParseResult):
         try:
@@ -2230,3 +2471,159 @@ class AppBridge(QObject):
         if name and self._creator_name != name:
             self._creator_name = name
             self.creatorNameChanged.emit()
+
+    # ── Watchlist Slots ────────────────────────────────────────────────────────
+
+    @Slot(str, str)
+    def removeFromWatchlist(self, userId: str, service: str):
+        """Remove an entry from the watchlist by userId + service."""
+        self._watchlist_manager.remove_entry(userId, service)
+        self._watchlist_model.refresh()
+        self.watchlistChanged.emit()
+
+    @Slot()
+    def checkWatchlist(self):
+        """Asynchronously check all watchlist entries for new posts."""
+        self.watchlistCheckStarted.emit()
+        threading.Thread(target=self._async_watchlist_check, daemon=True).start()
+
+    @Slot(str, str)
+    def checkWatchlistArtist(self, userId: str, service: str):
+        """Asynchronously check a single watchlist artist for new posts."""
+        entry = self._watchlist_manager._find(userId, service)
+        if not entry:
+            logger.warning(f"checkWatchlistArtist: entry not found for {userId}/{service}", category="watchlist")
+            return
+
+        self.watchlistArtistChecking.emit(userId, service, True)
+
+        def _run():
+            try:
+                new_posts = self._watchlist_manager.get_posts_since(entry, self.api_client)
+                count = len(new_posts)
+                entry.new_post_count = count
+            except Exception as e:
+                logger.warning(f"Watchlist check error for {entry.creator_name!r}: {e}", category="watchlist")
+                count = 0
+            self._watchlistArtistResultSignal.emit(userId, service, count)
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    @Slot(str, str)
+    def downloadNewPosts(self, userId: str, service: str):
+        """Queue only posts newer than the last_post_date for the given artist."""
+        entry = self._watchlist_manager._find(userId, service)
+        if not entry:
+            logger.warning(f"downloadNewPosts: entry not found for {userId}/{service}", category="watchlist")
+            return
+        if entry.new_post_count == 0:
+            logger.info(f"No new posts queued for {entry.creator_name!r} — all up to date.", category="watchlist")
+            return
+
+        def _run():
+            new_posts = self._watchlist_manager.get_posts_since(entry, self.api_client)
+            if not new_posts:
+                logger.info(f"No new posts found for {entry.creator_name!r}.", category="watchlist")
+                return
+            options = self._get_filter_options()
+            tasks = self.downloader.build_tasks_from_posts(
+                posts=new_posts,
+                creator_name=entry.creator_name,
+                service=entry.service,
+                domain=entry.domain,
+                base_dir=self._download_dir,
+                options=options,
+                batch_id=f"watchlist_{entry.service}_{entry.user_id}"
+            )
+            if tasks:
+                self._appendTasksSignal.emit(tasks)
+                self.downloader.append_tasks(tasks)
+                logger.success(
+                    f"Watchlist: queued {len(tasks)} new file(s) for {entry.creator_name!r}.",
+                    category="watchlist"
+                )
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    @Slot(str, str)
+    def redownloadWatchlistEntry(self, userId: str, service: str):
+        """Re-queue the full download for a watched artist (all posts, not just new)."""
+        entry = self._watchlist_manager._find(userId, service)
+        if not entry:
+            return
+        # Reuse currentUrl approach — set the URL and fire startDownload flow
+        self._current_url = entry.url
+        self.currentUrlChanged.emit()
+        self.startDownload()
+
+    @Slot(str, str, bool)
+    def setWatchlistAutoCheck(self, userId: str, service: str, enabled: bool):
+        """Toggle per-entry auto-check on startup."""
+        self._watchlist_manager.set_auto_check(userId, service, enabled)
+        self._watchlist_model.refresh()
+        self.watchlistChanged.emit()
+
+    @Slot(result=str)
+    def getWatchlistJson(self) -> str:
+        """Return a JSON string of all watchlist entries for QML."""
+        return self._watchlist_manager.to_json_list()
+
+    # ── Async Watchlist Check ─────────────────────────────────────────────────
+
+    def _async_watchlist_check(self):
+        """
+        Background thread: check all watchlist entries for new posts.
+        Updates new_post_count on each entry, then emits _watchlistResultSignal
+        so the GUI can refresh safely.
+        """
+        total_new = 0
+        for entry in list(self._watchlist_manager.entries):
+            try:
+                new = self._watchlist_manager.get_posts_since(entry, self.api_client)
+                entry.new_post_count = len(new)
+                total_new += len(new)
+                if new:
+                    logger.info(
+                        f"Watchlist: {entry.creator_name!r} has {len(new)} new post(s).",
+                        category="watchlist"
+                    )
+            except Exception as e:
+                logger.warning(f"Watchlist check error for {entry.creator_name!r}: {e}", category="watchlist")
+        self._watchlistResultSignal.emit([total_new])
+
+    @Slot(list)
+    def _handle_watchlist_result(self, result: list):
+        """Main-thread handler: refresh model and emit finished signal."""
+        total_new = result[0] if result else 0
+        self._watchlist_model.update_new_counts()
+        self._watchlist_model.refresh()
+        self.watchlistCheckFinished.emit(total_new)
+        if total_new > 0:
+            logger.success(
+                f"Watchlist check complete — {total_new} new post(s) found across all entries.",
+                category="watchlist"
+            )
+        else:
+            logger.info("Watchlist check complete — all artists up to date.", category="watchlist")
+
+    @Slot(str, str, int)
+    def _handle_watchlist_artist_result(self, userId: str, service: str, count: int):
+        """Main-thread handler: update counts and emit finished signals for a single artist."""
+        entry = self._watchlist_manager._find(userId, service)
+        name = entry.creator_name if entry else f"{userId} [{service}]"
+        self._watchlist_model.update_new_counts()
+        self._watchlist_model.refresh()
+        self.watchlistArtistChecking.emit(userId, service, False)
+        self.watchlistArtistChecked.emit(userId, service, count)
+        self.watchlistChanged.emit()
+        if count > 0:
+            logger.success(
+                f"Watchlist check complete — {count} new post(s) found for {name!r}.",
+                category="watchlist"
+            )
+        else:
+            logger.info(
+                f"Watchlist check complete — {name!r} is up to date (no new posts).",
+                category="watchlist"
+            )
+

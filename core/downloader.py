@@ -13,7 +13,7 @@ import datetime
 import hashlib
 import threading
 import requests
-from collections import deque
+from collections import deque, defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Callable
 from PIL import Image
@@ -46,7 +46,9 @@ class DownloadTask:
         file_size: int = 0,
         expected_sha256: str = "",
         is_ytdlp: bool = False,
-        batch_id: str = ""
+        batch_id: str = "",
+        post_url: str = "",
+        post_date: str = ""
     ):
         self.url = url
         self.target_path = target_path
@@ -59,6 +61,8 @@ class DownloadTask:
         self.expected_sha256 = expected_sha256
         self.is_ytdlp = is_ytdlp
         self.batch_id = batch_id or (f"{service}_{creator_name}_{post_id}".strip("_") if (service or creator_name or post_id) else "batch_default")
+        self.post_url = post_url
+        self.post_date = post_date
         self.downloaded_bytes = 0
         self.status = "pending"  # "pending", "downloading", "completed", "failed", "cancelled"
         self.error_msg = ""
@@ -89,7 +93,9 @@ class DownloadTask:
             "error_msg": self.error_msg,
             "retry_count": self.retry_count,
             "is_ytdlp": self.is_ytdlp,
-            "batch_id": getattr(self, "batch_id", "")
+            "batch_id": getattr(self, "batch_id", ""),
+            "post_url": getattr(self, "post_url", ""),
+            "post_date": getattr(self, "post_date", "")
         }
 
     @classmethod
@@ -105,7 +111,9 @@ class DownloadTask:
             file_size=int(d.get("file_size", 0)),
             expected_sha256=d.get("expected_sha256", ""),
             is_ytdlp=bool(d.get("is_ytdlp", False)),
-            batch_id=d.get("batch_id", "")
+            batch_id=d.get("batch_id", ""),
+            post_url=d.get("post_url", ""),
+            post_date=d.get("post_date", "")
         )
         t.downloaded_bytes = int(d.get("downloaded_bytes", 0))
         t.status = d.get("status", "pending")
@@ -209,6 +217,15 @@ class KemonoDownloader:
                 pid = str(p.get("id", "0"))
                 return (pub, pid)
             posts_to_process.sort(key=_post_date_key)
+        elif options.tag_folder_mode:
+            logger.info("Tag Folder Mode active: Sorting posts by primary tag and chronological index...", category="downloader")
+            def _post_tag_and_index_key(p):
+                tags = FilterEngine.normalize_tags(p.get("tags"))
+                primary_tag = tags[0].strip().lower() if tags else "zzz_untagged"
+                pub = p.get("published") or p.get("added") or "0000-00-00"
+                pid = str(p.get("id", "0"))
+                return (primary_tag, pub, pid)
+            posts_to_process.sort(key=_post_tag_and_index_key)
 
         # Smart character auto-discovery from posts
         new_chars = self.known_manager.add_candidates_from_posts(posts_to_process)
@@ -222,6 +239,7 @@ class KemonoDownloader:
 
         extracted_links_all: Dict[str, List[str]] = {}
         extracted_records_all: List[Dict[str, Any]] = []
+        folder_file_counts: Dict[str, int] = defaultdict(int)
 
         for post_idx, post in enumerate(posts_to_process, 1):
             post_id = str(post.get("id", ""))
@@ -241,6 +259,15 @@ class KemonoDownloader:
             else:
                 pub_str = str(published)
                 date_str = pub_str.split("T")[0] if "T" in pub_str else (pub_str[:10] if pub_str else "")
+
+            # Construct canonical web post link for manual inspection/testing
+            post_user = str(post.get("user") or "")
+            if domain and service and post_user and post_id:
+                task_post_url = f"https://{domain}/{service}/user/{post_user}/post/{post_id}"
+            elif domain and service and post_id:
+                task_post_url = f"https://{domain}/{service}/post/{post_id}"
+            else:
+                task_post_url = ""
 
             # ── Link extraction in "Only Links" mode ───────────────────────────
             if options.file_type == MediaTypes.LINKS:
@@ -298,6 +325,15 @@ class KemonoDownloader:
             # Creator folder
             folder_parts.append(f"{creator_clean} [{service}]")
 
+            # Tag-based subfolder (Pawchive / cum.st only — other providers have no tags)
+            if options.tag_folder_mode:
+                post_tags = FilterEngine.normalize_tags(post.get("tags"))
+                if post_tags:
+                    first_tag = FilterEngine.clean_filesystem_text(post_tags[0], max_len=60, fallback="tag")
+                    folder_parts.append(first_tag)
+                else:
+                    folder_parts.append("Untagged")
+
             # Post subfolder
             if options.subfolder_per_post:
                 clean_title = FilterEngine.clean_filesystem_text(post_title, max_len=100, fallback="Untitled")
@@ -318,8 +354,8 @@ class KemonoDownloader:
                         caption_text = post.get("content") or post.get("captionHtml") or post.get("caption") or ""
                         caption_clean = re.sub(r'<br\s*/?>', '\n', caption_text, flags=re.IGNORECASE)
                         caption_clean = re.sub(r'<[^>]+>', '', caption_clean).strip()
-                        tags_list = post.get("tags") or []
-                        tags_str = ", ".join(tags_list) if isinstance(tags_list, list) else str(tags_list)
+                        tags_list = FilterEngine.normalize_tags(post.get("tags"))
+                        tags_str = ", ".join(tags_list)
                         
                         info_content = f"Title: {post_title}\n"
                         info_content += f"Post ID: {post_id}\n"
@@ -396,6 +432,10 @@ class KemonoDownloader:
                     logger.debug(f"Skipped file '{raw_name}': {f_reason}", category="filter")
                     continue
 
+                # Track sequential file index per folder
+                folder_file_counts[post_folder] += 1
+                seq_idx = folder_file_counts[post_folder]
+
                 # Format filename based on selected naming style
                 sanitized_name = FilterEngine.format_custom_filename(
                     original_filename=raw_name,
@@ -403,7 +443,8 @@ class KemonoDownloader:
                     post_date=date_str,
                     post_index=post_idx,
                     file_index=file_idx,
-                    options=options
+                    options=options,
+                    folder_index=seq_idx
                 )
                 # Strip trailing punctuation/commas that would corrupt the ?f= CDN query parameter
                 # and trigger ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION in browsers.
@@ -561,7 +602,9 @@ class KemonoDownloader:
                     file_id=file_id,
                     file_size=int(file_bytes or 0),  # pre-populate from API metadata for progress
                     expected_sha256=expected_sha,
-                    batch_id=batch_id
+                    batch_id=batch_id,
+                    post_url=task_post_url,
+                    post_date=date_str
                 )
                 task.fallback_urls = candidate_urls[1:]
                 new_tasks.append(task)
@@ -587,7 +630,9 @@ class KemonoDownloader:
                         post_id=post_id,
                         file_id=e_file_id,
                         is_ytdlp=True,
-                        batch_id=batch_id
+                        batch_id=batch_id,
+                        post_url=task_post_url,
+                        post_date=date_str
                     )
                     new_tasks.append(e_task)
 

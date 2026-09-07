@@ -49,6 +49,8 @@ Rectangle {
                     postTitle: item.postTitle || "",
                     creatorName: item.creatorName || "",
                     service: item.service || "",
+                    postId: item.postId || "",
+                    postUrl: item.postUrl || "",
                     url: item.url || "",
                     errorMsg: item.errorMsg || "",
                     fileSize: item.fileSize || "-",
@@ -321,14 +323,85 @@ Rectangle {
                                 }
                             }
 
-                            // Post Title / Creator
-                            Text {
-                                text: "📌 Post: " + model.postTitle + " (" + model.creatorName + ")"
-                                font.family: "Segoe UI, sans-serif"
-                                font.pixelSize: 11
-                                color: "#94A3B8"
+                            // Post Title / Creator & Links Row
+                            RowLayout {
                                 Layout.fillWidth: true
-                                elide: Text.ElideRight
+                                spacing: 8
+
+                                Text {
+                                    text: "📌 " + (model.postTitle ? model.postTitle : "Post") + (model.creatorName ? " (" + model.creatorName + ")" : "")
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 11
+                                    color: "#94A3B8"
+                                    Layout.fillWidth: true
+                                    elide: Text.ElideRight
+                                }
+
+                                // Clickable Post Link badge
+                                Rectangle {
+                                    visible: model.postUrl && model.postUrl.length > 0
+                                    height: 18
+                                    implicitWidth: postLinkText.implicitWidth + 12
+                                    radius: 3
+                                    color: postLinkMouse.containsMouse ? "#1E293B" : "#0F172A"
+                                    border.color: "#38BDF8"
+                                    border.width: 1
+
+                                    Text {
+                                        id: postLinkText
+                                        anchors.centerIn: parent
+                                        text: "🔗 " + modalRoot.tr("btn_view_post", "Open Post")
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: "#38BDF8"
+                                    }
+
+                                    MouseArea {
+                                        id: postLinkMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        ToolTip.visible: containsMouse
+                                        ToolTip.delay: 300
+                                        ToolTip.text: model.postUrl
+                                        onClicked: {
+                                            if (model.postUrl) Qt.openUrlExternally(model.postUrl)
+                                        }
+                                    }
+                                }
+
+                                // Clickable Direct Download Link badge
+                                Rectangle {
+                                    visible: model.url && model.url.length > 0
+                                    height: 18
+                                    implicitWidth: dlLinkText.implicitWidth + 12
+                                    radius: 3
+                                    color: dlLinkMouse.containsMouse ? "#1E293B" : "#0F172A"
+                                    border.color: "#64748B"
+                                    border.width: 1
+
+                                    Text {
+                                        id: dlLinkText
+                                        anchors.centerIn: parent
+                                        text: "📥 " + modalRoot.tr("btn_test_dl_link", "Test Link")
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        color: "#94A3B8"
+                                    }
+
+                                    MouseArea {
+                                        id: dlLinkMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        ToolTip.visible: containsMouse
+                                        ToolTip.delay: 300
+                                        ToolTip.text: modalRoot.tr("tip_copy_dl_link", "Open direct download link in browser")
+                                        onClicked: {
+                                            if (model.url) Qt.openUrlExternally(model.url)
+                                        }
+                                    }
+                                }
                             }
 
                             // Error Callout Banner
@@ -385,6 +458,22 @@ Rectangle {
                     implicitHeight: 32
                     onClicked: {
                         if (modalRoot.bridge) modalRoot.bridge.autoRetryAtEnd = !modalRoot.bridge.autoRetryAtEnd
+                    }
+                }
+
+                // Export Failed Links Button
+                StyledButton {
+                    text: modalRoot.tr("btn_export_failed", "Export Links...")
+                    iconText: "📤"
+                    variant: "outline"
+                    implicitHeight: 32
+                    tooltip: modalRoot.tr("btn_export_failed_tip", "Export direct download links, post links, and file details to a text file for manual testing")
+                    enabled: failedItemsModel.count > 0
+                    onClicked: {
+                        var selected = failedItemsModel.getSelectedIds()
+                        if (modalRoot.bridge) {
+                            modalRoot.bridge.exportFailedTasks(selected)
+                        }
                     }
                 }
 

@@ -416,3 +416,66 @@ class KemonoApiClient:
             category="api"
         )
         return all_posts
+
+    def fetch_creator_tags(self, parsed) -> List[str]:
+        """
+        Fetch the tag list for a creator from Pawchive or cum.st.
+        Returns a list of tag name strings sorted by post-count descending.
+        Returns an empty list for unsupported providers or on error.
+
+        Pawchive response: [ { "tag": str, "post_count": int }, ... ]
+        cum.st response:   { "tags": [ { "slug": str, "label": str, "count": int }, ... ] }
+        """
+        domain = (parsed.domain or "").lower()
+        supported = "pawchive" in domain or "cum.st" in domain
+
+        if not supported:
+            logger.debug(
+                f"fetch_creator_tags: domain {domain!r} not supported (Pawchive/cum.st only).",
+                category="api"
+            )
+            return []
+
+        url = f"https://{parsed.domain}/api/v1/{parsed.service}/user/{parsed.user_id}/tags"
+        logger.info(f"Fetching creator tags: {url}", category="api")
+
+        resp = self._get_with_log(url, timeout=10)
+        if resp is None or resp.status_code != 200:
+            logger.warning(
+                f"Failed to fetch tags for {parsed.user_id} ({parsed.service}): "
+                f"HTTP {resp.status_code if resp else 'no response'}",
+                category="api"
+            )
+            return []
+
+        try:
+            data = resp.json()
+        except Exception as e:
+            logger.debug(f"Tag JSON parse error: {e}", category="api")
+            return []
+
+        tags: List[str] = []
+
+        if "cum.st" in domain:
+            # cum.st: { "tags": [ { "slug": str, "label": str, "count": int } ] }
+            raw_tags = data.get("tags", []) if isinstance(data, dict) else []
+            for item in raw_tags:
+                if isinstance(item, dict):
+                    label = item.get("label") or item.get("slug") or ""
+                    if label:
+                        tags.append((label, int(item.get("count", 0))))
+        else:
+            # Pawchive: [ { "tag": str, "post_count": int }, ... ]
+            raw_tags = data if isinstance(data, list) else []
+            for item in raw_tags:
+                if isinstance(item, dict):
+                    tag_name = item.get("tag") or ""
+                    if tag_name:
+                        tags.append((tag_name, int(item.get("post_count", 0))))
+
+        # Sort by count descending, return just the names
+        tags.sort(key=lambda x: x[1], reverse=True)
+        result = [t[0] for t in tags]
+        logger.info(f"Fetched {len(result)} tag(s) for {parsed.user_id} [{parsed.service}]", category="api")
+        return result
+

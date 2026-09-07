@@ -124,6 +124,7 @@ class SessionManager:
             "skip_scope": "posts",
             "subfolder_per_post": True,
             "date_prefix": True,
+            "file_index_prefix": False,
             "separate_by_known": False,
             "download_revisions": False,
             "compress_webp": False,
@@ -135,7 +136,8 @@ class SessionManager:
             "play_completion_sound": False,
             "post_download_action": "none",
             "known_recognition_mode": "hybrid",
-            "language": "auto"
+            "language": "auto",
+            "tag_folder_mode": False
         }
 
         if os.path.exists(self.settings_file):

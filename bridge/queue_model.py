@@ -465,12 +465,18 @@ class QueueModel(QAbstractListModel):
         failed = []
         for t in self._tasks:
             if t.status == "failed":
+                p_url = getattr(t, "post_url", "") or ""
+                if not p_url and t.service and t.post_id:
+                    p_url = f"https://pawchive.pw/{t.service}/user/{t.creator_name}/post/{t.post_id}"
+
                 failed.append({
                     "fileId": t.file_id,
                     "filename": t.filename,
                     "postTitle": t.post_title,
                     "creatorName": t.creator_name,
                     "service": t.service,
+                    "postId": t.post_id,
+                    "postUrl": p_url,
                     "url": t.url,
                     "errorMsg": t.error_msg or "Download failed",
                     "fileSize": self._format_size(t.file_size),

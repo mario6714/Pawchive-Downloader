@@ -7,6 +7,8 @@ media categories, and formats safe cross-platform filesystem filenames.
 import re
 import os
 import unicodedata
+import csv
+import io
 from typing import List, Dict, Any, Optional, Tuple
 
 
@@ -60,7 +62,9 @@ class FilterOptions:
         page_end: int = 999999,
         download_delay: float = 2.0,
         save_post_metadata: bool = True,
-        download_embeds: bool = True
+        download_embeds: bool = True,
+        file_index_prefix: bool = False,
+        tag_folder_mode: bool = False
     ):
         self.characters = characters
         self.character_scope = character_scope
@@ -77,6 +81,7 @@ class FilterOptions:
         self.subfolder_per_post = subfolder_per_post
         self.date_prefix = date_prefix
         self.separate_by_known = separate_by_known
+        self.tag_folder_mode = tag_folder_mode
         self.download_revisions = download_revisions
         self.adaptive_threading = adaptive_threading
         self.threads_locked = threads_locked
@@ -89,6 +94,7 @@ class FilterOptions:
         self.download_delay = download_delay
         self.save_post_metadata = save_post_metadata
         self.download_embeds = download_embeds
+        self.file_index_prefix = file_index_prefix
 
 
 class FilterEngine:
@@ -267,7 +273,8 @@ class FilterEngine:
         post_date: str,
         post_index: int,
         file_index: int,
-        options: FilterOptions
+        options: FilterOptions,
+        folder_index: Optional[int] = None
     ) -> str:
         clean_orig = cls.sanitize_filename(original_filename, options)
         name_stem, ext = os.path.splitext(clean_orig)
@@ -285,6 +292,11 @@ class FilterEngine:
         else:
             res = clean_orig
 
+        if getattr(options, "file_index_prefix", False):
+            idx = folder_index if folder_index is not None else file_index
+            if idx is not None and idx > 0:
+                res = f"{idx:03d}_{res}"
+
         return res
 
     @classmethod
@@ -300,3 +312,41 @@ class FilterEngine:
             if ext in MediaTypes.IMAGE_EXTS:
                 images.append(m)
         return images
+
+    @classmethod
+    def normalize_tags(cls, raw_tags: Any) -> List[str]:
+        """
+        Normalizes tag representations into a list of clean strings.
+        Handles:
+        - Python list of strings: ["tag1", "tag2"]
+        - Python list of dicts (cum.st): [{"label": "..."}, {"slug": "..."}]
+        - PostgreSQL array strings (Pawchive): '{"tag1","tag2"}' or '{tag1,tag2}'
+        - Comma-separated strings: "tag1, tag2"
+        """
+        if not raw_tags:
+            return []
+        if isinstance(raw_tags, list):
+            out = []
+            for t in raw_tags:
+                if isinstance(t, dict):
+                    val = t.get("label") or t.get("slug") or t.get("tag") or ""
+                else:
+                    val = str(t)
+                val = val.strip().strip('"\'')
+                if val:
+                    out.append(val)
+            return out
+        if isinstance(raw_tags, str):
+            s = raw_tags.strip()
+            if s.startswith("{") and s.endswith("}"):
+                s = s[1:-1].strip()
+            if not s:
+                return []
+            try:
+                reader = csv.reader(io.StringIO(s))
+                for row in reader:
+                    return [r.strip().strip('"\'') for r in row if r.strip()]
+            except Exception:
+                return [t.strip().strip('"\'') for t in s.split(",") if t.strip()]
+        return []
+

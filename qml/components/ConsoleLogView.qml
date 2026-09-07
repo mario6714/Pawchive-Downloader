@@ -22,11 +22,15 @@ Rectangle {
     signal exportLinksRequested()
     signal downloadLinksRequested()
 
+    readonly property bool isCompact: root.width < 660
+    readonly property bool isVeryNarrow: root.width < 420
+
     color: "#0D0F14"
 
     border.color: "#242A38"
     border.width: 1
     radius: 10
+    clip: true
 
     ColumnLayout {
         anchors.fill: parent
@@ -36,11 +40,12 @@ Rectangle {
         // Header toolbar
         RowLayout {
             Layout.fillWidth: true
-            spacing: 8
+            spacing: root.isVeryNarrow ? 4 : (root.isCompact ? 6 : 8)
 
             // Title & Icon
             Row {
-                spacing: 6
+                spacing: root.isVeryNarrow ? 0 : 6
+                Layout.alignment: Qt.AlignVCenter
                 Text {
                     text: "💻"
                     font.pixelSize: 13
@@ -52,6 +57,7 @@ Rectangle {
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     color: "#F1F5F9"
+                    visible: !root.isVeryNarrow
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -60,11 +66,15 @@ Rectangle {
 
             // Level filters (Highlights active level)
             Row {
-                spacing: 4
+                spacing: root.isVeryNarrow ? 2 : 4
+                Layout.alignment: Qt.AlignVCenter
                 Repeater {
                     model: ["ALL", "INFO", "WARN", "ERR"]
                     delegate: Rectangle {
-                        width: 38
+                        id: filterPill
+                        implicitHeight: 22
+                        implicitWidth: root.isVeryNarrow ? 28 : Math.max(42, filterText.implicitWidth + 14)
+                        width: implicitWidth
                         height: 22
                         radius: 4
                         property bool selected: root.activeLevel === modelData
@@ -73,13 +83,15 @@ Rectangle {
                         border.color: selected ? "#38BDF8" : "#2E3547"
                         border.width: 1
 
+                        Behavior on implicitWidth { NumberAnimation { duration: 120 } }
                         Behavior on color { ColorAnimation { duration: 100 } }
                         Behavior on border.color { ColorAnimation { duration: 100 } }
 
                         Text {
+                            id: filterText
                             anchors.centerIn: parent
-                            text: modelData
-                            font.pixelSize: 9
+                            text: root.isVeryNarrow && modelData === "INFO" ? "INF" : (root.isVeryNarrow && modelData === "WARN" ? "WRN" : modelData)
+                            font.pixelSize: root.isVeryNarrow ? 8 : 9
                             font.weight: Font.Bold
                             color: selected ? "#0F172A" : "#94A3B8"
                         }
@@ -104,23 +116,34 @@ Rectangle {
 
             // Download links button (Cloud Download)
             Rectangle {
-                width: 108
-                height: 24
+                id: dlBtn
+                implicitHeight: 24
+                implicitWidth: root.isCompact ? 28 : Math.max(120, dlText.implicitWidth + 38)
+                Layout.preferredHeight: 24
+                Layout.preferredWidth: implicitWidth
+                Layout.minimumWidth: implicitWidth
                 radius: 5
+                clip: true
                 color: dlLinkMouse.containsMouse ? "#113832" : "#0A2521"
                 border.color: "#2DD4BF"
                 border.width: 1
+                Layout.alignment: Qt.AlignVCenter
+
+                Behavior on implicitWidth { NumberAnimation { duration: 120 } }
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 4
-                    Text { text: "☁️"; font.pixelSize: 10 }
+                    spacing: 5
+                    Text { text: "☁️"; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
                     Text {
+                        id: dlText
                         text: root.tr("btn_download_links", "Download Links")
-                        font.family: "Segoe UI, sans-serif"
+                        font.family: "Segoe UI, Inter, sans-serif"
                         font.pixelSize: 10
                         color: "#2DD4BF"
                         font.weight: Font.DemiBold
+                        visible: !root.isCompact
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
@@ -130,7 +153,7 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     ToolTip.visible: containsMouse
-                    ToolTip.delay: 400
+                    ToolTip.delay: 300
                     ToolTip.text: root.tr("tip_download_links", "Open dialog to download harvested links via Mega.nz, Google Drive, Dropbox, or GoFile")
                     onClicked: root.downloadLinksRequested()
                 }
@@ -138,23 +161,34 @@ Rectangle {
 
             // Export links button
             Rectangle {
-                width: 96
-                height: 24
+                id: exBtn
+                implicitHeight: 24
+                implicitWidth: root.isCompact ? 28 : Math.max(106, exText.implicitWidth + 38)
+                Layout.preferredHeight: 24
+                Layout.preferredWidth: implicitWidth
+                Layout.minimumWidth: implicitWidth
                 radius: 5
+                clip: true
                 color: exLinkMouse.containsMouse ? "#1E2D2A" : "#13211E"
                 border.color: "#10B981"
                 border.width: 1
+                Layout.alignment: Qt.AlignVCenter
+
+                Behavior on implicitWidth { NumberAnimation { duration: 120 } }
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 4
-                    Text { text: "🔗"; font.pixelSize: 10 }
+                    spacing: 5
+                    Text { text: "🔗"; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
                     Text {
+                        id: exText
                         text: root.tr("btn_export_links", "Export Links")
-                        font.family: "Segoe UI, sans-serif"
+                        font.family: "Segoe UI, Inter, sans-serif"
                         font.pixelSize: 10
                         color: "#34D399"
                         font.weight: Font.Medium
+                        visible: !root.isCompact
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
@@ -164,7 +198,7 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     ToolTip.visible: containsMouse
-                    ToolTip.delay: 400
+                    ToolTip.delay: 300
                     ToolTip.text: root.tr("tip_export_links", "Extract and export all external cloud links to a text file")
                     onClicked: root.exportLinksRequested()
                 }
@@ -172,12 +206,16 @@ Rectangle {
 
             // Eye Button: Status / Summary mode toggle (Filters out individual file names)
             Rectangle {
-                width: 28
-                height: 24
+                implicitHeight: 24
+                implicitWidth: 28
+                Layout.preferredHeight: 24
+                Layout.preferredWidth: 28
+                Layout.minimumWidth: 28
                 radius: 5
                 color: root.statusOnlyMode ? "#1E2A3A" : (eyeMouse.containsMouse ? "#222734" : "#1A1E29")
                 border.color: root.statusOnlyMode ? "#38BDF8" : "#2E3547"
                 border.width: 1
+                Layout.alignment: Qt.AlignVCenter
 
                 Behavior on color { ColorAnimation { duration: 100 } }
                 Behavior on border.color { ColorAnimation { duration: 100 } }
@@ -195,7 +233,7 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     ToolTip.visible: containsMouse
-                    ToolTip.delay: 400
+                    ToolTip.delay: 300
                     ToolTip.text: root.statusOnlyMode ? root.tr("tip_status_only_active", "Status-Only mode active (click to show all file details)") : root.tr("tip_status_only", "Click to hide individual file names and show status only")
                     onClicked: {
                         root.statusOnlyMode = !root.statusOnlyMode
@@ -206,23 +244,34 @@ Rectangle {
 
             // Reset/Clear button
             Rectangle {
-                width: 58
-                height: 24
+                id: resetBtn
+                implicitHeight: 24
+                implicitWidth: root.isCompact ? 28 : Math.max(70, resetText.implicitWidth + 32)
+                Layout.preferredHeight: 24
+                Layout.preferredWidth: implicitWidth
+                Layout.minimumWidth: implicitWidth
                 radius: 5
+                clip: true
                 color: resetMouse.containsMouse ? "#2C1D24" : "#1F161C"
                 border.color: "#EF4444"
                 border.width: 1
+                Layout.alignment: Qt.AlignVCenter
+
+                Behavior on implicitWidth { NumberAnimation { duration: 120 } }
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 3
-                    Text { text: "↻"; font.pixelSize: 11; color: "#F87171" }
+                    spacing: 4
+                    Text { text: "↻"; font.pixelSize: 11; color: "#F87171"; anchors.verticalCenter: parent.verticalCenter }
                     Text {
+                        id: resetText
                         text: root.tr("btn_reset", "Reset")
-                        font.family: "Segoe UI, sans-serif"
+                        font.family: "Segoe UI, Inter, sans-serif"
                         font.pixelSize: 10
                         color: "#F87171"
                         font.weight: Font.Medium
+                        visible: !root.isCompact
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
@@ -232,7 +281,7 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     ToolTip.visible: containsMouse
-                    ToolTip.delay: 400
+                    ToolTip.delay: 300
                     ToolTip.text: root.tr("tip_reset_logs", "Clear all progress console logs")
                     onClicked: root.clearLogsRequested()
                 }

@@ -131,11 +131,12 @@ Rectangle {
 
             // Title
             Text {
-                text: panelRoot.tr("title_active_downloads", "⚡ Active Downloads")
+                text: panelRoot.width < 360 ? "⚡ Downloads" : panelRoot.tr("title_active_downloads", "⚡ Active Downloads")
                 font.family: "Segoe UI, Inter, sans-serif"
                 font.pixelSize: 12
                 font.weight: Font.Bold
                 color: "#F8FAFC"
+                elide: Text.ElideRight
                 Layout.alignment: Qt.AlignVCenter
             }
 
