@@ -240,6 +240,9 @@ class KemonoDownloader:
         extracted_links_all: Dict[str, List[str]] = {}
         extracted_records_all: List[Dict[str, Any]] = []
         folder_file_counts: Dict[str, int] = defaultdict(int)
+        # Track target paths already assigned in this build to detect same-display-name collisions
+        # (e.g. two attachments with identical ?f= names but different content hashes)
+        _batch_paths: set = set()
 
         for post_idx, post in enumerate(posts_to_process, 1):
             post_id = str(post.get("id", ""))
@@ -577,6 +580,30 @@ class KemonoDownloader:
                 target_path = os.path.join(post_folder, sanitized_name)
                 file_id = f"{post_id}_{clean_rel}"
 
+                # Resolve same-display-name collisions within the same batch.
+                # Two attachments can share an identical ?f= display name while having
+                # different content hashes (different images, same artist-given filename).
+                # When that happens, append a 6-char prefix of the content hash to distinguish them.
+                if target_path in _batch_paths:
+                    stem, ext = os.path.splitext(sanitized_name)
+                    # Use the content hash embedded in clean_rel (last path component before extension)
+                    hash_hint = os.path.splitext(os.path.basename(clean_rel))[0][-6:] or \
+                                hashlib.md5(clean_rel.encode()).hexdigest()[:6]
+                    disambig_name = f"{stem}_{hash_hint}{ext}"
+                    target_path = os.path.join(post_folder, disambig_name)
+                    logger.debug(
+                        f"Filename collision detected: '{sanitized_name}' already queued — "
+                        f"renamed to '{disambig_name}' for this file",
+                        category="file"
+                    )
+                    # Also update the candidate URLs to use the disambiguated display name
+                    candidate_urls = [
+                        u.replace(f"?f={sanitized_name}", f"?f={disambig_name}") if f"?f={sanitized_name}" in u else u
+                        for u in candidate_urls
+                    ]
+                    file_url = candidate_urls[0] if candidate_urls else file_url
+                _batch_paths.add(target_path)
+
                 webp_path = os.path.splitext(target_path)[0] + ".webp"
                 raw_path = os.path.join(post_folder, raw_name)
                 raw_webp = os.path.splitext(raw_path)[0] + ".webp"
@@ -587,7 +614,7 @@ class KemonoDownloader:
                        (os.path.exists(webp_path) and os.path.getsize(webp_path) > 0) or \
                        (os.path.exists(raw_path) and os.path.getsize(raw_path) > 0) or \
                        (os.path.exists(raw_webp) and os.path.getsize(raw_webp) > 0):
-                        logger.info(f"⏳ Skipping existing file: '{sanitized_name}' (already present on disk)", category="file")
+                        logger.info(f"⏳ Skipping existing file: '{os.path.basename(target_path)}' (already present on disk)", category="file")
                         continue
 
                 expected_sha = str(fobj.get("sha256") or fobj.get("hash") or "")
