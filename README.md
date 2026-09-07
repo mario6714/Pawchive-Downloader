@@ -64,7 +64,8 @@
 - 🎯 **Advanced Smart Filtering:** Filter by character names, series, keywords, file categories (images, videos, audio, archives), or minimum file size thresholds.
 - 🗂️ **Automated Organization & Franchise Recognition:** Automatically structures downloaded files into clean creator/franchise folders using an integrated franchise database and custom `Known.txt` rules.
 - 📌 **Artist Watchlist** *(WIP — not yet thoroughly tested):* Track followed creators and automatically check for new posts since your last download. Per-artist manual checks, auto-check on startup, and a live counter badge on the tab.
-- 🏷️ **Tag-Based Folder Sorting:** Organise downloads by their primary tag into sub-folders (`Artist / Tag / ...`) with sequential file indexing (`001_`, `002_`, ...) so related content stays cleanly grouped.
+- 🏷️ **Tag-Based Folder Sorting:** Organise downloads by their primary tag into sub-folders (`Artist / Tag / ...`) so related content stays cleanly grouped.
+- 🔢 **Sequential File Indexing:** When tag folder mode is active, files are numbered (`001_`, `002_`, ...) within each tag folder to preserve chronological order.
 - 📋 **Failed Download Export:** The retry modal now lets you export a full report of failed files — including direct download links and source post URLs — so you can audit or manually recover any missed content.
 - 📖 **Manga & Comic Order:** Chronologically sequences files and folders (`001 - Title`) so chapters stay in proper sequential order in image viewers.
 - 🔗 **Link Harvesting & Export:** Extracts external cloud drive links and embedded player URLs from post bodies and comments; download them immediately or export to text files.
