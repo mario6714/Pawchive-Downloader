@@ -29,7 +29,17 @@ SPLIT_SECONDARY_REGEX = re.compile(
 
 def get_7za_path() -> str:
     """Resolve the path to the bundled or system 7za/7z executable."""
-    # 1. PyInstaller bundled path
+    # 1. Next to the executable — dependencies/ folder visible to the user
+    #    (works both for compiled release and running from source)
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+    else:
+        exe_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    local_p = os.path.join(exe_dir, "dependencies", "7za.exe")
+    if os.path.exists(local_p):
+        return local_p
+
+    # 2. PyInstaller _MEIPASS fallback (legacy / should not be reached in normal release)
     if hasattr(sys, "_MEIPASS"):
         meipass_p = os.path.join(sys._MEIPASS, "dependencies", "7za.exe")
         if os.path.exists(meipass_p):
@@ -37,12 +47,6 @@ def get_7za_path() -> str:
         meipass_root = os.path.join(sys._MEIPASS, "7za.exe")
         if os.path.exists(meipass_root):
             return meipass_root
-
-    # 2. Project dependencies folder
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    local_p = os.path.join(base_dir, "dependencies", "7za.exe")
-    if os.path.exists(local_p):
-        return local_p
 
     # 3. System PATH fallback
     for binary in ["7za", "7z", "7za.exe", "7z.exe"]:

@@ -124,8 +124,8 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    console=False,  # Hidden console for clean GUI
+    upx=False,              # Disabled: UPX is a major AV/ML false-positive trigger
+    console=False,          # Hidden console for clean GUI
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -133,6 +133,7 @@ exe = EXE(
     entitlements_file=None,
     icon=icon_path,
     contents_directory='_internal',
+    version=os.path.join(project_root, 'version_info.txt'),  # EXE metadata (publisher, version)
 )
 
 coll = COLLECT(
@@ -141,7 +142,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,              # Disabled: UPX is a major AV/ML false-positive trigger
     upx_exclude=[],
     name='Pawchive Downloader',
 )

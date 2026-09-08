@@ -123,6 +123,33 @@ def post_build_setup(output_dir: str, version: str):
     print("✅ Runtime environment configured successfully.\n")
 
 
+def patch_version_info(version: str):
+    """Update version numbers in version_info.txt and version_info_updater.txt to match version.json."""
+    import re
+    parts = version.split(".")
+    while len(parts) < 4:
+        parts.append("0")
+    try:
+        ver_tuple = tuple(int(p) for p in parts[:4])
+    except ValueError:
+        ver_tuple = (1, 0, 0, 0)
+    ver_str4 = ".".join(str(p) for p in ver_tuple)
+
+    for info_file in ["version_info.txt", "version_info_updater.txt"]:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), info_file)
+        if not os.path.exists(path):
+            continue
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        content = re.sub(r'filevers=\(\d+, \d+, \d+, \d+\)', f'filevers={ver_tuple}', content)
+        content = re.sub(r'prodvers=\(\d+, \d+, \d+, \d+\)', f'prodvers={ver_tuple}', content)
+        content = re.sub(r"'FileVersion',\s*'[^']*'",   f"'FileVersion', '{ver_str4}'", content)
+        content = re.sub(r"'ProductVersion',\s*'[^']*'", f"'ProductVersion', '{version}'", content)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f"   Patched {info_file} -> v{version}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build Pawchive Downloader with clean '_internal' layout.")
     parser.add_argument("--clean", action="store_true", default=True, help="Clean build directories before compiling (default: True).")
@@ -134,10 +161,12 @@ def main():
     os.chdir(project_root)
 
     app_version = get_version()
+    patch_version_info(app_version)
 
     print("=" * 65)
     print("  🚀 Pawchive Downloader — Windows Build System (_internal layout)")
     print("=" * 65)
+
 
     if not args.noupdate_check:
         check_and_install_dependencies()
@@ -170,17 +199,21 @@ def main():
     os.makedirs(updater_work, exist_ok=True)
     os.makedirs(updater_dist, exist_ok=True)
 
+    version_info_updater = os.path.join(project_root, "version_info_updater.txt")
     updater_cmd = [
         sys.executable, "-m", "PyInstaller",
         "--noconfirm",
         "--onefile",
         "--windowed",
+        "--noupx",                          # Disable UPX: major AV/ML false-positive trigger
         "--name", "updater",
         "--workpath", updater_work,
         "--distpath", updater_dist,
     ]
     if os.path.exists(icon_file):
         updater_cmd.extend(["--icon", icon_file])
+    if os.path.exists(version_info_updater):
+        updater_cmd.extend(["--version-file", version_info_updater])
     updater_cmd.append(os.path.join(project_root, "updater.py"))
 
     updater_result = subprocess.run(updater_cmd)

@@ -20,9 +20,12 @@ from typing import Optional
 import tkinter as tk
 from tkinter import ttk
 
-# Files and folders that must NEVER be overwritten during an update
+# Files and folders that must NEVER be touched during an update
 PROTECTED_DIRS = {"config", "downloads", "temp", "logs", "venv", ".venv", "__pycache__", ".git"}
 PROTECTED_FILES = {"settings.json", "watchlist.json", "known.txt", "cookies.txt"}
+
+# Extra wait time after PID exits before touching exe files (Windows handle-release delay)
+_EXE_RELEASE_WAIT = 1.5
 
 
 def is_pid_running(pid: int) -> bool:
@@ -199,6 +202,239 @@ class UpdaterApp:
         self._set_status("Cancelling update...", "Cleaning up temporary files...")
         self.root.after(1000, self.root.destroy)
 
+    def _clean_stale_old_files(self):
+        """Remove any leftover *.old files from a previous update attempt."""
+        for root_d, _dirs, files in os.walk(self.target_dir):
+            for f in files:
+                if f.endswith(".old"):
+                    try:
+                        os.remove(os.path.join(root_d, f))
+                    except Exception:
+                        pass
+
+    def _safe_delete(self, path: str):
+        """
+        Delete a file as safely as possible without admin.
+        Strategy: rename to .old first (works even on locked/AV-scanned files
+        because rename only touches the directory entry), then delete the .old.
+        If .old deletion fails it stays harmlessly until the next update.
+        """
+        if not os.path.exists(path):
+            return
+        old_path = path + ".old"
+        # Remove any stale .old before renaming
+        try:
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        except Exception:
+            pass
+        try:
+            os.rename(path, old_path)   # Works even on memory-mapped/locked files!
+        except Exception:
+            return  # Cannot even rename — leave the file, copy will try to overwrite
+        try:
+            os.remove(old_path)
+        except Exception:
+            pass  # Locked by AV or still mapped — harmless, cleaned next update
+
+    def _safe_copy(self, src: str, dst: str) -> bool:
+        """
+        Copy src to dst, handling the case where dst is still locked.
+        Renames dst -> dst.old first (rename is allowed on locked files),
+        then copies src to the real dst name.
+        Returns True on success, False if the file could not be written.
+        """
+        if os.path.exists(dst):
+            old_path = dst + ".old"
+            try:
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except Exception:
+                pass
+            try:
+                os.rename(dst, old_path)  # Side-step the lock
+            except Exception:
+                pass  # If rename also fails, try a direct overwrite below
+        try:
+            shutil.copy2(src, dst)
+        except Exception:
+            return False  # Could not write — file is truly stuck
+        # Best-effort cleanup of the renamed old file
+        old_path = dst + ".old"
+        if os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except Exception:
+                pass  # Stays as .old, cleaned on next update — no harm
+        return True
+
+    def _relaunch_as_admin(self):
+        """
+        Re-launch the updater with administrator privileges using Windows UAC.
+        Uses ShellExecuteW with the 'runas' verb so Windows shows the native
+        UAC prompt — we never store or request credentials ourselves.
+        """
+        import ctypes
+        # Build the exe path: we are already a temp copy in %TEMP%
+        if getattr(sys, "frozen", False):
+            exe = os.path.abspath(sys.executable)
+        else:
+            exe = sys.executable
+
+        params = (
+            f'--target-dir "{self.target_dir}" '
+            f'--pid 0 '
+            f'--download-url "{self.download_url}" '
+            f'--version "{self.version}" '
+            f'--temp-runner'
+        )
+        try:
+            ctypes.windll.shell32.ShellExecuteW(
+                None,       # hwnd
+                "runas",    # verb  — triggers UAC elevation
+                exe,
+                params,
+                None,       # working dir
+                1           # SW_SHOWNORMAL
+            )
+        except Exception as e:
+            self._set_status("Could not elevate", f"Error: {e}", progress=0.0)
+            return
+        # Close this instance — the elevated copy takes over
+        self.root.after(300, self.root.destroy)
+
+    def _show_lock_error_dialog(self, failed_files: list):
+        """
+        Show a recovery dialog when some files could not be installed due to
+        file locks. Offers two options:
+          1. Run as Administrator — relaunches via UAC (Windows handles the prompt)
+          2. Try Later           — closes the updater; user can run updater.exe
+                                   from the install folder manually
+        """
+        def _build():
+            dlg = tk.Toplevel(self.root)
+            dlg.title("Update could not finish")
+            dlg.geometry("460x290")
+            dlg.resizable(False, False)
+            dlg.configure(bg="#121214")
+            dlg.grab_set()  # Modal
+            dlg.transient(self.root)
+
+            # Center on parent
+            dlg.update_idletasks()
+            px = self.root.winfo_x() + (self.root.winfo_width()  - 460) // 2
+            py = self.root.winfo_y() + (self.root.winfo_height() - 290) // 2
+            dlg.geometry(f"+{px}+{py}")
+
+            card = tk.Frame(dlg, bg="#18181b", highlightbackground="#27272a", highlightthickness=1)
+            card.pack(fill="both", expand=True, padx=14, pady=14)
+
+            tk.Label(
+                card,
+                text="The app didn't fully close in time",
+                font=("Segoe UI", 11, "bold"),
+                fg="#f4f4f5", bg="#18181b"
+            ).pack(pady=(16, 8))
+
+            explanation = (
+                "Windows is still holding on to some of the old app files — "
+                "this usually happens when your antivirus is scanning them or "
+                "Windows is slow releasing them after the app closed.\n\n"
+                "The update has been downloaded and is ready to install. "
+                "You just need to choose how to finish it:"
+            )
+            tk.Label(
+                card,
+                text=explanation,
+                font=("Segoe UI", 9),
+                fg="#a1a1aa", bg="#18181b",
+                justify="left", wraplength=410, anchor="w"
+            ).pack(padx=16, pady=(0, 14), fill="x")
+
+            btn_row = tk.Frame(card, bg="#18181b")
+            btn_row.pack(padx=16, fill="x")
+
+            def on_admin():
+                dlg.destroy()
+                threading.Thread(target=self._relaunch_as_admin, daemon=True).start()
+
+            def on_later():
+                dlg.destroy()
+                self._set_status(
+                    "Update ready — finish it when you're ready",
+                    "Open the install folder and run 'updater.exe' to apply the update.",
+                    progress=0.0
+                )
+                self.root.after(0, lambda: self.cancel_btn.config(
+                    text="Close", state="normal", command=self.root.destroy
+                ))
+
+            # Primary action
+            admin_btn = tk.Button(
+                btn_row,
+                text="Retry as Administrator  (Recommended)",
+                font=("Segoe UI", 9, "bold"),
+                fg="#ffffff", bg="#a855f7",
+                activebackground="#9333ea", activeforeground="#ffffff",
+                bd=0, padx=16, pady=7, cursor="hand2",
+                command=on_admin, anchor="w"
+            )
+            admin_btn.pack(fill="x", pady=(0, 6))
+
+            # Hint under primary button
+            tk.Label(
+                btn_row,
+                text="Windows will ask if you want to allow the update — click Yes to continue.",
+                font=("Segoe UI", 8),
+                fg="#52525b", bg="#18181b",
+                anchor="w"
+            ).pack(fill="x", pady=(0, 10))
+
+            # Secondary action
+            later_btn = tk.Button(
+                btn_row,
+                text="I'll do it later",
+                font=("Segoe UI", 9),
+                fg="#a1a1aa", bg="#27272a",
+                activebackground="#3f3f46", activeforeground="#f4f4f5",
+                bd=0, padx=16, pady=6, cursor="hand2",
+                command=on_later, anchor="w"
+            )
+            later_btn.pack(fill="x")
+
+            # Hint under secondary button
+            tk.Label(
+                btn_row,
+                text="Run 'updater.exe' from the app folder whenever you're ready.",
+                font=("Segoe UI", 8),
+                fg="#52525b", bg="#18181b",
+                anchor="w"
+            ).pack(fill="x", pady=(2, 0))
+
+        self.root.after(0, _build)
+
+    def _delete_non_protected(self):
+        """Remove all non-protected items from target_dir using safe rename strategy."""
+        for entry in os.listdir(self.target_dir):
+            entry_lower = entry.lower()
+            full_path = os.path.join(self.target_dir, entry)
+
+            if entry_lower in PROTECTED_DIRS:
+                continue
+            if entry_lower in PROTECTED_FILES:
+                continue
+            if entry_lower == "updater.exe":
+                # Running from %TEMP% already — will be overwritten by copy step
+                continue
+            # Skip .old debris (already renamed from a previous pass)
+            if entry.endswith(".old"):
+                continue
+
+            if os.path.isdir(full_path):
+                shutil.rmtree(full_path, ignore_errors=True)
+            else:
+                self._safe_delete(full_path)
+
     def _run_update_pipeline(self):
         try:
             # 1. Wait for Pawchive Downloader to completely terminate
@@ -208,11 +444,12 @@ class UpdaterApp:
                 while is_pid_running(self.pid):
                     if self._cancel_requested:
                         return
-                    if time.time() - start_wait > 12:
+                    if time.time() - start_wait > 15:
                         break
                     time.sleep(0.3)
 
-            time.sleep(0.5)  # Buffer for Windows OS file handle release
+            # Extra buffer for Windows to fully release file handles (no admin needed)
+            time.sleep(_EXE_RELEASE_WAIT)
 
             # 2. Prepare directories in %TEMP%
             temp_base = os.environ.get("TEMP", os.path.expanduser("~"))
@@ -256,7 +493,6 @@ class UpdaterApp:
 
                             status = f"Downloading update ({int(pct)}%)..."
                             detail = f"{mb_done:.1f} MB / {mb_total:.1f} MB • {speed_mb:.1f} MB/s • {eta_str}"
-                            # Scale download progress 5% -> 80%
                             self._set_status(status, detail, progress=5.0 + (pct * 0.75))
 
             # 4. Extract Package
@@ -266,20 +502,30 @@ class UpdaterApp:
             with zipfile.ZipFile(zip_dest, "r") as zf:
                 zf.extractall(staging_dir)
 
-            # Locate root directory inside zip if nested
+            # Locate root directory inside zip if nested (zip has a single root folder)
             stage_root = staging_dir
             entries = [os.path.join(staging_dir, e) for e in os.listdir(staging_dir)]
             if len(entries) == 1 and os.path.isdir(entries[0]):
                 stage_root = entries[0]
 
-            # 5. Synchronize files into target directory
-            self._set_status("Installing update...", "Replacing application binaries...", progress=90.0)
+            # 5. Clean up .old debris from any previous failed update
+            self._set_status("Preparing installation...", "Cleaning up previous update debris...", progress=84.0)
+            self._clean_stale_old_files()
+
+            # 6. Delete all non-protected items from target dir (clean slate)
+            self._set_status("Clearing old version...", "Removing outdated application files...", progress=87.0)
+            self._delete_non_protected()
+
+            # 7. Copy fresh files into target directory
+            self._set_status("Installing update...", "Copying new application files...", progress=91.0)
 
             copied_count = 0
+            failed_files: list = []
             for root_d, dirs, files in os.walk(stage_root):
                 rel = os.path.relpath(root_d, stage_root)
                 first = rel.split(os.sep)[0] if rel != "." else ""
 
+                # Skip protected dirs from the new zip too (shouldn't exist, but be safe)
                 if first.lower() in PROTECTED_DIRS:
                     dirs[:] = []
                     continue
@@ -292,22 +538,26 @@ class UpdaterApp:
                         continue
                     s_file = os.path.join(root_d, file_name)
                     d_file = os.path.join(dest_folder, file_name)
-                    try:
-                        shutil.copy2(s_file, d_file)
+                    if self._safe_copy(s_file, d_file):
                         copied_count += 1
-                    except Exception as e:
-                        # Retry once after short sleep if locked
-                        time.sleep(0.5)
-                        try:
-                            shutil.copy2(s_file, d_file)
-                            copied_count += 1
-                        except Exception:
-                            pass
+                    else:
+                        failed_files.append(d_file)
 
-            self._set_status("Finalizing update...", f"Updated {copied_count} files successfully.", progress=98.0)
+            # If any files failed to copy, offer admin elevation or try-later
+            if failed_files:
+                self._set_status(
+                    "Some files could not be replaced",
+                    f"{len(failed_files)} file(s) are still locked. Choose how to proceed.",
+                    progress=92.0
+                )
+                self._show_lock_error_dialog(failed_files)
+                shutil.rmtree(updater_work_dir, ignore_errors=True)
+                return  # Do not relaunch until user decides
+
+            self._set_status("Finalizing update...", f"Installed {copied_count} files successfully.", progress=98.0)
             time.sleep(0.5)
 
-            # 6. Clean up temporary files
+            # 7. Clean up temporary work directory
             shutil.rmtree(updater_work_dir, ignore_errors=True)
 
             # 7. Relaunch Application
