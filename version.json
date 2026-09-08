@@ -48,7 +48,7 @@
         {
             "version": "1.0.8",
             "date": "2026-09-08",
-            "notes": "Auto-retry cap (5 attempts), desktop completion reports, smart in-app updater, tutorial modal, version database"
+            "notes": "Bulkd decompressor (new tab),Auto-retry cap (5 attempts), desktop completion reports, smart in-app updater, tutorial modal, version database"
         }
     ]
 }

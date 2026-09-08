@@ -267,11 +267,7 @@ Rectangle {
                     Text {
                         id: actionText
                         anchors.centerIn: parent
-                        text: {
-                            if (updater && updater.isReady) return "🚀 Apply & Restart Now";
-                            if (updater && updater.isDownloading) return "Downloading...";
-                            return "📥 Download & Update";
-                        }
+                        text: "🚀 Update Now"
                         font.pixelSize: 13
                         font.weight: Font.Bold
                         color: "#0F172A"

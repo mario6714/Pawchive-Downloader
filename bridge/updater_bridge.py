@@ -159,22 +159,10 @@ class UpdaterBridge(QObject):
 
     @Slot()
     def startDownload(self):
-        """Download update zip from GitHub."""
-        download_url = self._update_info.get("download_url", "")
-        if not download_url:
-            self._status_message = "No direct download package found for this release."
-            self.statusChanged.emit()
-            return
-
-        self._is_downloading = True
-        self._is_ready = False
-        self._progress = 0.0
-        self._status_message = "Starting download..."
-        self.isDownloadingChanged.emit()
-        self.isReadyChanged.emit()
-        self.statusChanged.emit()
-
-        self._downloader = UpdateDownloader(download_url, self._update_info)
+        """Handoff update to standalone companion updater.exe and cleanly exit main app."""
+        from services.update_service import launch_external_updater
+        logger.info("Launching standalone updater.exe and closing application...", category="system")
+        launch_external_updater(self._update_info)
 
         def on_prog(pct, msg):
             self._progress = pct
@@ -214,14 +202,9 @@ class UpdaterBridge(QObject):
     @Slot()
     def applyAndRestart(self):
         """Apply staged update and restart the application."""
-        if not self._downloader or not self._downloader.is_ready:
-            return
-        staging_root = getattr(self._downloader, "staging_root", "")
-        if not staging_root:
-            return
-
-        logger.info("Applying update and restarting application...", category="system")
-        apply_update_and_restart(staging_root, self._update_info)
+        from services.update_service import launch_external_updater
+        logger.info("Launching standalone updater.exe and closing application...", category="system")
+        launch_external_updater(self._update_info)
 
     @Slot()
     def dismissUpdate(self):

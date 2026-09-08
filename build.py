@@ -161,6 +161,47 @@ def main():
         sys.exit(build_result.returncode)
 
     out_folder = os.path.join(project_root, "dist", "Pawchive Downloader")
+
+    # 2. Compile standalone onefile companion updater (console hidden)
+    print("\n🔨 Compiling updater.exe (standalone onefile, console hidden)...")
+    icon_file = os.path.join(project_root, "assets", "icon.ico")
+    updater_work = os.path.join(project_root, "build", "updater_build")
+    updater_dist = os.path.join(project_root, "build", "updater_dist")
+    os.makedirs(updater_work, exist_ok=True)
+    os.makedirs(updater_dist, exist_ok=True)
+
+    updater_cmd = [
+        sys.executable, "-m", "PyInstaller",
+        "--noconfirm",
+        "--onefile",
+        "--windowed",
+        "--name", "updater",
+        "--workpath", updater_work,
+        "--distpath", updater_dist,
+    ]
+    if os.path.exists(icon_file):
+        updater_cmd.extend(["--icon", icon_file])
+    updater_cmd.append(os.path.join(project_root, "updater.py"))
+
+    updater_result = subprocess.run(updater_cmd)
+    if updater_result.returncode != 0:
+        print("\n❌ Build failed for updater.exe!")
+        sys.exit(updater_result.returncode)
+
+    built_updater = os.path.join(updater_dist, "updater.exe")
+    dst_updater = os.path.join(out_folder, "updater.exe")
+    if os.path.exists(built_updater):
+        shutil.copy2(built_updater, dst_updater)
+        print(f"   Embedded updater.exe -> {dst_updater}")
+
+    # Remove temporary updater.spec
+    spec_auto = os.path.join(project_root, "updater.spec")
+    if os.path.exists(spec_auto):
+        try:
+            os.remove(spec_auto)
+        except Exception:
+            pass
+
     post_build_setup(out_folder, app_version)
 
     # Clean intermediate compiler files from build/ so only dist/ remains
