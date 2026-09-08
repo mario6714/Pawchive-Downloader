@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: "Pawchive Downloader v1.0.7"
+    title: "Pawchive Downloader v1.0.8"
     color: "#0F1117"
 
     // Stop active downloads and persist session gracefully when user closes the app
@@ -23,7 +23,7 @@ ApplicationWindow {
     }
 
     property bool showConsole: true
-    property int currentTab: 0 // 0: Downloader, 1: Queue, 2: Watchlist, 3: Known, 4: History, 5: Settings
+    property int currentTab: 0 // 0: Downloader, 1: Queue, 2: Watchlist, 3: Decompressor, 4: Known, 5: History, 6: Settings
 
     function tr(key, fallback) {
         if (!Lang) return fallback !== undefined ? fallback : key
@@ -220,7 +220,7 @@ ApplicationWindow {
                     }
                 }
 
-                // Tab: Known Characters
+                // Tab: Bulk Decompressor (3rd — after Watchlist)
                 Rectangle {
                     width: Math.max(120, tab3Row.implicitWidth + 24)
                     height: 30
@@ -242,9 +242,9 @@ ApplicationWindow {
                         id: tab3Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "🏷️"; font.pixelSize: 12 }
+                        Text { text: "📦"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_known", "Known Series")
+                            text: appWindow.tr("tab_bulk_decompressor", "Decompressor")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 3 ? 600 : Font.Normal
@@ -259,14 +259,14 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_known_tip", "Known character and series directory rules (Known.txt)")
+                        ToolTip.text: appWindow.tr("tab_decompressor_tip", "Bulk archive decompression with disk space pre-flight checks and parallel extraction")
                         onClicked: appWindow.currentTab = 3
                     }
                 }
 
-                // Tab: History
+                // Tab: Known Characters
                 Rectangle {
-                    width: Math.max(90, tab4Row.implicitWidth + 24)
+                    width: Math.max(120, tab4Row.implicitWidth + 24)
                     height: 30
                     radius: 6
                     color: appWindow.currentTab === 4 ? "#181B22" : (tab4Mouse.containsMouse ? "#141720" : "transparent")
@@ -286,9 +286,9 @@ ApplicationWindow {
                         id: tab4Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "📜"; font.pixelSize: 12 }
+                        Text { text: "🏷️"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_history", "History")
+                            text: appWindow.tr("tab_known", "Known Series")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 4 ? 600 : Font.Normal
@@ -303,12 +303,12 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_history_tip", "Completed downloads and past batch sessions")
+                        ToolTip.text: appWindow.tr("tab_known_tip", "Known character and series directory rules (Known.txt)")
                         onClicked: appWindow.currentTab = 4
                     }
                 }
 
-                // Tab: Settings
+                // Tab: History
                 Rectangle {
                     width: Math.max(90, tab5Row.implicitWidth + 24)
                     height: 30
@@ -330,9 +330,9 @@ ApplicationWindow {
                         id: tab5Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "⚙️"; font.pixelSize: 12 }
+                        Text { text: "📜"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_settings", "Settings")
+                            text: appWindow.tr("tab_history", "History")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 5 ? 600 : Font.Normal
@@ -347,14 +347,14 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_settings_tip", "Global application and network configuration")
+                        ToolTip.text: appWindow.tr("tab_history_tip", "Completed downloads and past batch sessions")
                         onClicked: appWindow.currentTab = 5
                     }
                 }
 
-                // Tab: Bulk Decompressor
+                // Tab: Settings
                 Rectangle {
-                    width: Math.max(120, tab6Row.implicitWidth + 24)
+                    width: Math.max(90, tab6Row.implicitWidth + 24)
                     height: 30
                     radius: 6
                     color: appWindow.currentTab === 6 ? "#181B22" : (tab6Mouse.containsMouse ? "#141720" : "transparent")
@@ -374,9 +374,9 @@ ApplicationWindow {
                         id: tab6Row
                         anchors.centerIn: parent
                         spacing: 6
-                        Text { text: "📦"; font.pixelSize: 12 }
+                        Text { text: "⚙️"; font.pixelSize: 12 }
                         Text {
-                            text: appWindow.tr("tab_bulk_decompressor", "Decompressor")
+                            text: appWindow.tr("tab_settings", "Settings")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
                             font.weight: appWindow.currentTab === 6 ? 600 : Font.Normal
@@ -391,7 +391,7 @@ ApplicationWindow {
                         cursorShape: Qt.PointingHandCursor
                         ToolTip.visible: containsMouse
                         ToolTip.delay: 400
-                        ToolTip.text: appWindow.tr("tab_decompressor_tip", "Bulk archive decompression with disk space pre-flight checks and parallel extraction")
+                        ToolTip.text: appWindow.tr("tab_settings_tip", "Global application and network configuration")
                         onClicked: appWindow.currentTab = 6
                     }
                 }
@@ -493,7 +493,7 @@ ApplicationWindow {
                     Text {
                         id: verText
                         anchors.centerIn: parent
-                        text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.0.7"
+                        text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.0.8"
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
                         font.weight: 600
@@ -549,7 +549,7 @@ ApplicationWindow {
                 if (appBridge) appBridge.addToQueue()
             }
             onSettingsRequested: {
-                appWindow.currentTab = 5
+                appWindow.currentTab = 6
             }
         }
 
@@ -1444,7 +1444,7 @@ ApplicationWindow {
                             WatchlistView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 3: Known Manager View with Newtonian slide & fade transition
+                        // Tab 3: Bulk Decompressor View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 3 ? 1.0 : 0.0
                             y: appWindow.currentTab === 3 ? 0 : 10
@@ -1454,10 +1454,10 @@ ApplicationWindow {
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                             Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
 
-                            KnownManagerView { anchors.fill: parent; bridge: appBridge }
+                            DecompressorView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 4: History View with Newtonian slide & fade transition
+                        // Tab 4: Known Manager View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 4 ? 1.0 : 0.0
                             y: appWindow.currentTab === 4 ? 0 : 10
@@ -1467,10 +1467,10 @@ ApplicationWindow {
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                             Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
 
-                            HistoryView { anchors.fill: parent; bridge: appBridge }
+                            KnownManagerView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 5: Settings View with Newtonian slide & fade transition
+                        // Tab 5: History View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 5 ? 1.0 : 0.0
                             y: appWindow.currentTab === 5 ? 0 : 10
@@ -1480,10 +1480,10 @@ ApplicationWindow {
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                             Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
 
-                            SettingsView { anchors.fill: parent; bridge: appBridge }
+                            HistoryView { anchors.fill: parent; bridge: appBridge }
                         }
 
-                        // Tab 6: Bulk Decompressor View with Newtonian slide & fade transition
+                        // Tab 6: Settings View with Newtonian slide & fade transition
                         Item {
                             opacity: appWindow.currentTab === 6 ? 1.0 : 0.0
                             y: appWindow.currentTab === 6 ? 0 : 10
@@ -1493,7 +1493,7 @@ ApplicationWindow {
                             Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
                             Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
 
-                            DecompressorView { anchors.fill: parent; bridge: appBridge }
+                            SettingsView { anchors.fill: parent; bridge: appBridge }
                         }
                     }
                 }
