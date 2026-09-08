@@ -5,9 +5,27 @@ Compiles the application into a clean Windows directory distribution with '_inte
 
 import sys
 import os
+import json
 import shutil
 import subprocess
 import argparse
+
+
+def get_version() -> str:
+    """Read the current version from version.json (single source of truth)."""
+    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.json")
+    if not os.path.exists(version_file):
+        print("⚠️  version.json not found — using fallback version 1.0.0")
+        return "1.0.0"
+    try:
+        with open(version_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        version = data.get("version", "1.0.0")
+        print(f"📋 Building version: {version}")
+        return version
+    except Exception as e:
+        print(f"⚠️  Could not read version.json: {e} — using fallback 1.0.0")
+        return "1.0.0"
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -56,7 +74,7 @@ def clean_build_artifacts():
                 print(f"   Warning: Could not remove {folder}: {e}")
 
 
-def post_build_setup(output_dir: str):
+def post_build_setup(output_dir: str, version: str):
     """Sets up runtime folders, data files, and config templates next to the executable."""
     print("\n📁 Configuring clean runtime environment...")
 
@@ -88,6 +106,20 @@ def post_build_setup(output_dir: str):
         shutil.copy2(src_master_bin, dst_master_bin)
         print(f"   Copied {src_master_bin} -> {dst_master_bin}")
 
+    # Stamp version.json into dist so the compiled exe can report its exact version
+    src_version = os.path.join(os.path.dirname(os.path.abspath(__file__)), "version.json")
+    dst_version = os.path.join(output_dir, "version.json")
+    if os.path.exists(src_version):
+        shutil.copy2(src_version, dst_version)
+        print(f"   Stamped version.json ({version}) -> {dst_version}")
+    else:
+        # Write a minimal one if it doesn't exist yet
+        from datetime import datetime, timezone
+        minimal = {"version": version, "commit": "", "short_commit": "", "date": datetime.now(timezone.utc).strftime("%Y-%m-%d")}
+        with open(dst_version, "w", encoding="utf-8") as f:
+            json.dump(minimal, f, indent=4)
+        print(f"   Created minimal version.json ({version}) -> {dst_version}")
+
     print("✅ Runtime environment configured successfully.\n")
 
 
@@ -100,6 +132,8 @@ def main():
 
     project_root = os.path.dirname(os.path.abspath(__file__))
     os.chdir(project_root)
+
+    app_version = get_version()
 
     print("=" * 65)
     print("  🚀 Pawchive Downloader — Windows Build System (_internal layout)")
@@ -127,7 +161,7 @@ def main():
         sys.exit(build_result.returncode)
 
     out_folder = os.path.join(project_root, "dist", "Pawchive Downloader")
-    post_build_setup(out_folder)
+    post_build_setup(out_folder, app_version)
 
     # Clean intermediate compiler files from build/ so only dist/ remains
     build_temp = os.path.join(project_root, "build")
@@ -139,14 +173,16 @@ def main():
 
     exe_path = os.path.join(out_folder, "Pawchive Downloader.exe")
 
-    # Create release zip archive
-    zip_base = os.path.join(project_root, "dist", "Pawchive-Downloader-v1.0.7-Windows")
+    # Create release zip archive — name includes version from version.json
+    zip_name = f"Pawchive-Downloader-v{app_version}-Windows"
+    zip_base = os.path.join(project_root, "dist", zip_name)
     print("\n📦 Compressing release into ZIP archive...")
     zip_path = shutil.make_archive(zip_base, "zip", root_dir=os.path.join(project_root, "dist"), base_dir="Pawchive Downloader")
     print(f"   Created {zip_path}")
 
     print("=" * 65)
     print("  🎉 Build Completed Successfully!")
+    print(f"  📋 Version:       v{app_version}")
     print(f"  📁 Output Folder: {out_folder}")
     print(f"  🚀 Executable:    {exe_path}")
     print(f"  📦 Release ZIP:   {zip_path}")

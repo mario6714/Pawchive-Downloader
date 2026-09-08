@@ -167,7 +167,7 @@ Rectangle {
                         text: cloudModalRoot.tr("title_cloud_download", "Download Harvested Cloud Links")
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 15
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: "#F8FAFC"
                     }
 
@@ -454,7 +454,7 @@ Rectangle {
                             text: cloudModalRoot.tr("btn_download_selected", "Download") + " (" + cloudLinksModel.countSelected() + ")"
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: "#0F172A"
                         }
                     }

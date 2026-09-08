@@ -192,6 +192,52 @@ class KemonoDownloader:
         self._smoothed_speed = 0.0
         logger.info("Download resumed.", category="downloader")
 
+    def reset_state(self):
+        """Fully resets download state so a new session starts cleanly."""
+        self._cancel_event.clear()
+        self._pause_event.clear()
+        self.tasks = []
+        self.downloaded_bytes = 0
+        self.total_bytes = 0
+        self.start_time = 0.0
+        self._is_running = False
+        self._speed_samples.clear()
+        self._smoothed_speed = 0.0
+        self._medium_speed = 0.0
+        self._smoothed_eta = None
+        self._last_eta_calc_time = 0.0
+        self._last_progress_emit_time = 0.0
+        self.adaptive_state = "optimal"
+        self.adaptive_status_text = ""
+        logger.info("Downloader state fully reset.", category="downloader")
+
+    @staticmethod
+    def extract_passwords(text: str) -> list:
+        """
+        Smartly extracts password candidates from post text.
+        Recognises common English and CJK password labels:
+        password / pass / pw / pwd / psswd / pswd / pd
+        and the Japanese/Chinese equivalents: パスワード, 解压密码, 密码
+        Returns a deduplicated list of candidate password strings.
+        """
+        if not text:
+            return []
+        patterns = [
+            # English labels: password: VALUE  /  pw: VALUE  etc.
+            r'(?:password|passwords|psswd|pswd|passwd|pass|pw|pwd|pd)\s*[:=\-–—]\s*([^\s<>"\n,;|]{3,64})',
+            # CJK labels
+            r'(?:パスワード|解压密码|密码)\s*[:：=]?\s*([^\s<>"\n,;|]{3,64})',
+        ]
+        found = []
+        seen = set()
+        for pat in patterns:
+            for m in re.findall(pat, text, re.IGNORECASE):
+                val = m.strip().strip('"\'')
+                if val and val not in seen:
+                    seen.add(val)
+                    found.append(val)
+        return found
+
     def build_tasks_from_posts(
         self,
         posts: List[Dict[str, Any]],
@@ -359,18 +405,81 @@ class KemonoDownloader:
                         caption_clean = re.sub(r'<[^>]+>', '', caption_clean).strip()
                         tags_list = FilterEngine.normalize_tags(post.get("tags"))
                         tags_str = ", ".join(tags_list)
-                        
+
+                        # Build creator profile URL
+                        post_user = str(post.get("user") or "")
+                        if domain and service and post_user:
+                            creator_url = f"https://{domain}/{service}/user/{post_user}"
+                        elif domain and service:
+                            creator_url = f"https://{domain}/{service}"
+                        else:
+                            creator_url = ""
+
+                        # Collect attached file names (built from the files already collected below)
+                        all_file_names = []
+                        _main_f = post.get("file")
+                        if isinstance(_main_f, dict) and (_main_f.get("path") or _main_f.get("storageKey")):
+                            _fname = (_main_f.get("name") or "").strip().rstrip(".,;!?")
+                            if _fname:
+                                all_file_names.append(_fname)
+                        for _att in (post.get("attachments") or []):
+                            if isinstance(_att, dict) and (_att.get("path") or _att.get("storageKey")):
+                                _fname = (_att.get("name") or "").strip().rstrip(".,;!?")
+                                if _fname:
+                                    all_file_names.append(_fname)
+
+                        # Extract external links
+                        ext_links_dict = LinkExtractor.extract_links_from_post(post)
+                        ext_links_flat = []
+                        for _plat, _urls in sorted(ext_links_dict.items()):
+                            for _u in _urls:
+                                ext_links_flat.append(f"[{_plat.upper()}] {_u}")
+
+                        # Extract embedded media (yt-dlp targets)
+                        embed_urls = LinkExtractor.extract_embed_urls(post)
+
+                        # Smart password extraction (search full caption + comments)
+                        _pw_search_text = caption_clean
+                        if post.get("comments_text"):
+                            _pw_search_text += "\n" + post.get("comments_text")
+                        passwords = self.extract_passwords(_pw_search_text)
+
                         info_content = f"Title: {post_title}\n"
                         info_content += f"Post ID: {post_id}\n"
                         info_content += f"Creator: {creator_name} [{service}]\n"
+                        if creator_url:
+                            info_content += f"Creator URL: {creator_url}\n"
+                        if task_post_url:
+                            info_content += f"Post URL: {task_post_url}\n"
                         info_content += f"Published: {date_str}\n"
                         if tags_str:
                             info_content += f"Tags: {tags_str}\n"
+
+                        if passwords:
+                            info_content += f"\n--- Detected Password(s) ---\n"
+                            for pw in passwords:
+                                info_content += f"  {pw}\n"
+
                         info_content += f"\n--- Content ---\n{caption_clean}\n"
-                        
+
                         if post.get("comments_text"):
                             info_content += f"\n--- Comments ---\n{post.get('comments_text')}\n"
-                        
+
+                        if all_file_names:
+                            info_content += f"\n--- Attached Files ---\n"
+                            for fn in all_file_names:
+                                info_content += f"  {fn}\n"
+
+                        if ext_links_flat:
+                            info_content += f"\n--- External Links ---\n"
+                            for lnk in ext_links_flat:
+                                info_content += f"  {lnk}\n"
+
+                        if embed_urls:
+                            info_content += f"\n--- Embedded Media ---\n"
+                            for eu in embed_urls:
+                                info_content += f"  {eu}\n"
+
                         with open(info_path, "w", encoding="utf-8") as inf_f:
                             inf_f.write(info_content)
                 except Exception as ex:
@@ -820,15 +929,33 @@ class KemonoDownloader:
                 if self.on_concurrency_throttled:
                     self.on_concurrency_throttled(self.max_workers)
 
-    def retry_failed_tasks(self, options: FilterOptions, cookie_str: str) -> int:
-        """Resets all tasks with status 'failed' to 'pending' and resumes downloading."""
-        failed_tasks = [t for t in self.tasks if t.status == "failed"]
-        if not failed_tasks:
+    def retry_failed_tasks(self, options: FilterOptions, cookie_str: str, max_auto_retries: int = 5) -> int:
+        """Resets all tasks with status 'failed' to 'pending' up to max_auto_retries (5) and resumes downloading."""
+        all_failed = [t for t in self.tasks if t.status == "failed"]
+        if not all_failed:
             logger.info("No failed tasks to retry.", category="downloader")
             return 0
 
-        for t in failed_tasks:
+        eligible_tasks = []
+        for t in all_failed:
+            cur_retries = getattr(t, "retry_count", 0)
+            if cur_retries >= max_auto_retries:
+                t.retry_capped = True
+                orig_err = getattr(t, "error_msg", "") or "Download failed"
+                if f"({max_auto_retries} retries)" not in orig_err:
+                    t.error_msg = f"{orig_err} (Stopped after {max_auto_retries} retries)"
+                if self.on_task_status_changed:
+                    self.on_task_status_changed(t)
+            else:
+                eligible_tasks.append(t)
+
+        if not eligible_tasks:
+            logger.info(f"All {len(all_failed)} failed task(s) reached max retry limit ({max_auto_retries}). Skipped by auto-retry but preserved in modal.", category="downloader")
+            return 0
+
+        for t in eligible_tasks:
             t.retry_count = getattr(t, "retry_count", 0) + 1
+            t.retry_capped = False
             t.status = "pending"
             t.error_msg = ""
             t.progress_pct = 0
@@ -839,12 +966,12 @@ class KemonoDownloader:
             if self.on_task_status_changed:
                 self.on_task_status_changed(t)
 
-        logger.info(f"Flagged {len(failed_tasks)} failed tasks for retry.", category="downloader")
+        logger.info(f"Flagged {len(eligible_tasks)} failed tasks for retry (attempt {eligible_tasks[0].retry_count}/{max_auto_retries}).", category="downloader")
 
         if not self._is_running:
             self.start_download_queue(self.tasks, options, cookie_str)
 
-        return len(failed_tasks)
+        return len(eligible_tasks)
 
     def retry_selected_tasks(self, selected_ids: List[str], options: FilterOptions, cookie_str: str) -> int:
         """Resets only user-selected failed tasks to 'pending' and resumes downloading."""
@@ -863,6 +990,7 @@ class KemonoDownloader:
 
         for t in target_tasks:
             t.retry_count = getattr(t, "retry_count", 0) + 1
+            t.retry_capped = False
             t.status = "pending"
             t.error_msg = ""
             t.progress_pct = 0
@@ -1065,17 +1193,27 @@ class KemonoDownloader:
                             else options.auto_retry_at_end
                         )
                         if auto_retry_active and not self._cancel_event.is_set():
-                            failed_tasks = [
-                                t for t in self.tasks
-                                if t.status == "failed" and getattr(t, "retry_count", 0) < 3
-                            ]
+                            all_failed = [t for t in self.tasks if t.status == "failed"]
+                            failed_tasks = []
+                            for t in all_failed:
+                                if getattr(t, "retry_count", 0) < 5:
+                                    failed_tasks.append(t)
+                                else:
+                                    t.retry_capped = True
+                                    orig_err = getattr(t, "error_msg", "") or "Download failed"
+                                    if "(Stopped after 5 retries)" not in orig_err:
+                                        t.error_msg = f"{orig_err} (Stopped after 5 retries)"
+                                    if self.on_task_status_changed:
+                                        self.on_task_status_changed(t)
+
                             if failed_tasks:
                                 logger.info(
-                                    f"🔄 Auto-retry triggered for {len(failed_tasks)} failed files...",
+                                    f"🔄 Auto-retry triggered for {len(failed_tasks)} failed files (attempt {getattr(failed_tasks[0], 'retry_count', 0) + 1}/5)...",
                                     category="downloader"
                                 )
                                 for t in failed_tasks:
                                     t.retry_count = getattr(t, "retry_count", 0) + 1
+                                    t.retry_capped = False
                                     t.status = "pending"
                                     t.error_msg = ""
                                     t.progress_pct = 0
@@ -1469,14 +1607,15 @@ class KemonoDownloader:
                 def _disk_poll():
                     while not _poll_stop.is_set():
                         try:
+                            # Sum .partN files (multipart) + .tmp file (fallback single-stream)
+                            _tmp_path = f"{task.target_path}.tmp"
+                            _paths_to_poll = _part_paths + ([_tmp_path] if os.path.exists(_tmp_path) else [])
                             disk_bytes = sum(
-                                os.path.getsize(p) for p in _part_paths if os.path.exists(p)
+                                os.path.getsize(p) for p in _paths_to_poll if os.path.exists(p)
                             )
                             # NOTE: We deliberately do NOT include task.target_path here.
-                            # After multipart stitching, part files are deleted and the final
-                            # assembled file appears. If we counted target_path, those bytes
-                            # would be counted again (they were already counted via part deltas),
-                            # causing the saved-bytes counter to show ~2x the actual download size.
+                            # After stitching, part/tmp files vanish and the final assembled file
+                            # appears. Counting target_path would double-count those bytes.
 
                             if disk_bytes < _prev_disk_bytes[0]:
                                 # Files on disk dropped (cleanup or error) — reset baseline
@@ -1492,8 +1631,6 @@ class KemonoDownloader:
                             task.downloaded_bytes = disk_bytes
                             if task.file_size > 0:
                                 task.progress_pct = min(99, int(disk_bytes / task.file_size * 100))
-                            if self.on_task_status_changed:
-                                self.on_task_status_changed(task)
 
                             # Push live speed + overall progress to the global bar once per second
                             now_poll = time.time()
@@ -1517,6 +1654,9 @@ class KemonoDownloader:
                                         task.eta_str = f"{s//60}m {s%60}s" if s > 60 else f"{s}s"
                                     else:
                                         task.eta_str = "--"
+
+                            if self.on_task_status_changed:
+                                self.on_task_status_changed(task)
                         except Exception:
                             pass
                         _poll_stop.wait(0.5)
@@ -1948,9 +2088,14 @@ class KemonoDownloader:
         else:
             percent = 0
 
-        dl_mb = self.downloaded_bytes / (1024 * 1024)
-        if self.downloaded_bytes > 1024 * 1024 * 1024:
-            saved_str = f"{self.downloaded_bytes / (1024 * 1024 * 1024):.2f} GB"
+        # Use the maximum of the running counter and the sum of per-task bytes.
+        # The running counter can lag for multipart files (disk-poll vs in-flight bytes),
+        # and the per-task sum stays accurate because _disk_poll updates task.downloaded_bytes.
+        tasks_downloaded = sum(t.downloaded_bytes for t in self.tasks)
+        effective_bytes = max(self.downloaded_bytes, tasks_downloaded)
+        dl_mb = effective_bytes / (1024 * 1024)
+        if effective_bytes > 1024 * 1024 * 1024:
+            saved_str = f"{effective_bytes / (1024 * 1024 * 1024):.2f} GB"
         else:
             saved_str = f"{dl_mb:.1f} MB"
 

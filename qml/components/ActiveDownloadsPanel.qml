@@ -162,7 +162,7 @@ Rectangle {
                     text: panelRoot.activeCount + " " + (panelRoot.tr("qtab_active", "Active")).toLowerCase()
                     font.family: "Segoe UI, Inter, sans-serif"
                     font.pixelSize: 10
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#38BDF8"
 
                     onTextChanged: {
@@ -204,7 +204,7 @@ Rectangle {
                     text: (bridge && bridge.currentSpeed) ? bridge.currentSpeed : ""
                     font.family: "Cascadia Code, Consolas, monospace"
                     font.pixelSize: 10
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#34D399"
                 }
             }
@@ -355,7 +355,7 @@ Rectangle {
                             text: model.filename || ""
                             font.family: "Segoe UI, Inter, sans-serif"
                             font.pixelSize: 11
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: rowMouse.containsMouse ? "#FFFFFF" : "#E2E8F0"
                             elide: Text.ElideMiddle
 

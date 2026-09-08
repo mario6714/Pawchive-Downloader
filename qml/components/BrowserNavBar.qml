@@ -176,7 +176,7 @@ Rectangle {
                         }
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: "#38BDF8"
                     }
                 }

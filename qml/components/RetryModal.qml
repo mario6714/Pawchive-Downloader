@@ -55,7 +55,8 @@ Rectangle {
                     errorMsg: item.errorMsg || "",
                     fileSize: item.fileSize || "-",
                     retryCount: item.retryCount || 0,
-                    isSelected: true // default selected
+                    retryCapped: !!item.retryCapped,
+                    isSelected: !item.retryCapped // defaults to true unless capped
                 })
             }
         }
@@ -284,22 +285,22 @@ Rectangle {
                                     }
                                 }
 
-                                // Retry Counter Badge
+                                // Retry Count / Capped Pill
                                 Rectangle {
                                     visible: model.retryCount > 0
                                     width: Math.max(56, retryBadgeText.implicitWidth + 10)
                                     height: 18
                                     radius: 3
-                                    color: "#3B181E"
-                                    border.color: "#EF4444"
+                                    color: model.retryCapped ? "#451A03" : "#3B181E"
+                                    border.color: model.retryCapped ? "#F59E0B" : "#EF4444"
                                     border.width: 1
                                     Text {
                                         id: retryBadgeText
                                         anchors.centerIn: parent
-                                        text: model.retryCount === 1 ? "🔁 Tried 1x" : ("🔁 Tried " + model.retryCount + "x")
+                                        text: model.retryCapped ? "🛑 5/5 Max Retries" : ("🔁 Tried " + model.retryCount + "x")
                                         font.pixelSize: 9
                                         font.bold: true
-                                        color: "#FCA5A5"
+                                        color: model.retryCapped ? "#FCD34D" : "#FCA5A5"
                                     }
                                 }
 
@@ -308,7 +309,7 @@ Rectangle {
                                     text: model.filename
                                     font.family: "Segoe UI, sans-serif"
                                     font.pixelSize: 12
-                                    font.weight: Font.DemiBold
+                                    font.weight: 600
                                     color: "#F1F5F9"
                                     Layout.fillWidth: true
                                     elide: Text.ElideMiddle

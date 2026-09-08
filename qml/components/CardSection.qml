@@ -47,7 +47,7 @@ Rectangle {
                 text: root.title
                 font.family: "Segoe UI, Inter, sans-serif"
                 font.pixelSize: 12
-                font.weight: Font.DemiBold
+                font.weight: 600
                 color: "#CBD5E1"
                 Layout.fillWidth: true
             }

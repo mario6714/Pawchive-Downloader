@@ -80,7 +80,7 @@ Item {
                 text: root.label
                 font.family: "Segoe UI, Inter, sans-serif"
                 font.pixelSize: 11
-                font.weight: root.checked ? Font.DemiBold : Font.Medium
+                font.weight: root.checked ? 600 : Font.Medium
                 color: root.checked ? "#F8FAFC" : "#94A3B8"
                 anchors.verticalCenter: parent.verticalCenter
 

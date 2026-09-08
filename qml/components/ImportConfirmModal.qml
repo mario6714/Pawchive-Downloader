@@ -199,7 +199,7 @@ Item {
                             text: root.tr("btn_import_replace", "🔄 Replace Current Queue")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: "#F1F5F9"
                         }
                         Text {

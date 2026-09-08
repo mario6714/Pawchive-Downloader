@@ -324,7 +324,7 @@ Item {
                         text: root.tr("modal_cancel_action", "Cancel — Don't") + " " + root.actionLabel
                         font.family: "Segoe UI, Inter, sans-serif"
                         font.pixelSize: 13
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: "#F1F5F9"
                         anchors.verticalCenter: parent.verticalCenter
                     }

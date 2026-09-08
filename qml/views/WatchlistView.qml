@@ -102,42 +102,88 @@ Item {
                     text: root.tr("tab_watchlist", "Watchlist")
                     font.family: "Segoe UI, Inter, sans-serif"
                     font.pixelSize: 15
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#E2E8F0"
                 }
 
                 // Subtitle / entry count
                 Text {
-                    text: bridge && bridge.watchlistModel
-                          ? (bridge.watchlistModel.count + " " + root.tr("watchlist_artists", "artist(s)"))
-                          : ""
+                    text: {
+                        if (!bridge || !bridge.watchlistModel) return ""
+                        var c = bridge.watchlistModel.count
+                        var u = bridge.watchlistModel.updatedCount
+                        var base = c + " " + root.tr("watchlist_artists", "artist(s)")
+                        if (u > 0) {
+                            return base + "  •  " + u + " updated"
+                        }
+                        return base
+                    }
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
-                    color: "#4B5563"
+                    font.weight: (bridge && bridge.watchlistModel && bridge.watchlistModel.updatedCount > 0) ? 600 : Font.Normal
+                    color: (bridge && bridge.watchlistModel && bridge.watchlistModel.updatedCount > 0) ? "#22D3EE" : "#4B5563"
                     Layout.alignment: Qt.AlignVCenter
                 }
 
                 Item { Layout.fillWidth: true }
 
-                // "New posts" result toast inline badge
+                // High-visibility update counter badge
                 Rectangle {
                     id: resultBadge
-                    visible: root.lastNewCount > 0
-                    height: 26
-                    implicitWidth: resultBadgeText.implicitWidth + 20
-                    radius: 13
-                    color: "#0D2A1A"
-                    border.color: "#10B981"
-                    border.width: 1
+                    readonly property int updArtists: bridge && bridge.watchlistModel ? bridge.watchlistModel.updatedCount : 0
+                    readonly property int totalNew: bridge && bridge.watchlistModel ? bridge.watchlistModel.totalNewPosts : (root.lastNewCount > 0 ? root.lastNewCount : 0)
+                    visible: updArtists > 0 || root.lastNewCount > 0
+                    height: 28
+                    implicitWidth: resultBadgeRow.implicitWidth + 22
+                    radius: 14
+                    color: "#071E26"   // Dark cyan-tinted — fits the dark theme
+                    border.color: "#22D3EE"
+                    border.width: 1.5
 
-                    Text {
-                        id: resultBadgeText
+                    scale: resultBadgeMouse.containsMouse ? 1.04 : 1.0
+                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                    Row {
+                        id: resultBadgeRow
                         anchors.centerIn: parent
-                        text: "+" + root.lastNewCount + " " + root.tr("watchlist_new_badge", "new")
-                        font.family: "Segoe UI, sans-serif"
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: "#34D399"
+                        spacing: 6
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "✦"
+                            font.pixelSize: 11
+                            color: "#22D3EE"
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: {
+                                var count = resultBadge.totalNew > 0 ? resultBadge.totalNew : root.lastNewCount
+                                var art = resultBadge.updArtists
+                                if (count <= 0 && root.lastNewCount > 0) count = root.lastNewCount
+                                if (art > 1) {
+                                    return count + " new " + (count === 1 ? "post" : "posts") + " · " + art + " creators"
+                                } else {
+                                    return count + " new " + (count === 1 ? "post" : "posts")
+                                }
+                            }
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            color: "#A5F3FC"  // Soft cyan text on dark background
+                        }
+                    }
+
+                    MouseArea {
+                        id: resultBadgeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 250
+                        ToolTip.text: {
+                            var count = resultBadge.totalNew > 0 ? resultBadge.totalNew : root.lastNewCount
+                            var art = resultBadge.updArtists
+                            return count + " new post(s) found across " + art + " creator(s). Updated creators are pinned at the top."
+                        }
                     }
                 }
 
@@ -184,7 +230,7 @@ Item {
                                   : root.tr("watchlist_check_all", "Check All")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: "#A78BFA"
                         }
                     }
@@ -229,7 +275,7 @@ Item {
                     text: root.tr("watchlist_empty_title", "No artists tracked yet")
                     font.family: "Segoe UI, Inter, sans-serif"
                     font.pixelSize: 15
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#4B5563"
                 }
                 Text {
@@ -267,28 +313,48 @@ Item {
                 delegate: Rectangle {
                     id: entryCard
                     width: watchListView.width
-                    height: cardCol.implicitHeight + 20
+                    height: cardCol.implicitHeight + 22
                     radius: 10
-                    color: cardMouse.containsMouse ? "#111827" : "#0D1117"
-                    border.color: (model.newPostCount > 0) ? "#1F4B2E" : "#1E2330"
-                    border.width: 1
-                    clip: true
-
+                    readonly property bool hasUpdates: (model.newPostCount || 0) > 0
                     readonly property bool isArtistChecking: !!(root.checkingArtists[model.userId + "_" + model.service])
 
-                    // Left accent bar — shows new-post color
+                    // Updated cards get a subtle cyan-tinted dark background — visible but not jarring
+                    color: hasUpdates 
+                           ? (cardMouse.containsMouse ? "#071E26" : "#050F14") 
+                           : (cardMouse.containsMouse ? "#111827" : "#0D1117")
+
+                    border.color: hasUpdates 
+                                  ? (cardMouse.containsMouse ? "#38BDF8" : "#22D3EE") 
+                                  : "#1E2330"
+                    border.width: hasUpdates ? 1.5 : 1
+                    clip: true
+
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                    Behavior on border.color { ColorAnimation { duration: 140 } }
+
+                    // Subtle top accent line on updated cards
                     Rectangle {
-                        width: 3
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        height: 2
+                        color: "#22D3EE"
+                        opacity: 0.75
+                        visible: hasUpdates
+                    }
+
+                    // Left accent bar — 5px cyan for updated, 3px service color for normal
+                    Rectangle {
+                        width: hasUpdates ? 5 : 3
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
                         radius: 3
-                        color: isArtistChecking ? "#8B5CF6" : (model.newPostCount > 0 ? "#10B981" : root.serviceColor(model.service))
-                        opacity: 0.8
+                        color: hasUpdates 
+                               ? "#22D3EE" 
+                               : (isArtistChecking ? "#8B5CF6" : root.serviceColor(model.service))
+                        opacity: hasUpdates ? 0.9 : 0.8
                     }
-
-                    Behavior on color { ColorAnimation { duration: 120 } }
-                    Behavior on border.color { ColorAnimation { duration: 120 } }
 
                     MouseArea {
                         id: cardMouse
@@ -312,11 +378,11 @@ Item {
                             spacing: 8
 
                             Text {
-                                text: model.creatorName || model.userId
+                                text: (hasUpdates ? "✦ " : "") + (model.creatorName || model.userId)
                                 font.family: "Segoe UI, Inter, sans-serif"
                                 font.pixelSize: 14
-                                font.weight: Font.DemiBold
-                                color: "#E2E8F0"
+                                font.weight: hasUpdates ? Font.Bold : 600
+                                color: hasUpdates ? "#A5F3FC" : "#E2E8F0"
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
                             }
@@ -345,23 +411,35 @@ Item {
                                 }
                             }
 
-                            // New-post badge (only when new posts found)
+                            // New post count badge — bright cyan, clearly readable on dark
                             Rectangle {
-                                visible: model.newPostCount > 0
+                                visible: hasUpdates
                                 height: 20
-                                implicitWidth: newBadgeText.implicitWidth + 14
+                                implicitWidth: newBadgeRow.implicitWidth + 16
                                 radius: 10
-                                color: "#0D2A1A"
-                                border.color: "#10B981"
+                                color: "#071E26"
+                                border.color: "#22D3EE"
                                 border.width: 1
 
-                                Text {
-                                    id: newBadgeText
+                                Row {
+                                    id: newBadgeRow
                                     anchors.centerIn: parent
-                                    text: "+" + model.newPostCount + " new"
-                                    font.pixelSize: 9
-                                    font.weight: Font.Bold
-                                    color: "#34D399"
+                                    spacing: 4
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "✦"
+                                        font.pixelSize: 9
+                                        color: "#22D3EE"
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: model.newPostCount + " new post" + (model.newPostCount === 1 ? "" : "s")
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 9
+                                        font.weight: Font.Bold
+                                        color: "#A5F3FC"
+                                    }
                                 }
                             }
                         }
@@ -450,6 +528,51 @@ Item {
                             }
                         }
 
+                        // ── Row 2.5: Download folder info & picker ────────────────
+                        RowLayout {
+                            width: parent.width
+                            spacing: 6
+
+                            Text {
+                                text: "📁"
+                                font.pixelSize: 11
+                            }
+                            Text {
+                                text: model.downloadDir || root.tr("watchlist_no_folder", "Default download folder")
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                color: model.downloadDir ? "#94A3B8" : "#4B5563"
+                                elide: Text.ElideMiddle
+                                Layout.fillWidth: true
+                            }
+                            Rectangle {
+                                height: 20
+                                width: 26
+                                radius: 4
+                                color: browseFolderMouse.containsMouse ? "#1E293B" : "#0F172A"
+                                border.color: browseFolderMouse.containsMouse ? "#64748B" : "#334155"
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "📂"
+                                    font.pixelSize: 10
+                                }
+                                MouseArea {
+                                    id: browseFolderMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    ToolTip.visible: containsMouse
+                                    ToolTip.delay: 300
+                                    ToolTip.text: root.tr("watchlist_browse_tip", "Change download folder for this artist")
+                                    onClicked: {
+                                        if (bridge) bridge.browseWatchlistDownloadDir(model.userId, model.service)
+                                    }
+                                }
+                            }
+                        }
+
                         // ── Row 3: Action buttons ─────────────────────────────────
                         Row {
                             spacing: 8
@@ -491,7 +614,7 @@ Item {
                                               : root.tr("watchlist_check_artist", "Check")
                                         font.family: "Segoe UI, sans-serif"
                                         font.pixelSize: 11
-                                        font.weight: Font.DemiBold
+                                        font.weight: 600
                                         color: isArtistChecking ? "#DDD6FE" : "#C4B5FD"
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -511,16 +634,17 @@ Item {
                                 }
                             }
 
-                            // Download New
+                            // Download New — cyan-bordered dark button matching the theme
                             Rectangle {
                                 height: 28
                                 implicitWidth: dlNewRow.implicitWidth + 20
                                 radius: 6
-                                visible: model.newPostCount > 0
-                                color: dlNewMouse.containsMouse ? "#0D2A1A" : "#071A12"
-                                border.color: "#10B981"
+                                visible: hasUpdates
+                                color: dlNewMouse.containsMouse ? "#0C2D3A" : "#071E26"
+                                border.color: dlNewMouse.containsMouse ? "#38BDF8" : "#22D3EE"
                                 border.width: 1
                                 Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on border.color { ColorAnimation { duration: 100 } }
                                 scale: dlNewMouse.pressed ? 0.94 : (dlNewMouse.containsMouse ? 1.04 : 1.0)
                                 transformOrigin: Item.Center
                                 Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutBack; easing.overshoot: 1.5 } }
@@ -529,13 +653,19 @@ Item {
                                     id: dlNewRow
                                     anchors.centerIn: parent
                                     spacing: 5
-                                    Text { text: "\u2B07\uFE0F"; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
                                     Text {
-                                        text: root.tr("watchlist_download_new", "Download New")
+                                        text: "↓"
+                                        font.pixelSize: 12
+                                        font.weight: Font.Bold
+                                        color: "#22D3EE"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Text {
+                                        text: "Download " + model.newPostCount + " New Post" + (model.newPostCount === 1 ? "" : "s")
                                         font.family: "Segoe UI, sans-serif"
                                         font.pixelSize: 11
-                                        font.weight: Font.DemiBold
-                                        color: "#34D399"
+                                        font.weight: 600
+                                        color: "#A5F3FC"
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
                                 }
@@ -546,8 +676,10 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                     ToolTip.visible: containsMouse
                                     ToolTip.delay: 300
-                                    ToolTip.text: root.tr("watchlist_download_new_tip", "Queue only the new posts since last download")
-                                    onClicked: if (bridge) bridge.downloadNewPosts(model.userId, model.service)
+                                    ToolTip.text: "Download all " + model.newPostCount + " new post(s) published by " + (model.creatorName || model.userId)
+                                    onClicked: {
+                                        if (bridge) bridge.downloadNewPosts(model.userId, model.service)
+                                    }
                                 }
                             }
 
@@ -573,7 +705,7 @@ Item {
                                         text: root.tr("watchlist_redownload", "Re-download All")
                                         font.family: "Segoe UI, sans-serif"
                                         font.pixelSize: 11
-                                        font.weight: Font.DemiBold
+                                        font.weight: 600
                                         color: "#A78BFA"
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -612,7 +744,7 @@ Item {
                                         text: root.tr("watchlist_remove", "Remove")
                                         font.family: "Segoe UI, sans-serif"
                                         font.pixelSize: 11
-                                        font.weight: Font.DemiBold
+                                        font.weight: 600
                                         color: "#FCA5A5"
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -672,7 +804,7 @@ Item {
                 anchors.centerIn: parent
                 font.family: "Segoe UI, sans-serif"
                 font.pixelSize: 12
-                font.weight: Font.DemiBold
+                font.weight: 600
                 color: "#34D399"
             }
         }

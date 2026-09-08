@@ -359,7 +359,7 @@
   "watchlist_remove": "Remove",
   "watchlist_auto_check": "Auto-check on launch",
   "watchlist_empty": "Artists you download will appear here automatically.",
-  "watchlist_new_badge": "+%1 new",
+  "watchlist_new_badge": "{0} postingan baru",
   "opt_tag_folder_mode": "Sort by Tag Folder",
   "opt_tag_folder_mode_tip": "(Pawchive & cum.st only) Groups downloaded files into subfolders named after the post's primary tag",
   "btn_view_post": "Open Post",

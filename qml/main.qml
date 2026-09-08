@@ -32,6 +32,14 @@ ApplicationWindow {
         return (res && res !== key) ? res : (fallback !== undefined ? fallback : res)
     }
 
+    function openUpdateModal() {
+        updateModal.isOpen = true;
+    }
+
+    function openTutorialModal() {
+        tutorialModal.isOpen = true;
+    }
+
 
     ColumnLayout {
         anchors.fill: parent
@@ -78,7 +86,7 @@ ApplicationWindow {
                             text: appWindow.tr("tab_downloader", "Downloader")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: appWindow.currentTab === 0 ? Font.DemiBold : Font.Normal
+                            font.weight: appWindow.currentTab === 0 ? 600 : Font.Normal
                             color: appWindow.currentTab === 0 ? "#F8FAFC" : "#94A3B8"
                         }
                     }
@@ -122,7 +130,7 @@ ApplicationWindow {
                             text: appWindow.tr("tab_queue", "Queue")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: appWindow.currentTab === 1 ? Font.DemiBold : Font.Normal
+                            font.weight: appWindow.currentTab === 1 ? 600 : Font.Normal
                             color: appWindow.currentTab === 1 ? "#F8FAFC" : "#94A3B8"
                         }
                     }
@@ -167,7 +175,7 @@ ApplicationWindow {
                             text: appWindow.tr("tab_watchlist", "Watchlist")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: appWindow.currentTab === 2 ? Font.DemiBold : Font.Normal
+                            font.weight: appWindow.currentTab === 2 ? 600 : Font.Normal
                             color: appWindow.currentTab === 2 ? "#F8FAFC" : "#94A3B8"
                         }
                     }
@@ -239,7 +247,7 @@ ApplicationWindow {
                             text: appWindow.tr("tab_known", "Known Series")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: appWindow.currentTab === 3 ? Font.DemiBold : Font.Normal
+                            font.weight: appWindow.currentTab === 3 ? 600 : Font.Normal
                             color: appWindow.currentTab === 3 ? "#F8FAFC" : "#94A3B8"
                         }
                     }
@@ -283,7 +291,7 @@ ApplicationWindow {
                             text: appWindow.tr("tab_history", "History")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: appWindow.currentTab === 4 ? Font.DemiBold : Font.Normal
+                            font.weight: appWindow.currentTab === 4 ? 600 : Font.Normal
                             color: appWindow.currentTab === 4 ? "#F8FAFC" : "#94A3B8"
                         }
                     }
@@ -327,7 +335,7 @@ ApplicationWindow {
                             text: appWindow.tr("tab_settings", "Settings")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: appWindow.currentTab === 5 ? Font.DemiBold : Font.Normal
+                            font.weight: appWindow.currentTab === 5 ? 600 : Font.Normal
                             color: appWindow.currentTab === 5 ? "#F8FAFC" : "#94A3B8"
                         }
                     }
@@ -344,7 +352,134 @@ ApplicationWindow {
                     }
                 }
 
+                // Tab: Bulk Decompressor
+                Rectangle {
+                    width: Math.max(120, tab6Row.implicitWidth + 24)
+                    height: 30
+                    radius: 6
+                    color: appWindow.currentTab === 6 ? "#181B22" : (tab6Mouse.containsMouse ? "#141720" : "transparent")
+                    border.color: appWindow.currentTab === 6 ? "#38BDF8" : "transparent"
+                    border.width: 1
+
+                    scale: tab6Mouse.pressed ? 0.94 : (tab6Mouse.containsMouse ? 1.035 : 1.0)
+                    transformOrigin: Item.Center
+
+                    Behavior on scale {
+                        NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.5 }
+                    }
+                    Behavior on color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                    Behavior on border.color { ColorAnimation { duration: 150; easing.type: Easing.OutCubic } }
+
+                    Row {
+                        id: tab6Row
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text { text: "📦"; font.pixelSize: 12 }
+                        Text {
+                            text: appWindow.tr("tab_bulk_decompressor", "Decompressor")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 12
+                            font.weight: appWindow.currentTab === 6 ? 600 : Font.Normal
+                            color: appWindow.currentTab === 6 ? "#F8FAFC" : "#94A3B8"
+                        }
+                    }
+
+                    MouseArea {
+                        id: tab6Mouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 400
+                        ToolTip.text: appWindow.tr("tab_decompressor_tip", "Bulk archive decompression with disk space pre-flight checks and parallel extraction")
+                        onClicked: appWindow.currentTab = 6
+                    }
+                }
+
                 Item { Layout.fillWidth: true }
+
+                // Update Available Notification Pill (Visible when updateAvailable is true)
+                Rectangle {
+                    visible: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.updateAvailable)
+                    height: 28
+                    implicitWidth: upRow.implicitWidth + 18
+                    radius: 14
+                    color: upMouse.containsMouse ? "#0284C7" : "#0369A1"
+                    border.color: "#38BDF8"
+                    border.width: 1
+
+                    scale: upMouse.pressed ? 0.94 : (upMouse.containsMouse ? 1.05 : 1.0)
+                    transformOrigin: Item.Center
+
+                    Behavior on scale { NumberAnimation { duration: 160 } }
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Row {
+                        id: upRow
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text { text: "✨"; font.pixelSize: 11 }
+                        Text {
+                            text: appWindow.tr("badge_update_avail", "Update Available")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            color: "#FFFFFF"
+                        }
+                    }
+
+                    MouseArea {
+                        id: upMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 300
+                        ToolTip.text: appWindow.tr("tip_update_pill", "New version detected on GitHub — click to download and install")
+                        onClicked: appWindow.openUpdateModal()
+                    }
+                }
+
+                // Tutorial / Help button
+                Rectangle {
+                    height: 28
+                    implicitWidth: tutRow.implicitWidth + 16
+                    radius: 6
+                    color: tutMouse.containsMouse ? "#222C3D" : "#141923"
+                    border.color: tutMouse.containsMouse ? "#38BDF8" : "#242A38"
+                    border.width: 1
+
+                    scale: tutMouse.pressed ? 0.94 : (tutMouse.containsMouse ? 1.04 : 1.0)
+                    transformOrigin: Item.Center
+
+                    Behavior on scale { NumberAnimation { duration: 160 } }
+                    Behavior on color { ColorAnimation { duration: 150 } }
+
+                    Row {
+                        id: tutRow
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text { text: "❓"; font.pixelSize: 12 }
+                        Text {
+                            text: appWindow.tr("btn_tutorial", "Tutorial")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: 600
+                            color: "#E2E8F0"
+                        }
+                    }
+
+                    MouseArea {
+                        id: tutMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 300
+                        ToolTip.text: appWindow.tr("tip_tutorial", "Open interactive tutorial and feature manual")
+                        onClicked: appWindow.openTutorialModal()
+                    }
+                }
 
                 // Version Badge
                 Rectangle {
@@ -358,10 +493,10 @@ ApplicationWindow {
                     Text {
                         id: verText
                         anchors.centerIn: parent
-                        text: "v1.0.7"
+                        text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.0.7"
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: "#64748B"
                     }
                 }
@@ -472,7 +607,7 @@ ApplicationWindow {
                     text: appBridge ? appBridge.creatorName : ""
                     font.family: "Segoe UI, Inter, sans-serif"
                     font.pixelSize: 12
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#38BDF8"
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -590,7 +725,7 @@ ApplicationWindow {
                                 : (mainStartBtn.isLinksMode ? appWindow.tr("action_extract_links", "Extract Links") : appWindow.tr("action_start_download", "Start Download"))
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: mainStartBtn.isDownloading ? "#34D399" : (mainStartBtn.isLinksMode ? "#2DD4BF" : "#38BDF8")
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -808,7 +943,7 @@ ApplicationWindow {
                             text: appWindow.tr("action_download_links_count", "Download Links (%1)").replace("%1", cloudDownloadStickyBtn.count)
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: "#2DD4BF"
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -964,7 +1099,7 @@ ApplicationWindow {
                             text: appWindow.tr("action_when_done", "When Done: %1").replace("%1", postActionBtn.getActionLabel(postActionBtn.currentAction))
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: postActionBtn.currentAction !== "none" ? Font.DemiBold : Font.Normal
+                            font.weight: postActionBtn.currentAction !== "none" ? 600 : Font.Normal
                             color: postActionBtn.getActionColor(postActionBtn.currentAction)
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -1063,7 +1198,7 @@ ApplicationWindow {
                                                 text: postActionBtn.getOptionLabel(model.actionId)
                                                 font.family: "Segoe UI, sans-serif"
                                                 font.pixelSize: 11
-                                                font.weight: isCurrent ? Font.DemiBold : Font.Normal
+                                                font.weight: isCurrent ? 600 : Font.Normal
                                                 color: isCurrent ? model.actionColor : "#E2E8F0"
                                             }
                                             Text {
@@ -1347,6 +1482,19 @@ ApplicationWindow {
 
                             SettingsView { anchors.fill: parent; bridge: appBridge }
                         }
+
+                        // Tab 6: Bulk Decompressor View with Newtonian slide & fade transition
+                        Item {
+                            opacity: appWindow.currentTab === 6 ? 1.0 : 0.0
+                            y: appWindow.currentTab === 6 ? 0 : 10
+                            scale: appWindow.currentTab === 6 ? 1.0 : 0.985
+                            transformOrigin: Item.Center
+                            Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                            Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+                            Behavior on scale { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+
+                            DecompressorView { anchors.fill: parent; bridge: appBridge }
+                        }
                     }
                 }
 
@@ -1572,6 +1720,17 @@ ApplicationWindow {
     ImportConfirmModal {
         id: importConfirmModal
         bridge: appBridge
+    }
+
+    // In-App Update Modal
+    UpdateModal {
+        id: updateModal
+        updater: (typeof updaterBridge !== "undefined" ? updaterBridge : null)
+    }
+
+    // Comprehensive In-Depth Tutorial Modal
+    TutorialModal {
+        id: tutorialModal
     }
 
     // Wire: when bridge emits postActionCountdownStarted, open the modal with the action label

@@ -45,7 +45,7 @@ ScrollView {
                         text: tr("label_language", "Interface Language:")
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: "#94A3B8"
                     }
 
@@ -369,7 +369,7 @@ ScrollView {
                             text: tr("label_what_to_do", "What to do after download finishes (one-time action):")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 11
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: "#94A3B8"
                         }
                         Text {
@@ -454,7 +454,7 @@ ScrollView {
                     text: tr("app_title", "Pawchive Downloader")
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 12
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#94A3B8"
                 }
                 Rectangle {
@@ -465,7 +465,7 @@ ScrollView {
                     Text {
                         id: sVerText
                         anchors.centerIn: parent
-                        text: "v1.0.6"
+                        text: "v1.0.7"
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 10
                         font.weight: Font.Bold
@@ -475,6 +475,24 @@ ScrollView {
             }
 
             Item { Layout.fillWidth: true }
+
+            StyledButton {
+                text: "🔄 " + (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.isChecking ? tr("btn_checking_update", "Checking...") : tr("btn_check_update", "Check for Updates"))
+                variant: "outline"
+                enabled: !(typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.isChecking)
+                onClicked: {
+                    if (typeof updaterBridge !== "undefined" && updaterBridge) {
+                        updaterBridge.checkForUpdates(false)
+                        appWindow.openUpdateModal()
+                    }
+                }
+            }
+
+            StyledButton {
+                text: "☕ " + tr("btn_support_kofi", "Support on Ko-fi")
+                variant: "outline"
+                onClicked: Qt.openUrlExternally("https://ko-fi.com/whyamihere773")
+            }
 
             StyledButton {
                 text: tr("btn_export_console_logs", "Export Console Logs")

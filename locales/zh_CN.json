@@ -361,7 +361,7 @@
   "watchlist_remove": "移除",
   "watchlist_auto_check": "启动时自动检查",
   "watchlist_empty": "您下载过的创作者将自动显示在此处。",
-  "watchlist_new_badge": "+%1 篇新帖",
+  "watchlist_new_badge": "{0} 篇新帖",
   "opt_tag_folder_mode": "按标签文件夹分类",
   "opt_tag_folder_mode_tip": "（仅限 Pawchive 与 cum.st）根据帖子主要标签将下载的文件归类到标签子文件夹",
   "btn_view_post": "打开帖子",

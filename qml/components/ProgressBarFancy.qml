@@ -36,7 +36,7 @@ Item {
                 text: root.active ? root.tr("status_downloading_colon", "Downloading:") : root.statusText
                 font.family: "Segoe UI, Inter, sans-serif"
                 font.pixelSize: 11
-                font.weight: Font.DemiBold
+                font.weight: 600
                 color: root.active ? "#38BDF8" : "#94A3B8"
             }
 

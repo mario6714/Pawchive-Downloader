@@ -16,6 +16,7 @@ datas = [
     (os.path.join(project_root, 'qml'), 'qml'),
     (os.path.join(project_root, 'assets'), 'assets'),
     (os.path.join(project_root, 'locales'), 'locales'),
+    (os.path.join(project_root, 'dependencies'), 'dependencies'),
     (os.path.join(project_root, 'config', 'settings.example.json'), 'config'),
 ]
 
@@ -68,11 +69,14 @@ hidden_imports = [
     'services.erome_client',
     'services.nhentai_client',
     'services.text_exporter',
+    'services.bulk_decompressor',
     'bridge',
     'bridge.app_bridge',
     'bridge.log_model',
     'bridge.queue_model',
     'bridge.known_model',
+    'bridge.watchlist_model',
+    'bridge.decompressor_bridge',
 ]
 
 # Optional application icon

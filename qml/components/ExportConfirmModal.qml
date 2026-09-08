@@ -151,7 +151,7 @@ Item {
                         text: root.tr("export_saved_to", "Backup File Location:")
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: "#64748B"
                     }
 
@@ -215,7 +215,7 @@ Item {
                             text: root.tr("btn_keep_stopped", "Keep Stopped (Exit Ready)")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
-                            font.weight: Font.DemiBold
+                            font.weight: 600
                             color: "#F1F5F9"
                         }
                     }

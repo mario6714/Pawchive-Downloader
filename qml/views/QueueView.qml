@@ -208,7 +208,7 @@ Rectangle {
                                 text: root.tr(modelData.labelKey, modelData.defaultLabel)
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 11
-                                font.weight: isSelected ? Font.DemiBold : Font.Normal
+                                font.weight: isSelected ? 600 : Font.Normal
                                 color: isSelected ? "#F8FAFC" : "#94A3B8"
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -500,31 +500,111 @@ Rectangle {
                                 }
                             }
 
-                            // Progress Bar & Stats
-                            RowLayout {
+                            // Dual Progress Bars
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 10
+                                spacing: 4
 
-                                Rectangle {
+                                // Total progress (file counter)
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    height: 6
-                                    radius: 3
-                                    color: "#1F2636"
+                                    spacing: 8
+
+                                    Text {
+                                        text: "Total"
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 10
+                                        color: "#64748B"
+                                        Layout.preferredWidth: 36
+                                    }
 
                                     Rectangle {
-                                        height: parent.height
-                                        width: parent.width * Math.min(1.0, Math.max(0.0, modelData.progress))
-                                        radius: 3
-                                        color: modelData.status === "completed" ? "#10B981" : (modelData.status === "failed" ? "#EF4444" : "#0EA5E9")
+                                        Layout.fillWidth: true
+                                        height: 5
+                                        radius: 2
+                                        color: "#1F2636"
+
+                                        Rectangle {
+                                            height: parent.height
+                                            width: parent.width * Math.min(1.0, Math.max(0.0,
+                                                (modelData.totalProgress !== undefined ? modelData.totalProgress : modelData.progress)))
+                                            radius: 2
+                                            color: modelData.status === "completed" ? "#10B981" : (modelData.status === "failed" ? "#EF4444" : "#10B981")
+                                            Behavior on width { NumberAnimation { duration: 200 } }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: modelData.completedFiles + "/" + modelData.totalFiles
+                                        font.family: "Cascadia Code, Segoe UI, sans-serif"
+                                        font.pixelSize: 10
+                                        color: "#94A3B8"
+                                        Layout.preferredWidth: 42
+                                        horizontalAlignment: Text.AlignRight
                                     }
                                 }
 
-                                Text {
-                                    text: Math.round(modelData.progress * 100) + "%"
-                                    font.family: "Segoe UI, sans-serif"
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    color: "#F8FAFC"
+                                // Active file progress
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+                                    visible: modelData.status === "downloading" && modelData.activeFileName !== undefined && modelData.activeFileName !== ""
+
+                                    Text {
+                                        text: "File"
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 10
+                                        color: "#64748B"
+                                        Layout.preferredWidth: 36
+                                    }
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 5
+                                        radius: 2
+                                        color: "#1F2636"
+
+                                        Rectangle {
+                                            height: parent.height
+                                            width: parent.width * Math.min(1.0, Math.max(0.0,
+                                                (modelData.activeFileProgressPct !== undefined ? modelData.activeFileProgressPct / 100.0 : 0)))
+                                            radius: 2
+                                            color: "#38BDF8"
+                                            Behavior on width { NumberAnimation { duration: 150 } }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: (modelData.activeFileProgressPct !== undefined ? modelData.activeFileProgressPct : 0) + "%"
+                                        font.family: "Cascadia Code, Segoe UI, sans-serif"
+                                        font.pixelSize: 10
+                                        color: "#38BDF8"
+                                        Layout.preferredWidth: 42
+                                        horizontalAlignment: Text.AlignRight
+                                    }
+                                }
+
+                                // Active file name + speed row
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    visible: modelData.status === "downloading" && modelData.activeFileName !== undefined && modelData.activeFileName !== ""
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: modelData.activeFileName !== undefined ? modelData.activeFileName : ""
+                                        font.family: "Cascadia Code, Segoe UI Mono, monospace"
+                                        font.pixelSize: 10
+                                        color: "#64748B"
+                                        elide: Text.ElideMiddle
+                                    }
+
+                                    Text {
+                                        text: modelData.activeFileSpeed !== undefined ? modelData.activeFileSpeed : ""
+                                        font.family: "Cascadia Code, Segoe UI, sans-serif"
+                                        font.pixelSize: 10
+                                        color: "#38BDF8"
+                                    }
                                 }
                             }
 
@@ -548,7 +628,7 @@ Rectangle {
                                     Text { text: "•"; color: "#475569"; font.pixelSize: 10 }
 
                                     Text {
-                                        text: modelData.downloadedBytesStr + " / " + modelData.totalBytesStr
+                                        text: modelData.downloadedBytesStr
                                         font.family: "Segoe UI, sans-serif"
                                         font.pixelSize: 11
                                         color: "#94A3B8"
@@ -631,7 +711,7 @@ Rectangle {
                                 Text { text: "•"; color: "#475569"; font.pixelSize: 10 }
 
                                 Text {
-                                    text: modelData.downloadedBytesStr + " / " + modelData.totalBytesStr
+                                    text: modelData.downloadedBytesStr
                                     font.family: "Segoe UI, sans-serif"
                                     font.pixelSize: 11
                                     color: "#94A3B8"
@@ -783,7 +863,7 @@ Rectangle {
                                 text: model.filename
                                 font.family: "Segoe UI, sans-serif"
                                 font.pixelSize: 12
-                                font.weight: Font.DemiBold
+                                font.weight: 600
                                 color: model.status === "failed" ? "#FCA5A5" : "#F1F5F9"
                                 Layout.fillWidth: true
                                 elide: Text.ElideMiddle

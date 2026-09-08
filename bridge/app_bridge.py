@@ -30,6 +30,7 @@ from bridge.log_model import LogModel
 from bridge.queue_model import QueueModel
 from bridge.known_model import KnownModel
 from bridge.watchlist_model import WatchlistModel
+from bridge.decompressor_bridge import DecompressorBridge
 from core.watchlist_manager import WatchlistManager
 from services.batch_loader import BatchLoader
 from services.link_extractor import LinkExtractor
@@ -202,6 +203,9 @@ class AppBridge(QObject):
         self._watchlist_model = WatchlistModel(self._watchlist_manager, self)
         self._watchlist_result_signal_connected = False
         self._watchlistResultSignal.connect(self._handle_watchlist_result, Qt.QueuedConnection)
+
+        # Bulk Decompressor
+        self._decompressor_bridge = DecompressorBridge(self._watchlist_manager, self, self)
 
         # Scan & Cloud cancellation state
         self._scan_cancel_event = threading.Event()
@@ -829,6 +833,10 @@ class AppBridge(QObject):
     def watchlistModel(self) -> WatchlistModel:
         return self._watchlist_model
 
+    @Property(QObject, constant=True)
+    def decompressorBridge(self) -> DecompressorBridge:
+        return self._decompressor_bridge
+
     @Property(bool, notify=tagFolderModeChanged)
     def tagFolderMode(self) -> bool:
         return self._tag_folder_mode
@@ -1267,6 +1275,24 @@ class AppBridge(QObject):
                             latest_pid = pid
 
                     canonical_url = getattr(parsed, "raw_url", "") or f"https://{parsed.domain}/{parsed.service}/user/{parsed.user_id}"
+                    target_download_dir = ""
+                    if tasks:
+                        try:
+                            sample_path = tasks[0].destination_path
+                            rel = os.path.relpath(sample_path, self._download_dir)
+                            parts = rel.split(os.sep)
+                            if len(parts) > 1:
+                                target_download_dir = os.path.join(self._download_dir, parts[0])
+                            else:
+                                target_download_dir = self._download_dir
+                        except Exception:
+                            target_download_dir = self._download_dir
+                    else:
+                        from core.filter_engine import FilterEngine
+                        clean_c = FilterEngine.clean_filesystem_text(creator_name or parsed.user_id, max_len=80, fallback="creator")
+                        cand = os.path.join(self._download_dir, f"{clean_c} [{parsed.service}]")
+                        target_download_dir = cand if os.path.exists(cand) else self._download_dir
+
                     self._watchlist_manager.add_entry(
                         url=canonical_url,
                         creator_name=creator_name or parsed.user_id,
@@ -1275,6 +1301,7 @@ class AppBridge(QObject):
                         domain=parsed.domain,
                         last_post_id=latest_pid,
                         last_post_date=latest_pdate,
+                        download_dir=target_download_dir,
                     )
                     self._watchlist_model.refresh()
                     self.watchlistChanged.emit()
@@ -1419,10 +1446,31 @@ class AppBridge(QObject):
 
     @Slot()
     def cancelDownload(self):
+        # Signal workers to stop
         self._scan_cancel_event.set()
         self.downloader.cancel()
         self.cancelCloudDownloads()
+
+        # Full session reset — clear all queue state so the next download starts fresh
+        self._queued_links.clear()
+        self._queue_model.setTasks([])
         self._active_queue_model.clear()
+        self.downloader.reset_state()
+
+        # Reset telemetry back to Idle / zero
+        self._overall_progress = 0
+        self.overallProgressChanged.emit()
+        self._current_speed = "0 KB/s"
+        self.currentSpeedChanged.emit()
+        self._eta_text = "--"
+        self.etaTextChanged.emit()
+        self._saved_bytes_text = "0 MB"
+        self.savedBytesTextChanged.emit()
+        self._elapsed_time_text = "0s"
+        self.elapsedTimeTextChanged.emit()
+        self._files_count_text = ""
+        self.filesCountTextChanged.emit()
+
         self._is_downloading = False
         self.isDownloadingChanged.emit()
         self._status_text = "Progress: Cancelled"
@@ -1686,78 +1734,7 @@ class AppBridge(QObject):
             self.isDownloadingChanged.emit()
             logger.warning("Cloud downloads cancellation requested.", category="downloader")
 
-    @Slot()
-    def cancelDownload(self):
-        self._scan_cancel_event.set()
-        self.downloader.cancel()
-        self.cancelCloudDownloads()
-        self._active_queue_model.clear()
-        self._is_downloading = False
-        self.isDownloadingChanged.emit()
-        self._status_text = "Progress: Cancelled"
-        self.statusTextChanged.emit()
 
-    @Slot()
-    def pauseDownload(self):
-        self.downloader.pause()
-        self._cloud_pause_event.set()
-        self._status_text = "Progress: Paused"
-        self.statusTextChanged.emit()
-
-    @Slot()
-    def resumeDownload(self):
-        self.downloader.resume()
-        self._cloud_pause_event.clear()
-        self._status_text = "Progress: Resumed"
-        self.statusTextChanged.emit()
-
-    @Slot()
-    def selectDownloadDirectory(self):
-        folder = QFileDialog.getExistingDirectory(
-            None,
-            "Select Download Directory",
-            self._download_dir
-        )
-        if folder:
-            self.downloadDir = folder
-            self.saveSettings()
-
-    @Slot()
-    def exportAllLinks(self):
-        # In links-only mode, export the harvested external cloud links
-        harvested = self.downloader.harvested_links
-        if harvested:
-            save_path, _ = QFileDialog.getSaveFileName(
-                None,
-                "Export Harvested Links",
-                os.path.join(self._download_dir, "harvested_links.txt"),
-                "Text Files (*.txt);;All Files (*)"
-            )
-            if not save_path:
-                return
-
-            lines = [
-                f"Kemono Downloader — Harvested External Links",
-                f"Exported: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                "=" * 60,
-                "",
-            ]
-            total = 0
-            for platform, urls in sorted(harvested.items()):
-                lines.append(f"[{platform.upper()}]  ({len(urls)} link(s))")
-                for u in urls:
-                    lines.append(f"  {u}")
-                    total += 1
-                lines.append("")
-            lines.append(f"Total: {total} unique link(s)")
-
-            try:
-                with open(save_path, "w", encoding="utf-8") as f:
-                    f.write("\n".join(lines))
-                logger.success(f"🔗 Exported {total} harvested link(s) to: {save_path}", category="session")
-            except Exception as e:
-                logger.error(f"Failed to export harvested links: {e}", category="session")
-            return
 
     @Slot()
     def exportLogs(self):
@@ -2288,6 +2265,21 @@ class AppBridge(QObject):
         }
         label = _labels.get(action, action.capitalize())
         self._pending_post_action = action
+
+        # Generate comprehensive Desktop report before action executes
+        try:
+            from services.report_generator import generate_completion_report
+            tasks = self._queue_model.getTasks() if self._queue_model else (self.downloader.tasks if self.downloader else [])
+            report_paths = generate_completion_report(
+                tasks=tasks,
+                action_name=label,
+                elapsed_seconds=getattr(self.downloader, "_elapsed_seconds", 0.0) if self.downloader else 0.0
+            )
+            if report_paths.get("html"):
+                logger.info(f"📊 Download completion report saved to Desktop: {report_paths['html']}", category="system")
+        except Exception as e:
+            logger.warning(f"Could not generate desktop report: {e}", category="system")
+
         logger.info(f"Post-download action '{label}' queued — showing 15s countdown modal.", category="system")
         # Emit to QML — the modal handles the countdown and calls confirmPostAction() or cancelPostAction()
         self.postActionCountdownStarted.emit(label)
@@ -2413,10 +2405,29 @@ class AppBridge(QObject):
                     elif t_date == last_post_date and t_pid > last_post_id:
                         last_post_id = t_pid
 
+                target_download_dir = ""
+                if tasks_done:
+                    try:
+                        sample_path = tasks_done[0].destination_path
+                        rel = os.path.relpath(sample_path, self._download_dir)
+                        parts = rel.split(os.sep)
+                        if len(parts) > 1:
+                            target_download_dir = os.path.join(self._download_dir, parts[0])
+                        else:
+                            target_download_dir = self._download_dir
+                    except Exception:
+                        target_download_dir = self._download_dir
+
                 url_clean = (self._current_url or "").strip()
                 from core.parser import KemonoURLParser
                 _parsed = KemonoURLParser.parse(url_clean) if url_clean else None
                 if _parsed and _parsed.is_valid and not _parsed.is_external_provider and not _parsed.is_single_post:
+                    if not target_download_dir:
+                        from core.filter_engine import FilterEngine
+                        clean_c = FilterEngine.clean_filesystem_text(self._creator_name or _parsed.user_id, max_len=80, fallback="creator")
+                        cand = os.path.join(self._download_dir, f"{clean_c} [{_parsed.service}]")
+                        target_download_dir = cand if os.path.exists(cand) else self._download_dir
+
                     self._watchlist_manager.add_entry(
                         url=url_clean,
                         creator_name=self._creator_name or _parsed.user_id,
@@ -2425,6 +2436,7 @@ class AppBridge(QObject):
                         domain=_parsed.domain,
                         last_post_id=last_post_id,
                         last_post_date=last_post_date,
+                        download_dir=target_download_dir,
                     )
                     self._watchlist_model.refresh()
                     self.watchlistChanged.emit()
@@ -2435,6 +2447,8 @@ class AppBridge(QObject):
                         if existing:
                             if last_post_date or last_post_id:
                                 self._watchlist_manager.update_last_download(existing.user_id, existing.service, last_post_id or existing.last_post_id, last_post_date or existing.last_post_date)
+                            if target_download_dir:
+                                self._watchlist_manager.set_download_dir(existing.user_id, existing.service, target_download_dir)
                             self._watchlist_model.refresh()
                             self.watchlistChanged.emit()
             except Exception as e:
@@ -2562,6 +2576,26 @@ class AppBridge(QObject):
         self._watchlist_manager.set_auto_check(userId, service, enabled)
         self._watchlist_model.refresh()
         self.watchlistChanged.emit()
+
+    @Slot(str, str, str)
+    def setWatchlistDownloadDir(self, userId: str, service: str, download_dir: str):
+        """Set or update the custom download directory for a watchlist artist."""
+        if self._watchlist_manager.set_download_dir(userId, service, download_dir):
+            self._watchlist_model.refresh()
+            self.watchlistChanged.emit()
+
+    @Slot(str, str)
+    def browseWatchlistDownloadDir(self, userId: str, service: str):
+        """Open a directory picker dialog to set custom download dir for a watchlist entry."""
+        entry = self._watchlist_manager._find(userId, service)
+        initial_dir = entry.download_dir if entry and entry.download_dir and os.path.exists(entry.download_dir) else self._download_dir
+        folder = QFileDialog.getExistingDirectory(
+            None,
+            f"Select Download Folder for {entry.creator_name if entry else userId}",
+            initial_dir
+        )
+        if folder:
+            self.setWatchlistDownloadDir(userId, service, folder)
 
     @Slot(result=str)
     def getWatchlistJson(self) -> str:

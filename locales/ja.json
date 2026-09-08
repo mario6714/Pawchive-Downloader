@@ -359,7 +359,7 @@
   "watchlist_remove": "削除",
   "watchlist_auto_check": "起動時に自動確認",
   "watchlist_empty": "ダウンロードしたクリエイターが自動的にここに表示されます。",
-  "watchlist_new_badge": "+%1 件の新規投稿",
+  "watchlist_new_badge": "{0} 件の新規投稿",
   "opt_tag_folder_mode": "タグ別フォルダー分類",
   "opt_tag_folder_mode_tip": "（Pawchive & cum.st 限定）投稿のメインタグに基づいてフォルダー分けします",
   "btn_view_post": "投稿を開く",

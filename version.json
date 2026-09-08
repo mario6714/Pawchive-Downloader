@@ -1,0 +1,54 @@
+{
+    "version": "1.0.8",
+    "commit": "0c73b6decf248354da01b0a45ed3dd3c6b28a862",
+    "short_commit": "0c73b6d",
+    "date": "2026-09-08",
+    "channel": "release",
+    "history": [
+        {
+            "version": "1.0.0",
+            "date": "2026-01-01",
+            "notes": "Initial release"
+        },
+        {
+            "version": "1.0.1",
+            "date": "2026-02-01",
+            "notes": "Bug fixes"
+        },
+        {
+            "version": "1.0.2",
+            "date": "2026-03-01",
+            "notes": "Performance improvements"
+        },
+        {
+            "version": "1.0.3",
+            "date": "2026-04-01",
+            "notes": "Added bulk decompressor"
+        },
+        {
+            "version": "1.0.4",
+            "date": "2026-05-01",
+            "notes": "Translation support"
+        },
+        {
+            "version": "1.0.5",
+            "date": "2026-06-01",
+            "notes": "Cloud downloader improvements"
+        },
+        {
+            "version": "1.0.6",
+            "date": "2026-07-01",
+            "notes": "Watchlist enhancements"
+        },
+        {
+            "version": "1.0.7",
+            "date": "2026-09-08",
+            "notes": "Auto-retry cap, completion reports, smart updater, in-app tutorial"
+        },
+        {
+            "version": "1.0.8",
+            "date": "2026-09-08",
+            "notes": "Auto-retry cap (5 attempts), desktop completion reports, smart in-app updater, tutorial modal, version database"
+        }
+    ]
+}

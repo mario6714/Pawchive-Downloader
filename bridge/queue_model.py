@@ -236,6 +236,8 @@ class QueueModel(QAbstractListModel):
     @Property("QVariantList", notify=groupsChanged)
     def groups(self) -> List[Dict[str, Any]]:
         groups_dict: Dict[str, Dict[str, Any]] = {}
+        # Also track the active (first downloading) task per group
+        active_task_dict: Dict[str, Any] = {}
         for t in self._tasks:
             bid = getattr(t, "batch_id", "") or f"{t.service}_{t.creator_name}_{t.post_id}".strip("_")
             if not bid:
@@ -270,11 +272,15 @@ class QueueModel(QAbstractListModel):
                 g["failedFiles"] += 1
             elif t.status in ("downloading", "retrying"):
                 g["downloadingFiles"] += 1
+                # Record first downloading task per group for active-file info
+                if bid not in active_task_dict:
+                    active_task_dict[bid] = t
             else:
                 g["pendingFiles"] += 1
 
         result = []
         for g in groups_dict.values():
+            bid = g["batchId"]
             if g["completedFiles"] == g["totalFiles"] and g["totalFiles"] > 0:
                 g["status"] = "completed"
             elif g["downloadingFiles"] > 0:
@@ -285,6 +291,25 @@ class QueueModel(QAbstractListModel):
                 g["status"] = "partial"
             else:
                 g["status"] = "pending"
+
+            # Total progress: strictly file-counter-based (completedFiles / totalFiles)
+            total = g["totalFiles"]
+            completed = g["completedFiles"]
+            if total > 0:
+                g["totalProgress"] = completed / total
+            else:
+                g["totalProgress"] = 1.0 if g["status"] == "completed" else 0.0
+
+            # Active file progress: from the currently downloading task
+            at = active_task_dict.get(bid)
+            if at:
+                g["activeFileName"] = getattr(at, "filename", "") or ""
+                g["activeFileProgressPct"] = getattr(at, "progress_pct", 0)
+                g["activeFileSpeed"] = getattr(at, "speed_str", "0 KB/s") or "0 KB/s"
+            else:
+                g["activeFileName"] = ""
+                g["activeFileProgressPct"] = 0
+                g["activeFileSpeed"] = ""
 
             g["progress"] = (g["downloadedBytes"] / g["totalBytes"]) if g["totalBytes"] > 0 else (1.0 if g["status"] == "completed" else 0.0)
             g["totalBytesStr"] = self._format_size(g["totalBytes"])
@@ -480,7 +505,8 @@ class QueueModel(QAbstractListModel):
                     "url": t.url,
                     "errorMsg": t.error_msg or "Download failed",
                     "fileSize": self._format_size(t.file_size),
-                    "retryCount": getattr(t, "retry_count", 0)
+                    "retryCount": getattr(t, "retry_count", 0),
+                    "retryCapped": getattr(t, "retry_capped", False) or getattr(t, "retry_count", 0) >= 5
                 })
         return failed
 
@@ -491,6 +517,7 @@ class QueueModel(QAbstractListModel):
         for t in self._tasks:
             if t.status == "failed" and (t.file_id in selected_set or t.url in selected_set or t.filename in selected_set):
                 t.retry_count = getattr(t, "retry_count", 0) + 1
+                t.retry_capped = False
                 t.status = "pending"
                 t.error_msg = ""
                 t.progress_pct = 0

@@ -49,8 +49,13 @@ def main():
     translation_manager.setLanguage(app_bridge.language)
     app_bridge.languageChanged.connect(lambda: translation_manager.setLanguage(app_bridge.language))
 
+    from bridge.updater_bridge import UpdaterBridge
+    updater_bridge = UpdaterBridge()
+
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("appBridge", app_bridge)
+    engine.rootContext().setContextProperty("decompressorBridge", app_bridge.decompressorBridge)
+    engine.rootContext().setContextProperty("updaterBridge", updater_bridge)
     engine.rootContext().setContextProperty("Lang", translation_manager)
 
     qml_file = os.path.join(base_dir, "qml", "main.qml")

@@ -23,26 +23,49 @@ class WatchlistModel(QAbstractListModel):
     AddedAtRole      = Qt.UserRole + 8
     AutoCheckRole    = Qt.UserRole + 9
     NewPostCountRole = Qt.UserRole + 10
+    DownloadDirRole  = Qt.UserRole + 11
 
     countChanged = Signal()
 
     def __init__(self, watchlist_manager, parent=None):
         super().__init__(parent)
         self._manager = watchlist_manager
+        self._display_entries = []
+        self._rebuild_display_entries()
+
+    def _rebuild_display_entries(self):
+        """
+        Sort entries:
+        1. Creators with new_post_count > 0 at the top, sorted alphabetically by creator name.
+        2. Remaining creators below, sorted alphabetically by creator name.
+        """
+        entries = list(self._manager.entries)
+        self._display_entries = sorted(
+            entries,
+            key=lambda e: (
+                0 if (getattr(e, "new_post_count", 0) or 0) > 0 else 1,
+                (getattr(e, "creator_name", "") or getattr(e, "user_id", "") or "").lower()
+            )
+        )
 
     @Property(int, notify=countChanged)
     def count(self) -> int:
-        return len(self._manager.entries)
+        return len(self._display_entries)
 
     @Property(int, notify=countChanged)
     def updatedCount(self) -> int:
         """Number of tracked artists that have new posts found since last download."""
-        return sum(1 for e in self._manager.entries if (e.new_post_count or 0) > 0)
+        return sum(1 for e in self._manager.entries if (getattr(e, "new_post_count", 0) or 0) > 0)
+
+    @Property(int, notify=countChanged)
+    def totalNewPosts(self) -> int:
+        """Total count of new posts across all tracked artists."""
+        return sum((getattr(e, "new_post_count", 0) or 0) for e in self._manager.entries if (getattr(e, "new_post_count", 0) or 0) > 0)
 
     @Slot(int, result="QVariantMap")
     def get(self, index: int) -> dict:
-        if 0 <= index < len(self._manager.entries):
-            e = self._manager.entries[index]
+        if 0 <= index < len(self._display_entries):
+            e = self._display_entries[index]
             return {
                 "url": e.url,
                 "creatorName": e.creator_name,
@@ -54,18 +77,19 @@ class WatchlistModel(QAbstractListModel):
                 "addedAt": e.added_at,
                 "autoCheck": e.auto_check,
                 "newPostCount": e.new_post_count,
+                "downloadDir": e.download_dir,
             }
         return {}
 
     # ── QAbstractListModel interface ───────────────────────────────────────────
 
     def rowCount(self, parent=QModelIndex()) -> int:
-        return len(self._manager.entries)
+        return len(self._display_entries)
 
     def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid() or index.row() >= len(self._manager.entries):
+        if not index.isValid() or index.row() >= len(self._display_entries):
             return None
-        entry = self._manager.entries[index.row()]
+        entry = self._display_entries[index.row()]
         return {
             self.UrlRole:          entry.url,
             self.CreatorNameRole:  entry.creator_name,
@@ -77,6 +101,7 @@ class WatchlistModel(QAbstractListModel):
             self.AddedAtRole:      entry.added_at,
             self.AutoCheckRole:    entry.auto_check,
             self.NewPostCountRole: entry.new_post_count,
+            self.DownloadDirRole:  entry.download_dir,
             Qt.DisplayRole:        entry.creator_name,
         }.get(role)
 
@@ -92,6 +117,7 @@ class WatchlistModel(QAbstractListModel):
             self.AddedAtRole:      b"addedAt",
             self.AutoCheckRole:    b"autoCheck",
             self.NewPostCountRole: b"newPostCount",
+            self.DownloadDirRole:  b"downloadDir",
             Qt.DisplayRole:        b"display",
         }
 
@@ -99,15 +125,12 @@ class WatchlistModel(QAbstractListModel):
 
     @Slot()
     def refresh(self):
-        """Full model reset — call after any add/remove/update."""
+        """Full model reset — rebuilds sorted display list and notifies QML."""
         self.beginResetModel()
+        self._rebuild_display_entries()
         self.endResetModel()
         self.countChanged.emit()
 
     def update_new_counts(self):
-        """Emit dataChanged for newPostCount column after a watchlist check."""
-        if self._manager.entries:
-            top = self.index(0, 0)
-            bottom = self.index(len(self._manager.entries) - 1, 0)
-            self.dataChanged.emit(top, bottom, [self.NewPostCountRole])
-        self.countChanged.emit()  # re-notify updatedCount badge in tab bar
+        """Re-sort and refresh when new counts are updated."""
+        self.refresh()

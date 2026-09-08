@@ -55,7 +55,7 @@ Rectangle {
                     text: root.tr("title_progress_log", "Progress Log")
                     font.family: "Segoe UI, Inter, sans-serif"
                     font.pixelSize: 12
-                    font.weight: Font.DemiBold
+                    font.weight: 600
                     color: "#F1F5F9"
                     visible: !root.isVeryNarrow
                     anchors.verticalCenter: parent.verticalCenter
@@ -141,7 +141,7 @@ Rectangle {
                         font.family: "Segoe UI, Inter, sans-serif"
                         font.pixelSize: 10
                         color: "#2DD4BF"
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         visible: !root.isCompact
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -477,7 +477,7 @@ Rectangle {
                         text: root.tr("btn_jump_to_latest", "Jump to latest")
                         font.family: "Segoe UI, Inter, sans-serif"
                         font.pixelSize: 10
-                        font.weight: Font.DemiBold
+                        font.weight: 600
                         color: jumpMouse.containsMouse ? "#FFFFFF" : "#F1F5F9"
                         anchors.verticalCenter: parent.verticalCenter
                     }
