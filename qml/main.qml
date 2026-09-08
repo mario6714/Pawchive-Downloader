@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: "Pawchive Downloader v1.0.8"
+    title: "Pawchive Downloader v1.0.9"
     color: "#0F1117"
 
     // Stop active downloads and persist session gracefully when user closes the app
@@ -484,20 +484,32 @@ ApplicationWindow {
                 // Version Badge
                 Rectangle {
                     height: 24
-                    implicitWidth: verText.implicitWidth + 14
+                    implicitWidth: verRow.implicitWidth + 16
                     radius: 12
                     color: "#131722"
                     border.color: "#222B3D"
                     border.width: 1
 
-                    Text {
-                        id: verText
+                    RowLayout {
+                        id: verRow
                         anchors.centerIn: parent
-                        text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.0.8"
-                        font.family: "Segoe UI, sans-serif"
-                        font.pixelSize: 11
-                        font.weight: 600
-                        color: "#64748B"
+                        spacing: 1
+
+                        Text {
+                            text: "v"
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: 600
+                            color: "#64748B"
+                        }
+
+                        Text {
+                            text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? updaterBridge.currentVersion : "1.0.9"
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: 700
+                            color: "#38BDF8"
+                        }
                     }
                 }
 

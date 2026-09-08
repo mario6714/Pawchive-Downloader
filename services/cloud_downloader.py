@@ -379,7 +379,9 @@ def download_gdrive_link(
     url: str,
     target_folder: str,
     log_func: Callable[[str], None] = print,
-    cancel_event: Optional[Event] = None
+    progress_callback: Optional[Callable[[str, int, int, int, int], None]] = None,
+    cancel_event: Optional[Event] = None,
+    pause_event: Optional[Event] = None
 ) -> bool:
     if not GDRIVE_AVAILABLE:
         log_func("❌ Google Drive download failed: 'gdown' is not installed.")
@@ -388,15 +390,160 @@ def download_gdrive_link(
     os.makedirs(target_folder, exist_ok=True)
     log_func(f"   [Google Drive] Initializing download for: {url}")
 
-    try:
-        if "drive/folders/" in url or "open?id=" in url and "folders" in url:
-            gdown.download_folder(url=url, output=target_folder, quiet=False, use_cookies=False)
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+
+    # Detect folder vs file
+    folder_m = re.search(r'/folders/([a-zA-Z0-9_-]+)', parsed.path)
+    if folder_m:
+        kind, item_id = 'folder', folder_m.group(1)
+    elif 'folderview' in parsed.path or 'folders' in parsed.query:
+        kind, item_id = 'folder', qs.get('id', [None])[0]
+    elif file_m := re.search(r'/file/(?:u/\d+/)?d/([a-zA-Z0-9_-]+)', parsed.path):
+        kind, item_id = 'file', file_m.group(1)
+    elif doc_m := re.search(r'/(?:document|presentation|spreadsheets)/d/([a-zA-Z0-9_-]+)', parsed.path):
+        kind, item_id = 'file', doc_m.group(1)
+    elif 'id' in qs:
+        item_id = qs['id'][0]
+        if 'open' in parsed.path:
+            try:
+                r = requests.get(f"https://drive.google.com/open?id={item_id}", allow_redirects=False, timeout=8)
+                loc = r.headers.get("Location", "")
+                if "/folders/" in loc or "folderview" in loc:
+                    kind = "folder"
+                else:
+                    kind = "file"
+            except Exception:
+                kind = "file"
         else:
-            gdown.download(url=url, output=target_folder, quiet=False, fuzzy=True)
-        log_func(f"   [Google Drive] ✅ Download complete to: {target_folder}")
+            kind = "file"
+    else:
+        kind, item_id = 'unknown', None
+
+    try:
+        import inspect
+
+        # Folder handling
+        if kind == 'folder' and item_id:
+            log_func(f"   [Google Drive] 📁 Detected folder ID: {item_id}. Inspecting folder contents...")
+            try:
+                # Discover files to support per-file progress, cancel, and status reporting
+                files_to_download = gdown.download_folder(id=item_id, output=os.path.join(target_folder, ""), skip_download=True, quiet=True)
+                if not files_to_download:
+                    log_func("   [Google Drive] ⚠️ Folder appears empty or has restricted permissions.")
+                    return False
+
+                total_files = len(files_to_download)
+                log_func(f"   [Google Drive] 📁 Found {total_files} file(s) in folder. Starting download...")
+                downloaded_count = 0
+
+                for idx, fobj in enumerate(files_to_download, 1):
+                    if cancel_event and cancel_event.is_set():
+                        log_func("   [Google Drive] Download cancelled.")
+                        return False
+                    while pause_event and pause_event.is_set():
+                        time.sleep(0.5)
+                        if cancel_event and cancel_event.is_set():
+                            return False
+
+                    fname = os.path.basename(fobj.path)
+                    log_func(f"   [Google Drive] 🔽 Downloading ({idx}/{total_files}): '{fname}'")
+
+                    def _folder_file_prog(cur, tot):
+                        if cancel_event and cancel_event.is_set():
+                            raise InterruptedError("Cancelled by user")
+                        if progress_callback:
+                            progress_callback(fname, cur, tot or 0, idx, total_files)
+
+                    out_dir = os.path.dirname(fobj.local_path)
+                    os.makedirs(out_dir, exist_ok=True)
+                    try:
+                        dl_kwargs = {"quiet": True}
+                        if "progress" in inspect.signature(gdown.download).parameters:
+                            dl_kwargs["progress"] = _folder_file_prog
+                        if "fuzzy" in inspect.signature(gdown.download).parameters:
+                            dl_kwargs["fuzzy"] = True
+
+                        res = gdown.download(id=fobj.id, output=fobj.local_path, **dl_kwargs)
+                        if res and os.path.exists(res):
+                            # Verify not an HTML quota error page
+                            if os.path.getsize(res) < 65536:
+                                with open(res, "rb") as check_f:
+                                    h = check_f.read(2048)
+                                if b"<title>Google Drive - Quota exceeded</title>" in h or b"uc-error-subcaption" in h:
+                                    os.remove(res)
+                                    log_func(f"   [Google Drive] ⚠️ Quota exceeded on '{fname}'.")
+                                    continue
+                            downloaded_count += 1
+                    except Exception as sub_err:
+                        err_text = str(sub_err)
+                        if "Too many users have viewed or downloaded" in err_text or "Quota exceeded" in err_text:
+                            log_func(f"   [Google Drive] ⚠️ Quota exceeded on '{fname}'.")
+                        else:
+                            log_func(f"   [Google Drive] ⚠️ Error on '{fname}': {sub_err}")
+
+                log_func(f"   [Google Drive] ✅ Folder download finished: {downloaded_count}/{total_files} file(s) saved to {target_folder}")
+                return downloaded_count > 0
+
+            except Exception as fe:
+                # Direct folder download fallback
+                log_func(f"   [Google Drive] Fetching folder contents directly...")
+                res_list = gdown.download_folder(id=item_id, output=os.path.join(target_folder, ""), quiet=False)
+                if res_list:
+                    log_func(f"   [Google Drive] ✅ Folder download finished to: {target_folder}")
+                    return True
+                return False
+
+        # Single file handling
+        kwargs = {"quiet": False}
+        if "fuzzy" in inspect.signature(gdown.download).parameters:
+            kwargs["fuzzy"] = True
+
+        current_fname = os.path.basename(parsed.path) or "gdrive_file"
+
+        def _single_file_prog(cur, tot):
+            if cancel_event and cancel_event.is_set():
+                raise InterruptedError("Cancelled by user")
+            if progress_callback:
+                progress_callback(current_fname, cur, tot or 0, 1, 1)
+
+        if "progress" in inspect.signature(gdown.download).parameters:
+            kwargs["progress"] = _single_file_prog
+
+        if item_id:
+            result = gdown.download(id=item_id, output=target_folder, **kwargs)
+        else:
+            result = gdown.download(url=url, output=target_folder, **kwargs)
+
+        if result is False or result is None:
+            log_func("   [Google Drive] ❌ Download returned no file (file may be restricted, deleted, or quota-limited).")
+            return False
+
+        # Verify whether Google returned an HTML quota error page disguised as a download
+        if isinstance(result, str) and os.path.isfile(result) and os.path.getsize(result) < 65536:
+            try:
+                with open(result, "rb") as check_f:
+                    head = check_f.read(2048)
+                if b"<title>Google Drive - Quota exceeded</title>" in head or b"uc-error-subcaption" in head:
+                    os.remove(result)
+                    log_func("   [Google Drive] ⚠️ Bandwidth Quota Exceeded: Google has temporarily locked public downloads for this file ('Too many users have viewed or downloaded this file recently'). Google imposes a 24-hour cooldown on heavily accessed files. Please try again later or open in a browser while logged in.")
+                    return False
+            except Exception:
+                pass
+
+        log_func(f"   [Google Drive] ✅ Download complete to: {result}")
         return True
+
     except Exception as e:
-        log_func(f"   [Google Drive] ❌ Download error: {e}")
+        err_str = str(e)
+        if "Too many users have viewed or downloaded this file recently" in err_str or "Quota exceeded" in err_str:
+            log_func("   [Google Drive] ⚠️ Bandwidth Quota Exceeded: Google has temporarily locked public downloads for this file ('Too many users have viewed or downloaded this file recently'). Google imposes a 24-hour cooldown on heavily accessed files. Please try again later or open in a browser while logged in.")
+        elif "Cancelled by user" in err_str:
+            log_func("   [Google Drive] ℹ️ Download cancelled.")
+        elif "Cannot retrieve the public link" in err_str or "Access denied" in err_str:
+            log_func("   [Google Drive] ⚠️ Access Denied: File may be private or requires Google account permissions.")
+        else:
+            log_func(f"   [Google Drive] ❌ Download error: {e}")
         return False
 
 

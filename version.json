@@ -1,7 +1,7 @@
 {
-    "version": "1.0.8",
-    "commit": "0c73b6decf248354da01b0a45ed3dd3c6b28a862",
-    "short_commit": "0c73b6d",
+    "version": "1.0.9",
+    "commit": "",
+    "short_commit": "",
     "date": "2026-09-08",
     "channel": "release",
     "history": [
@@ -48,7 +48,12 @@
         {
             "version": "1.0.8",
             "date": "2026-09-08",
-            "notes": "Bulkd decompressor (new tab),Auto-retry cap (5 attempts), desktop completion reports, smart in-app updater, tutorial modal, version database"
+            "notes": "Bulk decompressor (new tab), auto-retry cap (5 attempts), desktop completion reports, smart in-app updater, tutorial modal, version database"
+        },
+        {
+            "version": "1.0.9",
+            "date": "2026-09-08",
+            "notes": "Google Drive overhaul: fixed fuzzy crash, quota exceeded detection, full folder support, all URL patterns, live progress. Persistent per-session logs in logs/ folder. Settings UI cleanup: removed bottom version label, coloured version numbers, added Logs Folder button."
         }
     ]
 }

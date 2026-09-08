@@ -25,7 +25,9 @@ share/python-wheels/
 .installed.cfg
 *.egg
 
-# Testing & Coverage
+# Testing, Coverage & Internal Scripts
+tests/
+scripts/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -52,6 +54,7 @@ path2/
 test_*/
 
 # Standalone Executables & Large Binaries
+updater.spec
 dependencies/*.exe
 dependencies/*.zip
 dependencies/*.tar.gz

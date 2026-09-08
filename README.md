@@ -57,8 +57,11 @@
 ## ✨ Key Features
 
 - ⚡ **Adaptive Multi-Threaded Engine:** Parallel chunked downloads with dynamic concurrency scaling and manual thread-locking.
+- 📦 **Universal Bulk Decompressor:** Automatically syncs with downloaded artists from your Watchlist so you just select Bulk Decompress tab and hit "Scan", afterwards you can select multiple artists at once or selectively unpack individual archives. Features high-speed multi-threaded extraction for `.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.bz2`, `.xz`, `.zst`, and multi-part volumes (`.part01.rar`, `.7z.001`) via a bundled `7za` engine with pre-flight disk safety checks, optional archive cleanup, and password extraction.
+- 🔄 **Smart In-App Updater & Standalone Companion (`updater.exe`):** Automatic update alerts on launch with release notes preview and a dedicated standalone companion updater for zero-lock binary updates, seamless extraction, and instant restart.
 - 🌐 **Full 14-Language Localization (i18n):** Instant in-app language switching and real-time dynamically translated console activity logs (English, Chinese, Japanese, Korean, Spanish, French, German, Russian, Portuguese, and more).
-- 🔓 **Built-in Cloud Decryptor:** Downloads and decrypts entire **Mega** folders directly with client-side AES decryption, plus direct streaming for **Google Drive**, **Dropbox**, and **GoFile**.
+- 🔓 **Built-in Cloud Decryptor:** Downloads and decrypts entire **Mega** folders directly with client-side AES decryption, plus direct streaming for **Google Drive** (files and full folder trees with live progress), **Dropbox**, and **GoFile**.
+- 📊 **Desktop Completion Reports:** Automatically generates rich HTML visual summaries and plaintext audit reports directly to your Desktop upon download completion.
 - 📊 **Active Large File Monitor (≥ 50 MB):** Dedicated real-time monitoring panel displaying individual progress bars, speed, and ETA for large media downloads.
 - 🛡️ **SSD Stall & Disk Saturation Protection:** Hardened speed estimation engine prevents freeze glitches and auto-pauses gracefully upon out-of-disk space (`WinError 112` / `Errno 28`) without crashing worker threads.
 - 🎯 **Advanced Smart Filtering:** Filter by character names, series, keywords, file categories (images, videos, audio, archives), or minimum file size thresholds.
@@ -102,7 +105,7 @@
 ### Option A: Pre-compiled Windows Binary (Recommended for most users)
 
 1. Head over to the **[Latest Release](https://github.com/whyamihere773/Pawchive-Downloader/releases/latest)** page.
-2. Download `Pawchive-Downloader-v1.0.7-Windows.zip`.
+2. Download `Pawchive-Downloader-v1.0.9-Windows.zip`.
 3. Extract the ZIP archive anywhere on your computer.
 4. Run `Pawchive Downloader.exe` — that's it!
 

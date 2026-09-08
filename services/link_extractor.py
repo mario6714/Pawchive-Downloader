@@ -12,7 +12,7 @@ from urllib.parse import urlparse, parse_qs, unquote
 
 LINK_PATTERNS = {
     "mega": re.compile(r'https?://(?:www\.)?mega\.(?:nz|co\.nz|io)/(?:file/|folder/|embed/|#|#!|#F!|[a-zA-Z0-9_\-#])[^\s"\'<>]+', re.IGNORECASE),
-    "gdrive": re.compile(r'https?://(?:drive|docs)\.google\.com/(?:file/d/|open\?id=|drive/(?:u/\d+/)?folders/|uc\?id=|document/d/|spreadsheets/d/|[a-zA-Z0-9_\-/])[^\s"\'<>]+', re.IGNORECASE),
+    "gdrive": re.compile(r'https?://(?:(?:drive|docs|drive\.usercontent)\.google\.com)/(?:file/d/|open\?id=|drive/(?:u/\d+/)?folders/|uc\?id=|document/d/|spreadsheets/d/|download\?id=|[a-zA-Z0-9_\-/])[^\s"\'<>]+', re.IGNORECASE),
     "dropbox": re.compile(r'https?://(?:www\.)?dropbox\.com/(?:s/|scl/|sh/|browse/|[a-zA-Z0-9_\-/])[^\s"\'<>]+', re.IGNORECASE),
     "pixeldrain": re.compile(r'https?://(?:www\.)?pixeldrain\.com/(?:u/|l/|api/file/)[a-zA-Z0-9_\-]+', re.IGNORECASE),
     "catbox": re.compile(r'https?://(?:files\.)?catbox\.moe/[a-zA-Z0-9\.\-_]+', re.IGNORECASE),
@@ -118,7 +118,7 @@ class LinkExtractor:
         url_lower = url.lower()
         if "mega.nz" in url_lower or "mega.co.nz" in url_lower or "mega.io" in url_lower:
             return "mega"
-        if "drive.google.com" in url_lower or "docs.google.com" in url_lower:
+        if "drive.google.com" in url_lower or "docs.google.com" in url_lower or "drive.usercontent.google.com" in url_lower:
             return "gdrive"
         if "dropbox.com" in url_lower:
             return "dropbox"

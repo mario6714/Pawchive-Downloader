@@ -52,11 +52,57 @@ class AppLogger:
         self._history = []
         self._max_history = 1000
 
+        # Resolve logs directory: <project_root>/logs
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self._logs_dir = os.path.join(base_dir, "logs")
+        try:
+            os.makedirs(self._logs_dir, exist_ok=True)
+        except Exception:
+            pass
+
+        import threading
+        self._file_lock = threading.Lock()
+
+        start_dt = datetime.datetime.now()
+        self._session_start_time = start_dt
+        self._log_filename = start_dt.strftime("%Y-%m-%d_%H-%M-%S.log")
+        self._current_log_path = os.path.join(self._logs_dir, self._log_filename)
+        self._write_session_start()
+
     @classmethod
     def instance(cls) -> "AppLogger":
         if cls._instance is None:
             cls._instance = AppLogger()
         return cls._instance
+
+    def get_logs_dir(self) -> str:
+        return self._logs_dir
+
+    def get_current_log_file(self) -> str:
+        return self._current_log_path
+
+    def _get_log_file_path(self) -> str:
+        return self._current_log_path
+
+    def _append_to_file(self, text: str):
+        try:
+            with self._file_lock:
+                with open(self._current_log_path, "a", encoding="utf-8", errors="replace") as f:
+                    f.write(text)
+        except Exception:
+            pass
+
+    def _write_session_start(self):
+        start_time = self._session_start_time.strftime("%Y-%m-%d %H:%M:%S")
+        header = (
+            f"{'=' * 72}\n"
+            f"=== Pawchive Downloader Session Started: {start_time} ===\n"
+            f"{'=' * 72}\n"
+        )
+        self._append_to_file(header)
 
     def add_listener(self, callback: Callable[[LogEntry], None]):
         if callback not in self._listeners:
@@ -71,6 +117,10 @@ class AppLogger:
         self._history.append(entry)
         if len(self._history) > self._max_history:
             self._history.pop(0)
+
+        # Write to persistent log file named per date
+        log_line = f"[{entry.timestamp}] [{entry.level.upper():<7}] [{entry.category}] {entry.message}\n"
+        self._append_to_file(log_line)
 
         try:
             print(str(entry), flush=True)

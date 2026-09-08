@@ -1600,7 +1600,7 @@ class AppBridge(QObject):
 
                 if "mega.nz" in url or "mega.co.nz" in url or "mega.io" in url:
                     platform = "mega"
-                elif "drive.google.com" in url or "docs.google.com" in url:
+                elif "drive.google.com" in url or "docs.google.com" in url or "drive.usercontent.google.com" in url:
                     platform = "gdrive"
                 elif "dropbox.com" in url:
                     platform = "dropbox"
@@ -1683,7 +1683,7 @@ class AppBridge(QObject):
                     if platform == "mega":
                         ok = download_mega_link(url, target_dir, log_func=lambda msg: logger.info(msg, category="downloader"), progress_callback=_prog, cancel_event=self._cloud_cancel_event, pause_event=self._cloud_pause_event, max_workers=workers_per_link)
                     elif platform in ("gdrive", "google drive"):
-                        ok = download_gdrive_link(url, target_dir, log_func=lambda msg: logger.info(msg, category="downloader"), cancel_event=self._cloud_cancel_event)
+                        ok = download_gdrive_link(url, target_dir, log_func=lambda msg: logger.info(msg, category="downloader"), progress_callback=_prog, cancel_event=self._cloud_cancel_event, pause_event=self._cloud_pause_event)
                     elif platform == "dropbox":
                         ok = download_dropbox_link(url, target_dir, log_func=lambda msg: logger.info(msg, category="downloader"), progress_callback=_prog, cancel_event=self._cloud_cancel_event, pause_event=self._cloud_pause_event)
                     elif platform == "gofile":
@@ -1755,6 +1755,15 @@ class AppBridge(QObject):
     @Slot()
     def clearLogs(self):
         self._log_model.clearLogs()
+
+    @Slot()
+    def openLogsFolder(self):
+        logs_dir = logger.get_logs_dir()
+        os.makedirs(logs_dir, exist_ok=True)
+        if os.name == "nt":
+            os.startfile(logs_dir)
+        else:
+            subprocess.Popen(["xdg-open", logs_dir])
 
     @Slot()
     def openDownloadFolder(self):
