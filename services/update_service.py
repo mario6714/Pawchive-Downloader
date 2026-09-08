@@ -279,34 +279,89 @@ class UpdateDownloader:
 
 def apply_update_and_restart(staging_root: str, update_info: Dict[str, Any]):
     """
-    Spawns updater_helper.py passing current process PID, target dir, and staging root,
-    then cleanly terminates the main application.
+    Spawns an out-of-process updater to replace application files and restart,
+    then cleanly terminates the running application.
     """
     app_dir = get_app_dir()
     current_pid = os.getpid()
-    helper_script = os.path.join(os.path.dirname(__file__), "updater_helper.py")
-    python_exe = sys.executable
+    compiled = is_compiled()
 
     sha = update_info.get("full_remote_sha", "") or update_info.get("remote_commit", "")
     version = update_info.get("remote_version", "") or "source-update"
 
-    args = [
-        python_exe,
-        helper_script,
-        "--target-dir", app_dir,
-        "--staging-dir", staging_root,
-        "--pid", str(current_pid),
-        "--commit-sha", sha,
-        "--version-str", version,
-        "--is-compiled", "1" if is_compiled() else "0"
-    ]
+    if compiled and sys.platform == "win32":
+        exe_path = sys.executable
+        temp_dir = os.environ.get("TEMP", os.path.join(app_dir, "temp"))
+        bat_path = os.path.join(temp_dir, f"pawchive_updater_{current_pid}.bat")
+        log_path = os.path.join(temp_dir, f"pawchive_updater_{current_pid}.log")
 
-    # Spawn updater helper detached from current process
-    if sys.platform == "win32":
+        bat_content = f"""@echo off
+setlocal enabledelayedexpansion
+
+set "PID={current_pid}"
+set "TARGET_DIR={app_dir}"
+set "STAGING_DIR={staging_root}"
+set "EXE_PATH={exe_path}"
+set "LOG_FILE={log_path}"
+
+echo [%DATE% %TIME%] Updater started. Waiting for PID %PID% to exit... > "%LOG_FILE%"
+
+:WAIT_PID
+tasklist /fi "PID eq %PID%" 2>NUL | findstr /i "%PID%" >NUL
+if not errorlevel 1 (
+    timeout /t 1 /nobreak >NUL
+    goto WAIT_PID
+)
+
+echo [%DATE% %TIME%] Process %PID% exited. Waiting 1s for file locks to release... >> "%LOG_FILE%"
+timeout /t 1 /nobreak >NUL
+
+echo [%DATE% %TIME%] Copying files from "%STAGING_DIR%" to "%TARGET_DIR%"... >> "%LOG_FILE%"
+robocopy "%STAGING_DIR%" "%TARGET_DIR%" /E /XD temp logs .git downloads /XF settings.json watchlist.json Known.txt cookies.txt /R:5 /W:1 /NP /NDL /NFL >> "%LOG_FILE%" 2>&1
+
+if %ERRORLEVEL% GEQ 8 (
+    echo [%DATE% %TIME%] Robocopy error %ERRORLEVEL%, falling back to xcopy... >> "%LOG_FILE%"
+    xcopy "%STAGING_DIR%\\*" "%TARGET_DIR%\\" /S /E /Y /I /Q >> "%LOG_FILE%" 2>&1
+)
+
+echo [%DATE% %TIME%] Cleaning up staging directory... >> "%LOG_FILE%"
+rmdir /s /q "%STAGING_DIR%" 2>NUL
+
+echo [%DATE% %TIME%] Launching "%EXE_PATH%"... >> "%LOG_FILE%"
+cd /d "%TARGET_DIR%"
+start "" "%EXE_PATH%"
+
+echo [%DATE% %TIME%] Updater completed successfully. >> "%LOG_FILE%"
+(goto) 2>nul & del "%~f0"
+"""
+        with open(bat_path, "w", encoding="ascii", errors="replace") as f:
+            f.write(bat_content)
+
         creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-        subprocess.Popen(args, creationflags=creationflags, close_fds=True)
-    else:
-        subprocess.Popen(args, start_new_session=True, close_fds=True)
+        subprocess.Popen(["cmd.exe", "/c", bat_path], creationflags=creationflags, close_fds=True)
+        # Force immediate hard process exit so file locks on exe and _internal are released instantly
+        os._exit(0)
 
-    # Immediately exit current app
-    sys.exit(0)
+    else:
+        # Running from source (or non-Windows)
+        helper_script = os.path.join(os.path.dirname(__file__), "updater_helper.py")
+        python_exe = sys.executable
+
+        args = [
+            python_exe,
+            helper_script,
+            "--target-dir", app_dir,
+            "--staging-dir", staging_root,
+            "--pid", str(current_pid),
+            "--commit-sha", sha,
+            "--version-str", version,
+            "--is-compiled", "0"
+        ]
+
+        if sys.platform == "win32":
+            creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            subprocess.Popen(args, creationflags=creationflags, close_fds=True)
+        else:
+            subprocess.Popen(args, start_new_session=True, close_fds=True)
+
+        os._exit(0)
