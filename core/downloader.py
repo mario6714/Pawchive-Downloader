@@ -48,13 +48,15 @@ class DownloadTask:
         is_ytdlp: bool = False,
         batch_id: str = "",
         post_url: str = "",
-        post_date: str = ""
+        post_date: str = "",
+        user_id: str = ""
     ):
         self.url = url
         self.target_path = target_path
         self.post_title = post_title
         self.creator_name = creator_name
         self.service = service
+        self.user_id = user_id
         self.post_id = post_id
         self.file_id = file_id
         self.file_size = file_size
@@ -246,7 +248,9 @@ class KemonoDownloader:
         domain: str,
         base_dir: str,
         options: FilterOptions,
-        batch_id: Optional[str] = None
+        batch_id: Optional[str] = None,
+        artist_dir: Optional[str] = None,
+        user_id: str = ""
     ) -> List[DownloadTask]:
         """
         Filters posts and attachments, building the list of download tasks with structured paths.
@@ -353,26 +357,29 @@ class KemonoDownloader:
                 continue
 
             # Determine parent directory for this post
-            folder_parts = [base_dir]
+            if artist_dir:
+                folder_parts = [artist_dir]
+            else:
+                folder_parts = [base_dir]
 
-            # Separate by Known.txt if requested (Franchise -> Character hierarchy)
-            if options.separate_by_known:
-                matched_hierarchy = self.known_manager.find_matching_hierarchy(
-                    post_title, tags=post.get("tags")
-                )
-                if matched_hierarchy:
-                    franchise, char_name = matched_hierarchy
-                    if franchise and franchise.strip() and franchise != "Other":
-                        clean_fr = FilterEngine.clean_filesystem_text(franchise, max_len=60, fallback="Franchise")
-                        folder_parts.append(clean_fr)
-                    if char_name and char_name.strip() and char_name.lower() != (franchise or "").lower():
-                        clean_ch = FilterEngine.clean_filesystem_text(char_name, max_len=60, fallback="Character")
-                        folder_parts.append(clean_ch)
-                else:
-                    folder_parts.append("Other")
+                # Separate by Known.txt if requested (Franchise -> Character hierarchy)
+                if options.separate_by_known:
+                    matched_hierarchy = self.known_manager.find_matching_hierarchy(
+                        post_title, tags=post.get("tags")
+                    )
+                    if matched_hierarchy:
+                        franchise, char_name = matched_hierarchy
+                        if franchise and franchise.strip() and franchise != "Other":
+                            clean_fr = FilterEngine.clean_filesystem_text(franchise, max_len=60, fallback="Franchise")
+                            folder_parts.append(clean_fr)
+                        if char_name and char_name.strip() and char_name.lower() != (franchise or "").lower():
+                            clean_ch = FilterEngine.clean_filesystem_text(char_name, max_len=60, fallback="Character")
+                            folder_parts.append(clean_ch)
+                    else:
+                        folder_parts.append("Other")
 
-            # Creator folder
-            folder_parts.append(f"{creator_clean} [{service}]")
+                # Creator folder
+                folder_parts.append(f"{creator_clean} [{service}]")
 
             # Tag-based subfolder (Pawchive / cum.st only — other providers have no tags)
             if options.tag_folder_mode:
@@ -740,7 +747,8 @@ class KemonoDownloader:
                     expected_sha256=expected_sha,
                     batch_id=batch_id,
                     post_url=task_post_url,
-                    post_date=date_str
+                    post_date=date_str,
+                    user_id=user_id or post_user
                 )
                 task.fallback_urls = candidate_urls[1:]
                 new_tasks.append(task)
@@ -768,7 +776,8 @@ class KemonoDownloader:
                         is_ytdlp=True,
                         batch_id=batch_id,
                         post_url=task_post_url,
-                        post_date=date_str
+                        post_date=date_str,
+                        user_id=user_id or post_user
                     )
                     new_tasks.append(e_task)
 

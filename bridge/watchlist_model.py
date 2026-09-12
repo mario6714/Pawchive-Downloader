@@ -24,22 +24,45 @@ class WatchlistModel(QAbstractListModel):
     AutoCheckRole    = Qt.UserRole + 9
     NewPostCountRole = Qt.UserRole + 10
     DownloadDirRole  = Qt.UserRole + 11
+    IgnoredCountRole = Qt.UserRole + 12
+    CachedPostsRole  = Qt.UserRole + 13
 
     countChanged = Signal()
 
     def __init__(self, watchlist_manager, parent=None):
         super().__init__(parent)
         self._manager = watchlist_manager
+        self._search_text: str = ""
+        self._service_filter: str = "all"
         self._display_entries = []
         self._rebuild_display_entries()
 
     def _rebuild_display_entries(self):
         """
-        Sort entries:
-        1. Creators with new_post_count > 0 at the top, sorted alphabetically by creator name.
-        2. Remaining creators below, sorted alphabetically by creator name.
+        Filters and sorts entries:
+        1. Filters by search_text (creator_name or user_id)
+        2. Filters by service_filter ("all", "updates", or specific service)
+        3. Creators with new_post_count > 0 at the top, sorted alphabetically by creator name.
+        4. Remaining creators below, sorted alphabetically by creator name.
         """
         entries = list(self._manager.entries)
+
+        # Apply search filter
+        if self._search_text:
+            st = self._search_text.strip().lower()
+            entries = [
+                e for e in entries
+                if st in (getattr(e, "creator_name", "") or "").lower()
+                or st in (getattr(e, "user_id", "") or "").lower()
+            ]
+
+        # Apply category / service filter
+        if self._service_filter == "updates":
+            entries = [e for e in entries if (getattr(e, "new_post_count", 0) or 0) > 0]
+        elif self._service_filter and self._service_filter != "all":
+            sf = self._service_filter.strip().lower()
+            entries = [e for e in entries if (getattr(e, "service", "") or "").lower() == sf]
+
         self._display_entries = sorted(
             entries,
             key=lambda e: (
@@ -48,9 +71,21 @@ class WatchlistModel(QAbstractListModel):
             )
         )
 
+    @Slot(str, str)
+    def setFilter(self, search_text: str, service_filter: str):
+        """Live search & category filter update from QML."""
+        self._search_text = search_text or ""
+        self._service_filter = (service_filter or "all").lower()
+        self.refresh()
+
     @Property(int, notify=countChanged)
     def count(self) -> int:
         return len(self._display_entries)
+
+    @Property(int, notify=countChanged)
+    def totalCount(self) -> int:
+        """Total unfiltered count of tracked artists."""
+        return len(self._manager.entries)
 
     @Property(int, notify=countChanged)
     def updatedCount(self) -> int:
@@ -78,6 +113,16 @@ class WatchlistModel(QAbstractListModel):
                 "autoCheck": e.auto_check,
                 "newPostCount": e.new_post_count,
                 "downloadDir": e.download_dir,
+                "ignoredCount": len(getattr(e, "ignored_post_ids", [])),
+                "cachedNewPosts": [
+                    {
+                        "id": str(p.get("id", "")),
+                        "title": (p.get("title") or "Untitled").strip(),
+                        "published": str(p.get("published") or p.get("added") or "")[:10],
+                        "fileCount": (1 if (p.get("file") and isinstance(p.get("file"), dict) and (p.get("file").get("path") or p.get("file").get("storageKey"))) else 0) + len([a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]),
+                    }
+                    for p in getattr(e, "cached_new_posts", [])
+                ],
             }
         return {}
 
@@ -102,6 +147,16 @@ class WatchlistModel(QAbstractListModel):
             self.AutoCheckRole:    entry.auto_check,
             self.NewPostCountRole: entry.new_post_count,
             self.DownloadDirRole:  entry.download_dir,
+            self.IgnoredCountRole: len(getattr(entry, "ignored_post_ids", [])),
+            self.CachedPostsRole:  [
+                {
+                    "id": str(p.get("id", "")),
+                    "title": (p.get("title") or "Untitled").strip(),
+                    "published": str(p.get("published") or p.get("added") or "")[:10],
+                    "fileCount": (1 if (p.get("file") and isinstance(p.get("file"), dict) and (p.get("file").get("path") or p.get("file").get("storageKey"))) else 0) + len([a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]),
+                }
+                for p in getattr(entry, "cached_new_posts", [])
+            ],
             Qt.DisplayRole:        entry.creator_name,
         }.get(role)
 
@@ -118,6 +173,8 @@ class WatchlistModel(QAbstractListModel):
             self.AutoCheckRole:    b"autoCheck",
             self.NewPostCountRole: b"newPostCount",
             self.DownloadDirRole:  b"downloadDir",
+            self.IgnoredCountRole: b"ignoredCount",
+            self.CachedPostsRole:  b"cachedNewPosts",
             Qt.DisplayRole:        b"display",
         }
 
@@ -134,3 +191,4 @@ class WatchlistModel(QAbstractListModel):
     def update_new_counts(self):
         """Re-sort and refresh when new counts are updated."""
         self.refresh()
+

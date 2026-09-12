@@ -96,6 +96,78 @@ class FilterOptions:
         self.download_embeds = download_embeds
         self.file_index_prefix = file_index_prefix
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize filter options to dictionary for persistence."""
+        return {
+            "characters": self.characters,
+            "character_scope": self.character_scope,
+            "skip_words": self.skip_words,
+            "skip_scope": self.skip_scope,
+            "remove_words": self.remove_words,
+            "file_type": self.file_type,
+            "skip_archives": self.skip_archives,
+            "download_thumbnails_only": self.download_thumbnails_only,
+            "scan_content_images": self.scan_content_images,
+            "compress_to_webp": self.compress_to_webp,
+            "keep_duplicates": self.keep_duplicates,
+            "favorite_mode": self.favorite_mode,
+            "subfolder_per_post": self.subfolder_per_post,
+            "date_prefix": self.date_prefix,
+            "separate_by_known": self.separate_by_known,
+            "tag_folder_mode": self.tag_folder_mode,
+            "download_revisions": self.download_revisions,
+            "adaptive_threading": self.adaptive_threading,
+            "threads_locked": self.threads_locked,
+            "auto_retry_at_end": self.auto_retry_at_end,
+            "manga_mode": self.manga_mode,
+            "filename_style": self.filename_style,
+            "proxy_url": self.proxy_url,
+            "page_start": self.page_start,
+            "page_end": self.page_end,
+            "download_delay": self.download_delay,
+            "save_post_metadata": self.save_post_metadata,
+            "download_embeds": self.download_embeds,
+            "file_index_prefix": self.file_index_prefix,
+        }
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "FilterOptions":
+        """Reconstruct FilterOptions from a dictionary."""
+        if not isinstance(d, dict):
+            return cls()
+        return cls(
+            characters=d.get("characters", ""),
+            character_scope=d.get("character_scope", "title"),
+            skip_words=d.get("skip_words", ""),
+            skip_scope=d.get("skip_scope", "posts"),
+            remove_words=d.get("remove_words", ""),
+            file_type=d.get("file_type", "all"),
+            skip_archives=bool(d.get("skip_archives", False)),
+            download_thumbnails_only=bool(d.get("download_thumbnails_only", False)),
+            scan_content_images=bool(d.get("scan_content_images", True)),
+            compress_to_webp=bool(d.get("compress_to_webp", False)),
+            keep_duplicates=bool(d.get("keep_duplicates", False)),
+            favorite_mode=bool(d.get("favorite_mode", False)),
+            subfolder_per_post=bool(d.get("subfolder_per_post", True)),
+            date_prefix=bool(d.get("date_prefix", True)),
+            separate_by_known=bool(d.get("separate_by_known", False)),
+            tag_folder_mode=bool(d.get("tag_folder_mode", False)),
+            download_revisions=bool(d.get("download_revisions", False)),
+            adaptive_threading=bool(d.get("adaptive_threading", False)),
+            threads_locked=bool(d.get("threads_locked", False)),
+            auto_retry_at_end=bool(d.get("auto_retry_at_end", False)),
+            manga_mode=bool(d.get("manga_mode", False)),
+            filename_style=d.get("filename_style", "post_title"),
+            proxy_url=d.get("proxy_url", ""),
+            page_start=int(d.get("page_start", 1)),
+            page_end=int(d.get("page_end", 999999)),
+            download_delay=float(d.get("download_delay", 2.0)),
+            save_post_metadata=bool(d.get("save_post_metadata", True)),
+            download_embeds=bool(d.get("download_embeds", True)),
+            file_index_prefix=bool(d.get("file_index_prefix", False)),
+        )
+
+
 
 class FilterEngine:
     @staticmethod

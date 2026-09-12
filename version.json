@@ -1,8 +1,8 @@
 {
-    "version": "1.1.0",
+    "version": "1.1.1",
     "commit": "",
     "short_commit": "",
-    "date": "2026-09-09",
+    "date": "2026-09-12",
     "channel": "release",
     "history": [
         {
@@ -59,6 +59,11 @@
             "version": "1.1.0",
             "date": "2026-09-09",
             "notes": "Fixed critical NoneType crash in Google Drive downloader (sys.stdout=None in windowed builds). Real filenames now resolved via gdown skip_download before download. Removed invalid gdown 6.x parameters (fuzzy, remaining_ok). Added _suppress_gdown_output guard, resume support, progress callback wiring, and centralised quota-error HTML page detection."
+        },
+        {
+            "version": "1.1.1",
+            "date": "2026-09-12",
+            "notes": "Watchlist overhaul: fixed global download directory overriding artist folders, saved per-artist filter settings for updates, fixed Windows cross-drive path crashes & double-folder nesting. Added Download All Updates, Add Artist by URL modal, interactive post review with per-post/bulk ignoring, editable last-downloaded cutoff date with smart auto-normalization, live search & service filter, click-to-open folder, Newtonian spring physics animations, and QML responsive layout fixes."
         }
     ]
 }

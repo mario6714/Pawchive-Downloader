@@ -1206,8 +1206,11 @@ class AppBridge(QObject):
                 # 3. Build tasks
                 if parsed.is_single_post and parsed.post_id:
                     batch_id = f"post_{parsed.service}_{parsed.user_id}_{parsed.post_id}"
+                    artist_dir = None
                 else:
                     batch_id = f"artist_{parsed.service}_{parsed.user_id}"
+                    existing_entry = self._watchlist_manager._find(parsed.user_id, parsed.service) if (not parsed.is_external_provider and parsed.user_id) else None
+                    artist_dir = self.resolve_artist_download_dir(existing_entry) if (existing_entry and existing_entry.download_dir) else None
 
                 tasks = self.downloader.build_tasks_from_posts(
                     posts=posts,
@@ -1216,7 +1219,9 @@ class AppBridge(QObject):
                     domain=parsed.domain,
                     base_dir=self._download_dir,
                     options=options,
-                    batch_id=batch_id
+                    batch_id=batch_id,
+                    artist_dir=artist_dir,
+                    user_id=parsed.user_id if not parsed.is_external_provider else ""
                 )
 
             if self._scan_cancel_event.is_set():
@@ -1276,17 +1281,15 @@ class AppBridge(QObject):
 
                     canonical_url = getattr(parsed, "raw_url", "") or f"https://{parsed.domain}/{parsed.service}/user/{parsed.user_id}"
                     target_download_dir = ""
-                    if tasks:
-                        try:
-                            sample_path = tasks[0].destination_path
-                            rel = os.path.relpath(sample_path, self._download_dir)
-                            parts = rel.split(os.sep)
-                            if len(parts) > 1:
-                                target_download_dir = os.path.join(self._download_dir, parts[0])
-                            else:
-                                target_download_dir = self._download_dir
-                        except Exception:
-                            target_download_dir = self._download_dir
+                    if artist_dir:
+                        target_download_dir = artist_dir
+                    elif tasks:
+                        target_download_dir = self.extract_artist_folder_from_path(
+                            tasks[0].target_path,
+                            creator_name or parsed.user_id,
+                            parsed.service,
+                            fallback_dir=self._download_dir
+                        )
                     else:
                         from core.filter_engine import FilterEngine
                         clean_c = FilterEngine.clean_filesystem_text(creator_name or parsed.user_id, max_len=80, fallback="creator")
@@ -1302,11 +1305,13 @@ class AppBridge(QObject):
                         last_post_id=latest_pid,
                         last_post_date=latest_pdate,
                         download_dir=target_download_dir,
+                        options=options.to_dict() if hasattr(options, "to_dict") else {},
                     )
                     self._watchlist_model.refresh()
                     self.watchlistChanged.emit()
                 except Exception as e:
                     logger.debug(f"Watchlist auto-track error: {e}", category="watchlist")
+
 
             if auto_start:
                 if self.downloader._is_running:
@@ -2403,63 +2408,77 @@ class AppBridge(QObject):
             # 4. Auto-add / update completed artist in watchlist
             try:
                 tasks_done = self._queue_model.getTasks()
-                last_post_id = ""
-                last_post_date = ""
-                for _t in tasks_done:
-                    t_date = getattr(_t, "post_date", "") or ""
-                    t_pid = getattr(_t, "post_id", "") or ""
-                    if t_date and t_date > last_post_date:
-                        last_post_date = t_date
-                        last_post_id = t_pid
-                    elif t_date == last_post_date and t_pid > last_post_id:
-                        last_post_id = t_pid
-
-                target_download_dir = ""
                 if tasks_done:
-                    try:
-                        sample_path = tasks_done[0].destination_path
-                        rel = os.path.relpath(sample_path, self._download_dir)
-                        parts = rel.split(os.sep)
-                        if len(parts) > 1:
-                            target_download_dir = os.path.join(self._download_dir, parts[0])
-                        else:
-                            target_download_dir = self._download_dir
-                    except Exception:
-                        target_download_dir = self._download_dir
+                    # Group completed tasks by (service, user_id or creator_name)
+                    grouped = {}
+                    for _t in tasks_done:
+                        svc = getattr(_t, "service", "").strip().lower()
+                        uid = (getattr(_t, "user_id", "") or getattr(_t, "creator_name", "")).strip().lower()
+                        if svc and uid:
+                            key = (svc, uid)
+                            if key not in grouped:
+                                grouped[key] = []
+                            grouped[key].append(_t)
 
-                url_clean = (self._current_url or "").strip()
-                from core.parser import KemonoURLParser
-                _parsed = KemonoURLParser.parse(url_clean) if url_clean else None
-                if _parsed and _parsed.is_valid and not _parsed.is_external_provider and not _parsed.is_single_post:
-                    if not target_download_dir:
-                        from core.filter_engine import FilterEngine
-                        clean_c = FilterEngine.clean_filesystem_text(self._creator_name or _parsed.user_id, max_len=80, fallback="creator")
-                        cand = os.path.join(self._download_dir, f"{clean_c} [{_parsed.service}]")
-                        target_download_dir = cand if os.path.exists(cand) else self._download_dir
+                    for (svc, uid), c_tasks in grouped.items():
+                        c_latest_date = ""
+                        c_latest_pid = ""
+                        for _t in c_tasks:
+                            t_date = getattr(_t, "post_date", "") or ""
+                            t_pid = getattr(_t, "post_id", "") or ""
+                            if t_date and t_date > c_latest_date:
+                                c_latest_date = t_date
+                                c_latest_pid = t_pid
+                            elif t_date == c_latest_date and t_pid > c_latest_pid:
+                                c_latest_pid = t_pid
 
-                    self._watchlist_manager.add_entry(
-                        url=url_clean,
-                        creator_name=self._creator_name or _parsed.user_id,
-                        user_id=_parsed.user_id,
-                        service=_parsed.service,
-                        domain=_parsed.domain,
-                        last_post_id=last_post_id,
-                        last_post_date=last_post_date,
-                        download_dir=target_download_dir,
-                    )
+                        existing = self._watchlist_manager._find(uid, svc)
+                        if not existing:
+                            t0 = c_tasks[0]
+                            existing = next((e for e in self._watchlist_manager.entries if e.service.lower() == svc and (e.creator_name.lower() == t0.creator_name.lower() or e.user_id.lower() == t0.creator_name.lower())), None)
+
+                        if existing:
+                            if c_latest_date or c_latest_pid:
+                                self._watchlist_manager.update_last_download(
+                                    existing.user_id, existing.service,
+                                    c_latest_pid or existing.last_post_id,
+                                    c_latest_date or existing.last_post_date
+                                )
+                            # ONLY assign download_dir if it was previously empty (protect manual changes!)
+                            if not existing.download_dir:
+                                t_dir = self.extract_artist_folder_from_path(
+                                    c_tasks[0].target_path,
+                                    existing.creator_name,
+                                    existing.service,
+                                    fallback_dir=self._download_dir
+                                )
+                                self._watchlist_manager.set_download_dir(existing.user_id, existing.service, t_dir)
+
+                    url_clean = (self._current_url or "").strip()
+                    from core.parser import KemonoURLParser
+                    _parsed = KemonoURLParser.parse(url_clean) if url_clean else None
+                    if _parsed and _parsed.is_valid and not _parsed.is_external_provider and not _parsed.is_single_post:
+                        c_tasks = grouped.get((_parsed.service.lower(), _parsed.user_id.lower()), tasks_done)
+                        t_dir = self.extract_artist_folder_from_path(
+                            c_tasks[0].target_path,
+                            self._creator_name or _parsed.user_id,
+                            _parsed.service,
+                            fallback_dir=self._download_dir
+                        )
+                        self._watchlist_manager.add_entry(
+                            url=url_clean,
+                            creator_name=self._creator_name or _parsed.user_id,
+                            user_id=_parsed.user_id,
+                            service=_parsed.service,
+                            domain=_parsed.domain,
+                            last_post_id=c_latest_pid if 'c_latest_pid' in locals() else "",
+                            last_post_date=c_latest_date if 'c_latest_date' in locals() else "",
+                            download_dir=t_dir,
+                            options=self._get_filter_options().to_dict(),
+                        )
+
                     self._watchlist_model.refresh()
                     self.watchlistChanged.emit()
-                elif tasks_done:
-                    t0 = tasks_done[0]
-                    if t0.service and t0.creator_name:
-                        existing = next((e for e in self._watchlist_manager.entries if e.service.lower() == t0.service.lower() and (e.creator_name.lower() == t0.creator_name.lower() or e.user_id == t0.creator_name)), None)
-                        if existing:
-                            if last_post_date or last_post_id:
-                                self._watchlist_manager.update_last_download(existing.user_id, existing.service, last_post_id or existing.last_post_id, last_post_date or existing.last_post_date)
-                            if target_download_dir:
-                                self._watchlist_manager.set_download_dir(existing.user_id, existing.service, target_download_dir)
-                            self._watchlist_model.refresh()
-                            self.watchlistChanged.emit()
             except Exception as e:
                 logger.debug(f"Watchlist update error on finish: {e}", category="watchlist")
 
@@ -2532,14 +2551,77 @@ class AppBridge(QObject):
 
         threading.Thread(target=_run, daemon=True).start()
 
+    def resolve_artist_download_dir(self, entry) -> str:
+        """
+        Return the exact directory to download an artist into:
+        1. If entry.download_dir is set and non-empty, resolve it (ensuring no duplicate creator folder).
+        2. Otherwise, construct the default path inside self._download_dir: os.path.join(self._download_dir, f"{clean_c} [{service}]").
+        """
+        from core.filter_engine import FilterEngine
+        clean_c = FilterEngine.clean_filesystem_text(entry.creator_name or entry.user_id, max_len=80, fallback="creator")
+        expected_folder = f"{clean_c} [{entry.service}]"
+
+        target = (getattr(entry, "download_dir", "") or "").strip()
+        if target:
+            return self.resolve_artist_download_dir_for_folder(target, entry.creator_name or entry.user_id, entry.service)
+
+        # Default fallback: inside self._download_dir
+        base_dir = self._download_dir or os.path.join(os.path.expanduser("~"), "Downloads", "KemonoDownloads")
+        return os.path.join(base_dir, expected_folder)
+
+    def resolve_artist_download_dir_for_folder(self, folder: str, creator_name: str, service: str) -> str:
+        r"""
+        Resolves a selected or configured folder to ensure it points directly to the creator's folder:
+        - If folder basename already matches creator or creator [service], return folder as-is.
+        - If an existing subfolder matching the creator exists inside folder, return that subfolder.
+        - Otherwise, if folder is a parent directory (e.g. D:\Archive), assign folder/creator [service].
+        """
+        from core.filter_engine import FilterEngine
+        clean_c = FilterEngine.clean_filesystem_text(creator_name, max_len=80, fallback="creator")
+        expected_folder = f"{clean_c} [{service}]"
+        folder = os.path.normpath(folder)
+        base = os.path.basename(folder)
+        if base.lower() == expected_folder.lower() or base.lower() == clean_c.lower() or (service and base.lower().startswith(f"{clean_c.lower()} [")):
+            return folder
+        cand1 = os.path.join(folder, expected_folder)
+        if os.path.exists(cand1):
+            return cand1
+        cand2 = os.path.join(folder, clean_c)
+        if os.path.exists(cand2):
+            return cand2
+        return os.path.join(folder, expected_folder)
+
+    def extract_artist_folder_from_path(self, sample_path: str, creator_name: str, service: str, fallback_dir: str = "") -> str:
+        """
+        Safely walk up parent directories from a sample file target path to locate
+        the creator folder, completely avoiding cross-drive ValueError from os.path.relpath.
+        """
+        from core.filter_engine import FilterEngine
+        clean_c = FilterEngine.clean_filesystem_text(creator_name, max_len=80, fallback="creator")
+        expected = f"{clean_c} [{service}]".lower()
+        clean_lower = clean_c.lower()
+
+        try:
+            curr = os.path.dirname(os.path.abspath(sample_path))
+            while curr and curr != os.path.dirname(curr):
+                base = os.path.basename(curr).lower()
+                if base == expected or base == clean_lower or (service and base.startswith(f"{clean_lower} [")):
+                    return curr
+                curr = os.path.dirname(curr)
+        except Exception:
+            pass
+
+        return fallback_dir or (os.path.dirname(sample_path) if sample_path else self._download_dir)
+
     @Slot(str, str)
-    def downloadNewPosts(self, userId: str, service: str):
-        """Queue only posts newer than the last_post_date for the given artist."""
+    @Slot(str, str, "QVariantList")
+    def downloadNewPosts(self, userId: str, service: str, postIds: Optional[list] = None):
+        """Queue only posts newer than the last_post_date for the given artist, reusing saved settings."""
         entry = self._watchlist_manager._find(userId, service)
         if not entry:
             logger.warning(f"downloadNewPosts: entry not found for {userId}/{service}", category="watchlist")
             return
-        if entry.new_post_count == 0:
+        if entry.new_post_count == 0 and not postIds:
             logger.info(f"No new posts queued for {entry.creator_name!r} — all up to date.", category="watchlist")
             return
 
@@ -2548,7 +2630,30 @@ class AppBridge(QObject):
             if not new_posts:
                 logger.info(f"No new posts found for {entry.creator_name!r}.", category="watchlist")
                 return
-            options = self._get_filter_options()
+
+            # If specific postIds were requested (selective download), filter to only those
+            if postIds:
+                p_set = set(str(pid) for pid in postIds)
+                new_posts = [p for p in new_posts if str(p.get("id")) in p_set]
+                if not new_posts:
+                    logger.info(f"None of the requested posts for {entry.creator_name!r} were available.", category="watchlist")
+                    return
+
+            # Reuse saved settings if present, otherwise fallback to current UI settings
+            from core.filter_engine import FilterOptions
+            if entry.options:
+                options = FilterOptions.from_dict(entry.options)
+            else:
+                options = self._get_filter_options()
+
+            artist_folder = self.resolve_artist_download_dir(entry)
+            # Ensure the entry knows its download_dir if it was previously empty
+            if not entry.download_dir:
+                entry.download_dir = artist_folder
+                self._watchlist_manager.save()
+                self._watchlist_model.refresh()
+                self.watchlistChanged.emit()
+
             tasks = self.downloader.build_tasks_from_posts(
                 posts=new_posts,
                 creator_name=entry.creator_name,
@@ -2556,17 +2661,150 @@ class AppBridge(QObject):
                 domain=entry.domain,
                 base_dir=self._download_dir,
                 options=options,
-                batch_id=f"watchlist_{entry.service}_{entry.user_id}"
+                batch_id=f"watchlist_{entry.service}_{entry.user_id}",
+                artist_dir=artist_folder,
+                user_id=entry.user_id
             )
             if tasks:
                 self._appendTasksSignal.emit(tasks)
-                self.downloader.append_tasks(tasks)
+                self.downloader.append_tasks(tasks, options=options, cookie_str=self._cookie_string)
+                if not self._is_downloading and self.downloader._is_running:
+                    self._is_downloading = True
+                    self.isDownloadingChanged.emit()
+                    self._status_text = f"Downloading updates for {entry.creator_name}..."
+                    self.statusTextChanged.emit()
                 logger.success(
-                    f"Watchlist: queued {len(tasks)} new file(s) for {entry.creator_name!r}.",
+                    f"Watchlist: queued {len(tasks)} new file(s) for {entry.creator_name!r} at {artist_folder}.",
                     category="watchlist"
                 )
 
         threading.Thread(target=_run, daemon=True).start()
+
+    @Slot()
+    def downloadAllNewPosts(self):
+        """Batch download new posts for all watchlist artists with pending updates."""
+        updated_entries = [e for e in self._watchlist_manager.entries if (getattr(e, "new_post_count", 0) or 0) > 0]
+        if not updated_entries:
+            logger.info("No watchlist artists have pending updates.", category="watchlist")
+            return
+        logger.info(f"Queueing updates for {len(updated_entries)} watchlist creator(s)...", category="watchlist")
+        for e in updated_entries:
+            self.downloadNewPosts(e.user_id, e.service)
+
+    @Slot(str, result=bool)
+    @Slot(str, str, result=bool)
+    def addArtistToWatchlist(self, url: str, custom_download_dir: str = "") -> bool:
+        """
+        Manually add an artist to the watchlist by URL without downloading past posts.
+        Fetches the latest post to set cutoff point so only future posts are considered new.
+        """
+        raw_url = (url or "").strip()
+        if not raw_url:
+            return False
+        from core.parser import KemonoURLParser
+        parsed = KemonoURLParser.parse(raw_url)
+        if not parsed.is_valid:
+            logger.warning(f"Cannot add to watchlist: invalid URL ({raw_url})", category="watchlist")
+            return False
+
+        creator_name = self.api_client.resolve_creator_name(parsed) or parsed.user_id
+        target_dir = ""
+        if custom_download_dir:
+            target_dir = self.resolve_artist_download_dir_for_folder(custom_download_dir, creator_name, parsed.service)
+        else:
+            from core.filter_engine import FilterEngine
+            clean_c = FilterEngine.clean_filesystem_text(creator_name, max_len=80, fallback="creator")
+            target_dir = os.path.join(self._download_dir, f"{clean_c} [{parsed.service}]")
+
+        # Fetch page 1 to set latest post id and date as cutoff
+        latest_pid = ""
+        latest_pdate = ""
+        try:
+            posts = self.api_client.fetch_user_posts(parsed, page_start=1, page_end=1, page_size=10)
+            if posts:
+                p0 = posts[0]
+                latest_pid = str(p0.get("id", ""))
+                pub = p0.get("published") or p0.get("added") or ""
+                if isinstance(pub, (int, float)):
+                    try:
+                        latest_pdate = datetime.datetime.fromtimestamp(pub).strftime("%Y-%m-%d")
+                    except Exception:
+                        latest_pdate = ""
+                else:
+                    p_str = str(pub)
+                    latest_pdate = p_str.split("T")[0] if "T" in p_str else (p_str[:10] if p_str else "")
+        except Exception as e:
+            logger.debug(f"Could not fetch latest post for new artist: {e}", category="watchlist")
+
+        canonical_url = getattr(parsed, "raw_url", "") or f"https://{parsed.domain}/{parsed.service}/user/{parsed.user_id}"
+        options_dict = self._get_filter_options().to_dict()
+
+        created = self._watchlist_manager.add_entry(
+            url=canonical_url,
+            creator_name=creator_name,
+            user_id=parsed.user_id,
+            service=parsed.service,
+            domain=parsed.domain,
+            last_post_id=latest_pid,
+            last_post_date=latest_pdate,
+            download_dir=target_dir,
+            options=options_dict,
+        )
+        self._watchlist_model.refresh()
+        self.watchlistChanged.emit()
+        logger.success(f"Added {creator_name!r} [{parsed.service}] to watchlist (tracking new posts).", category="watchlist")
+        return True
+
+    @Slot(str, str, str)
+    def ignoreWatchlistPost(self, userId: str, service: str, postId: str):
+        """Ignore a specific post for an artist so it won't be downloaded."""
+        if self._watchlist_manager.ignore_post(userId, service, postId):
+            self._watchlist_model.update_new_counts()
+            self._watchlist_model.refresh()
+            self.watchlistChanged.emit()
+
+    @Slot(str, str, str)
+    def unignoreWatchlistPost(self, userId: str, service: str, postId: str):
+        """Unignore a previously ignored post for an artist."""
+        if self._watchlist_manager.unignore_post(userId, service, postId):
+            self._watchlist_model.update_new_counts()
+            self._watchlist_model.refresh()
+            self.watchlistChanged.emit()
+
+    @Slot(str, str)
+    def unignoreAllWatchlistPosts(self, userId: str, service: str):
+        """Unignore all posts for an artist and re-check."""
+        if self._watchlist_manager.unignore_all(userId, service):
+            self._watchlist_model.update_new_counts()
+            self._watchlist_model.refresh()
+            self.watchlistChanged.emit()
+            self.checkWatchlistArtist(userId, service)
+
+    @Slot(str, str)
+    def ignoreCurrentNewPosts(self, userId: str, service: str):
+        """Ignore all currently discovered new posts for this artist."""
+        entry = self._watchlist_manager._find(userId, service)
+        if not entry:
+            return
+        if entry.cached_new_posts:
+            for p in list(entry.cached_new_posts):
+                pid = str(p.get("id", "")).strip()
+                if pid:
+                    self._watchlist_manager.ignore_post(userId, service, pid)
+        if entry.cached_new_posts:
+            latest = entry.cached_new_posts[-1]
+            entry.last_post_id = str(latest.get("id", "")) or entry.last_post_id
+            pub = latest.get("published") or latest.get("added") or ""
+            d_str = str(pub).split("T")[0] if "T" in str(pub) else str(pub)[:10]
+            if d_str:
+                entry.last_post_date = d_str
+        entry.new_post_count = 0
+        entry.cached_new_posts = []
+        self._watchlist_manager.save()
+        self._watchlist_model.update_new_counts()
+        self._watchlist_model.refresh()
+        self.watchlistChanged.emit()
+        logger.info(f"Ignored current updates for {entry.creator_name!r}.", category="watchlist")
 
     @Slot(str, str)
     def redownloadWatchlistEntry(self, userId: str, service: str):
@@ -2593,6 +2831,29 @@ class AppBridge(QObject):
             self._watchlist_model.refresh()
             self.watchlistChanged.emit()
 
+    @Slot(str, str, str, result=str)
+    def setWatchlistLastDownloadDate(self, userId: str, service: str, dateStr: str) -> str:
+        """
+        Manually set or update the last downloaded cutoff date for an artist.
+        Converts and normalizes user input into canonical 'YYYY-MM-DD' (or '' if cleared).
+        Returns the normalized date string on success, or '' on failure.
+        """
+        ok, res = self._watchlist_manager.set_last_post_date(userId, service, dateStr)
+        if ok:
+            self._watchlist_model.update_new_counts()
+            self._watchlist_model.refresh()
+            self.watchlistChanged.emit()
+            return res
+        else:
+            logger.warning(f"Failed to update last download date: {res}", category="watchlist")
+            return ""
+
+    @Slot(str, result=str)
+    def normalizeWatchlistDate(self, dateStr: str) -> str:
+        """Helper to preview/validate date conversion live from QML."""
+        res = self._watchlist_manager.normalize_date(dateStr)
+        return res if res is not None else "INVALID"
+
     @Slot(str, str)
     def browseWatchlistDownloadDir(self, userId: str, service: str):
         """Open a directory picker dialog to set custom download dir for a watchlist entry."""
@@ -2604,7 +2865,32 @@ class AppBridge(QObject):
             initial_dir
         )
         if folder:
-            self.setWatchlistDownloadDir(userId, service, folder)
+            norm_folder = os.path.normpath(folder)
+            if entry:
+                resolved = self.resolve_artist_download_dir_for_folder(norm_folder, entry.creator_name, entry.service)
+            else:
+                resolved = norm_folder
+            self.setWatchlistDownloadDir(userId, service, resolved)
+
+    @Slot(str)
+    def openFolder(self, path: str):
+        """Open the specified or enclosing directory in the OS file manager."""
+        if not path:
+            path = self._download_dir
+        target = path if os.path.isdir(path) else os.path.dirname(path)
+        if not os.path.exists(target):
+            try:
+                os.makedirs(target, exist_ok=True)
+            except Exception:
+                target = self._download_dir
+        if os.path.exists(target):
+            import subprocess
+            if sys.platform == "win32":
+                subprocess.Popen(["explorer", os.path.normpath(target)])
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", target])
+            else:
+                subprocess.Popen(["xdg-open", target])
 
     @Slot(result=str)
     def getWatchlistJson(self) -> str:

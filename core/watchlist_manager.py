@@ -27,10 +27,14 @@ class WatchlistEntry:
     auto_check: bool = True
     new_post_count: int = 0    # transient — not persisted, set after checks
     download_dir: str = ""
+    options: Dict[str, Any] = field(default_factory=dict)
+    ignored_post_ids: List[str] = field(default_factory=list)
+    cached_new_posts: List[Dict[str, Any]] = field(default_factory=list)  # transient — discovered new posts
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
-        d.pop("new_post_count", None)  # don't persist transient field
+        d.pop("new_post_count", None)   # don't persist transient field
+        d.pop("cached_new_posts", None) # don't persist transient field
         return d
 
     @classmethod
@@ -47,7 +51,11 @@ class WatchlistEntry:
             auto_check=bool(d.get("auto_check", True)),
             new_post_count=0,
             download_dir=d.get("download_dir", ""),
+            options=d.get("options", {}) if isinstance(d.get("options"), dict) else {},
+            ignored_post_ids=list(d.get("ignored_post_ids", [])) if isinstance(d.get("ignored_post_ids"), list) else [],
+            cached_new_posts=[],
         )
+
 
 
 class WatchlistManager:
@@ -120,6 +128,7 @@ class WatchlistManager:
         last_post_date: str = "",
         auto_check: bool = True,
         download_dir: str = "",
+        options: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Add or update a watchlist entry.
@@ -138,8 +147,11 @@ class WatchlistManager:
                 existing.creator_name = creator_name
             if url:
                 existing.url = url
-            if download_dir:
+            # Only set download_dir if existing does not already have one set
+            if download_dir and not existing.download_dir:
                 existing.download_dir = download_dir
+            if options:
+                existing.options = options
             self.save()
             return False
         else:
@@ -154,6 +166,9 @@ class WatchlistManager:
                 added_at=datetime.datetime.now().isoformat(timespec="seconds"),
                 auto_check=auto_check,
                 download_dir=download_dir,
+                options=options or {},
+                ignored_post_ids=[],
+                cached_new_posts=[],
             )
             self.entries.insert(0, entry)
             self.save()
@@ -180,6 +195,7 @@ class WatchlistManager:
             existing.last_post_id = post_id
             existing.last_post_date = post_date
             existing.new_post_count = 0
+            existing.cached_new_posts = []
             self.save()
 
     def set_auto_check(self, user_id: str, service: str, enabled: bool):
@@ -197,6 +213,130 @@ class WatchlistManager:
             self.save()
             return True
         return False
+
+    @staticmethod
+    def normalize_date(s: str) -> Optional[str]:
+        """
+        Convert any user-provided or API date string into canonical 'YYYY-MM-DD'.
+        Supports:
+          - ISO dates: 'YYYY-MM-DD', 'YYYY-MM-DDTHH:MM:SS', 'YYYY/MM/DD', 'YYYY.MM.DD'
+          - Slash/dash/dot variants: 'DD/MM/YYYY', 'MM/DD/YYYY', 'DD-MM-YYYY', etc.
+          - Compact digits: 'YYYYMMDD'
+          - Written months: '19 Aug 2026', 'August 19, 2026', '2026 Aug 19'
+          - Relative terms: 'today', 'yesterday'
+          - Clear terms: '', 'never', 'none', 'clear', 'null', 'reset', '-' -> returns ''
+          - Unix timestamp in seconds or milliseconds
+        Returns:
+          Canonical 'YYYY-MM-DD' string, or '' if cleared, or None if invalid.
+        """
+        s = (s or "").strip()
+        if not s or s.lower() in ("never", "none", "clear", "null", "reset", "-", "never downloaded"):
+            return ""
+        if s.lower() == "today":
+            return datetime.date.today().strftime("%Y-%m-%d")
+        if s.lower() == "yesterday":
+            return (datetime.date.today() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+
+        # Check for numeric unix timestamp (10 digits for seconds, 13 for ms)
+        if s.isdigit() and len(s) in (10, 13):
+            try:
+                ts = int(s) / 1000.0 if len(s) == 13 else int(s)
+                return datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
+            except Exception:
+                pass
+
+        # Check for compact 8-digit date: YYYYMMDD
+        if s.isdigit() and len(s) == 8:
+            try:
+                y = int(s[:4])
+                m = int(s[4:6])
+                d = int(s[6:8])
+                dt = datetime.date(y, m, d)
+                if 1990 <= dt.year <= 2100:
+                    return dt.strftime("%Y-%m-%d")
+            except Exception:
+                pass
+
+        # Try dateutil.parser if available (strict mode without fuzzy false positives)
+        try:
+            import dateutil.parser
+            dt = dateutil.parser.parse(s, fuzzy=False)
+            if 1990 <= dt.year <= 2100:
+                return dt.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+
+        # Fallback standard datetime formats
+        for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y", "%Y.%m.%d", "%d.%m.%Y", "%B %d, %Y", "%d %B %Y", "%b %d, %Y", "%d %b %Y"):
+            try:
+                dt = datetime.datetime.strptime(s, fmt)
+                if 1990 <= dt.year <= 2100:
+                    return dt.strftime("%Y-%m-%d")
+            except Exception:
+                continue
+
+        return None
+
+    def set_last_post_date(self, user_id: str, service: str, raw_date_str: str) -> tuple:
+        """
+        Manually update or reset the last_post_date for an entry.
+        Normalizes any input format into canonical 'YYYY-MM-DD' (or '' if cleared).
+        Returns (success: bool, normalized_date_or_error: str).
+        """
+        existing = self._find(user_id, service)
+        if not existing:
+            return False, "Artist not found in watchlist"
+
+        normalized = self.normalize_date(raw_date_str)
+        if normalized is None:
+            return False, f"Invalid date format: '{raw_date_str}'. Please use YYYY-MM-DD (e.g. 2024-05-18), DD/MM/YYYY, or Month DD, YYYY."
+
+        existing.last_post_date = normalized
+        existing.last_post_id = ""  # Reset cutoff post id
+        existing.new_post_count = 0
+        existing.cached_new_posts = []
+        self.save()
+        logger.info(
+            f"Watchlist: updated last download date for {existing.creator_name!r} [{service}] to {normalized or 'Never'}.",
+            category="watchlist"
+        )
+        return True, normalized
+
+
+    def ignore_post(self, user_id: str, service: str, post_id: str) -> bool:
+        """Add post_id to ignored list for an entry."""
+        pid = str(post_id).strip()
+        if not pid:
+            return False
+        existing = self._find(user_id, service)
+        if existing:
+            if pid not in existing.ignored_post_ids:
+                existing.ignored_post_ids.append(pid)
+            existing.cached_new_posts = [p for p in existing.cached_new_posts if str(p.get("id")) != pid]
+            existing.new_post_count = len(existing.cached_new_posts)
+            self.save()
+            return True
+        return False
+
+    def unignore_post(self, user_id: str, service: str, post_id: str) -> bool:
+        """Remove post_id from ignored list for an entry."""
+        pid = str(post_id).strip()
+        existing = self._find(user_id, service)
+        if existing and pid in existing.ignored_post_ids:
+            existing.ignored_post_ids.remove(pid)
+            self.save()
+            return True
+        return False
+
+    def unignore_all(self, user_id: str, service: str) -> bool:
+        """Clear all ignored posts for an entry."""
+        existing = self._find(user_id, service)
+        if existing and existing.ignored_post_ids:
+            existing.ignored_post_ids = []
+            self.save()
+            return True
+        return False
+
 
     # ── New-Post Detection ─────────────────────────────────────────────────────
 
@@ -301,7 +441,13 @@ class WatchlistManager:
             str(p.get("id", "0"))
         ))
 
-        return new_posts
+        # Filter out ignored posts and update cached_new_posts
+        ignored_set = set(str(pid) for pid in getattr(entry, "ignored_post_ids", []))
+        unignored_posts = [p for p in new_posts if str(p.get("id", "")) not in ignored_set]
+        entry.cached_new_posts = unignored_posts
+        entry.new_post_count = len(unignored_posts)
+
+        return unignored_posts
 
     def to_json_list(self) -> str:
         """Return JSON string of all entries (for QML consumption)."""
@@ -319,5 +465,16 @@ class WatchlistManager:
                 "autoCheck": e.auto_check,
                 "newPostCount": e.new_post_count,
                 "downloadDir": e.download_dir,
+                "ignoredCount": len(getattr(e, "ignored_post_ids", [])),
+                "cachedNewPosts": [
+                    {
+                        "id": str(p.get("id", "")),
+                        "title": (p.get("title") or "Untitled").strip(),
+                        "published": str(p.get("published") or p.get("added") or "")[:10],
+                        "fileCount": (1 if (p.get("file") and isinstance(p.get("file"), dict) and (p.get("file").get("path") or p.get("file").get("storageKey"))) else 0) + len([a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]),
+                    }
+                    for p in getattr(e, "cached_new_posts", [])
+                ],
             })
         return json.dumps(data, ensure_ascii=False)
+
