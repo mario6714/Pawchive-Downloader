@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: "Pawchive Downloader v1.0.9"
+    title: "Pawchive Downloader " + ((typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.1.1")
     color: "#0F1117"
 
     // Stop active downloads and persist session gracefully when user closes the app
@@ -504,7 +504,7 @@ ApplicationWindow {
                         }
 
                         Text {
-                            text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? updaterBridge.currentVersion : "1.0.9"
+                            text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? updaterBridge.currentVersion : "1.1.1"
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 11
                             font.weight: 700
