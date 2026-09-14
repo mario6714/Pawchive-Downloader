@@ -139,6 +139,30 @@ class TranslationManager(QObject):
         merged.update(self._translations)
         return merged
 
+    @Property('QVariant', notify=languageChanged)
+    def tutorialSections(self) -> List[Dict[str, Any]]:
+        """Returns the structured tutorial sections for the active language."""
+        target_code = self._detect_system_locale() if self._selected_code == "auto" else self._selected_code
+        tut_dir = os.path.join(self._locales_dir, "tutorials")
+        lang_file = os.path.join(tut_dir, f"{target_code}.json")
+        if os.path.exists(lang_file):
+            try:
+                with open(lang_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.debug(f"Could not load tutorial for {target_code}: {e}", category="i18n")
+
+        # Fallback to English
+        en_file = os.path.join(tut_dir, "en.json")
+        if os.path.exists(en_file):
+            try:
+                with open(en_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.debug(f"Could not load fallback en tutorial: {e}", category="i18n")
+
+        return []
+
 
     @Slot(str)
     def setLanguage(self, code: str):

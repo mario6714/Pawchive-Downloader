@@ -505,5 +505,13 @@
   "toast_harvest_success": "成功擷取 ",
   "toast_harvest_success_links": " 條新連結，來自 ",
   "toast_harvest_failed": "擷取失敗：",
-  "toast_probing_finished": "連結有效性驗證完成。"
+  "toast_probing_finished": "連結有效性驗證完成。",
+  "opt_skip_post_covers": "略過貼文封面圖片",
+  "opt_skip_post_covers_tip": "當貼文包含附件或內文圖片時，不下載貼文的展示封面/預覽縮圖",
+  "tutorial_modal_title": "Pawchive Downloader — 完整使用手冊與功能指南",
+  "tutorial_modal_subtitle": "深入說明文件、提示說明與工作流程教學",
+  "tutorial_tag_tip": "提示",
+  "tutorial_tag_important": "重要",
+  "tutorial_tag_overview": "總覽",
+  "tutorial_tag_detail": "詳情"
 }

@@ -1,0 +1,394 @@
+[
+  {
+    "title": "Mulai Cepat & Ikhtisar",
+    "icon": "🚀",
+    "summary": "Situs yang didukung, tur antarmuka, dan pengunduhan pertama yang cepat.",
+    "content": [
+      {
+        "heading": "Selamat datang di Pengunduh Pawchive",
+        "body": "Pawchive Downloader adalah alat pengarsipan multi-utas berkecepatan tinggi yang dibuat khusus untuk artis dan platform konten. Ini terhubung langsung ke API dan jaringan cermin dengan perlindungan pembatasan kecepatan bawaan, pengenalan karakter, lompatan duplikat, dan ekstraksi arsip otomatis.",
+        "type": "intro"
+      },
+      {
+        "heading": "Platform yang Didukung",
+        "body": "• Kemono & Coomer (Patreon, Pixiv Fanbox, Fantia, Discord, Boosty, Gumroad, Afdian, DLsite, Subscribestar)\n• Album dan folder Bunkr\n• Galeri nHentai\n• Cloud Host: Mega.nz, Dropbox, tautan Google Drive tertanam di dalam postingan",
+        "type": "info"
+      },
+      {
+        "heading": "Alur Kerja Pengunduhan Pertama Kali",
+        "body": "1. Tempelkan URL pembuat atau URL postingan ke bilah pencarian atas (misalnya https://kemono.su/patreon/user/123456).\n2. Pilih rentang halaman atau biarkan sebagai 'Semua'.\n3. Klik 'Scrape & Queue' atau tekan Enter.\n4. Klik 'Mulai Unduh' di kontrol antrian untuk memulai.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Mode Input & Pengikis URL",
+    "icon": "📥",
+    "summary": "Pengikisan pembuat, mode posting tunggal, rentang halaman, dan pengumpulan tautan.",
+    "content": [
+      {
+        "heading": "URL Pembuat vs URL Postingan Tunggal",
+        "body": "• URL Pembuat Konten (berisi /pengguna/): Menghapus seluruh arsip artis di semua postingan. Anda dapat menentukan rentang halaman (misalnya 1..3) untuk hanya mengambil konten terbaru.\n• URL Postingan Tunggal (mengandung /post/): Segera menggores dan mengantri hanya file dan link dari postingan spesifik tersebut.\n• URL File Langsung: Jika Anda menempelkan URL media atau cloud langsung, aplikasi akan mendeteksinya dan menanyakan pemecah tautan cloud.",
+        "type": "info"
+      },
+      {
+        "heading": "Pemilih Rentang Halaman",
+        "body": "Penggeser halaman memungkinkan Anda memilih halaman mana yang akan dikikis. Setiap halaman berisi 50 posting. Halaman 1 adalah konten terbaru. Menyetel 'Semua' akan menghapus seluruh riwayat pembuat konten.",
+        "type": "tip"
+      },
+      {
+        "heading": "Mode Ekstraktor Cloud Link",
+        "body": "Postingan sering kali memiliki konten teks yang berisi tautan Mega.nz, Google Drive, atau Bunkr. Scraper secara otomatis memeriksa teks isi postingan dan menyematkannya, mengekstraksi tautan cloud mentah ke dalam antrean unduhan atau tab ekspor tautan.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Filter Aturan & Cakupan",
+    "icon": "🔍",
+    "summary": "Jenis file, gambar konten, kata penyertaan/pengecualian, dan cakupan.",
+    "content": [
+      {
+        "heading": "Filter Kategori File",
+        "body": "• Gambar: .png, .jpg, .jpeg, .webp, .gif, .bmp, .psd, .clip\n• Video: .mp4, .mkv, .webm, .mov, .avi, .m4v\n• Audio: .mp3, .wav, .flac, .ogg, .m4a\n• Arsip: .zip, .rar, .7z, .tar, .gz\n• Teks/Dokumen: .pdf, .txt, .epub, .doc, .docx",
+        "type": "info"
+      },
+      {
+        "heading": "Beralih Gambar Konten",
+        "body": "Gambar konten adalah ilustrasi sebaris dan pratinjau yang tertanam dalam badan teks postingan (bukan lampiran). Mengaktifkan ini memastikan tidak ada gambar tersemat yang tertinggal.",
+        "type": "tip"
+      },
+      {
+        "heading": "Kata Kunci Inklusi & Pengecualian",
+        "body": "• Pertahankan Kata: Hanya file yang cocok dengan salah satu kata kunci yang dipisahkan koma ini yang akan diunduh.\n• Lewati Kata: File yang mengandung salah satu kata kunci ini akan dilewati.\n• Cakupan (File vs Karakter): 'File' cocok dengan nama file. 'Keduanya' cocok dengan nama file, judul posting, dan tag karakter.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Unduhan Mega & Cloud",
+    "icon": "☁️",
+    "summary": "Menggunakan filter 'Hanya Tautan', mengekstrak tautan Mega, mengunduh vs mengekspor, dan memotong kuota.",
+    "content": [
+      {
+        "heading": "Langkah 1: Aktifkan Filter 'Hanya Tautan'",
+        "body": "Di tab Pengunduh, di bawah Jenis File, pilih filter radio 'Hanya Tautan'. Ini menginstruksikan Pawchive Downloader untuk melewatkan pengunduhan lampiran gambar/video standar dan sebagai gantinya menguraikan deskripsi posting, isi konten, dan komentar khusus untuk tautan cloud yang disematkan.",
+        "type": "tip"
+      },
+      {
+        "heading": "Langkah 2: Kikis Pembuat atau Postingan",
+        "body": "Tempelkan URL pembuat atau kiriman ke dalam bilah pencarian dan klik 'Gores & Antrean'. Scraper secara otomatis mendeteksi dan mengekstrak Mega URL (baik tautan folder seperti mega.nz/folder/... dan tautan file tunggal seperti mega.nz/file/...), Google Drive, Dropbox, Bunkr, dan lainnya ke dalam repositori Harvested Links Anda.",
+        "type": "info"
+      },
+      {
+        "heading": "Langkah 3: Unduh Langsung vs Ekspor Tautan",
+        "body": "• Opsi A (Unduh melalui Aplikasi): Klik 'Unduhan Cloud' di antrean atau bilah navigasi. Pengunduh cloud bawaan secara asli menanyakan Mega API, menyelesaikan hierarki folder, dan mengalirkan file AES-CTR yang didekripsi langsung ke disk Anda dengan pekerja multithread.\n• Opsi B (Ekspor Tautan): Buka tab Ekspor/Tautan dan klik 'Ekspor Tautan yang Dipanen' untuk menyimpan file .txt bersih yang berisi semua URL Mega mentah, siap untuk ditempel langsung ke JDownloader, MegaSync, atau aria2.",
+        "type": "info"
+      },
+      {
+        "heading": "Melewati Kuota Mega Bandwidth (VPN & Proxy)",
+        "body": "Mega membatasi akun gratis hingga ~5 GB transfer setiap 6 jam per alamat IP. Ketika batas kuota tercapai:\n• VPN Bypass: Alihkan server VPN Anda ke kota atau negara lain untuk mendapatkan alamat IP baru, lalu lanjutkan pengunduhan Anda.\n• Pengaturan Proxy: Buka Pengaturan -> Jaringan & Proxy, dan masukkan URL proxy HTTP atau SOCKS5 Anda (mis. Socks5://127.0.0.1:1080). Pawchive akan merutekan permintaan potongan melalui proxy, langsung melewati blok kuota.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Pembelajaran Karakter & Folder",
+    "icon": "🏷️",
+    "summary": "Organisasi folder karakter cerdas, pencocokan kamus, dan pembelajaran.",
+    "content": [
+      {
+        "heading": "Penyortiran Subfolder Otomatis",
+        "body": "Ketika Organisasi Karakter diaktifkan, file secara otomatis diurutkan ke dalam folder yang diberi nama sesuai karakter yang terdeteksi (misalnya, 'Pembuat [layanan] / Nama Karakter / file.png').",
+        "type": "info"
+      },
+      {
+        "heading": "Basis Data Utama .txt yang Dikenal",
+        "body": "Aplikasi ini dilengkapi dengan kamus utama bawaan yang berisi lebih dari 100.000 karakter anime, game, dan komik. Tokenizer memecah nama file dan mencocokkan nama karakter yang paling spesifik.",
+        "type": "info"
+      },
+      {
+        "heading": "Sistem Pembelajaran Karakter Cerdas",
+        "body": "Jika nama karakter muncul berulang kali di judul atau tag postingan, aplikasi akan mempelajarinya secara dinamis dan membuat folder yang cocok meskipun karakter tersebut belum ada di Known.txt.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Antrian, Konkurensi & Batasan Tarif",
+    "icon": "⚡",
+    "summary": "Utas pekerja, deteksi batas kecepatan, dan optimalisasi kecepatan.",
+    "content": [
+      {
+        "heading": "Penggeser Utas Pekerja",
+        "body": "Menyesuaikan konkurensi pengunduhan paralel (1 hingga 16 thread). 3–5 thread umumnya merupakan titik terbaik untuk throughput maksimum tanpa memicu pembatasan server.",
+        "type": "tip"
+      },
+      {
+        "heading": "Konkurensi Adaptif & Perlindungan 429",
+        "body": "Server cermin Kemono menerapkan batasan kecepatan. Jika server mengembalikan HTTP 429 (Terlalu Banyak Permintaan), aplikasi secara otomatis membatasi konkurensi menjadi 2 thread dan menerapkan backoff eksponensial sebelum melanjutkan dengan lancar.",
+        "type": "warning"
+      },
+      {
+        "heading": "Antrian Aktif vs Antrian Selesai",
+        "body": "Gunakan bilah filter di atas daftar antrean untuk beralih antara item 'Semua', 'Pengunduhan', 'Selesai', dan 'Gagal'. Anda dapat menjeda, membatalkan, atau memprioritaskan tugas dengan cepat.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Coba Ulang Otomatis & Penanganan Kesalahan",
+    "icon": "🔄",
+    "summary": "Batas 5 kali coba lagi, tombol coba ulang otomatis, dan Modal Coba Lagi.",
+    "content": [
+      {
+        "heading": "Batas Coba Ulang Otomatis (Maks 5 Percobaan Ulang)",
+        "body": "Untuk mencegah pengulangan percobaan ulang tanpa batas pada URL yang rusak atau file yang hilang, percobaan ulang otomatis akan mencoba file yang gagal paling banyak 5 kali. Jika gagal pada percobaan ke-5, maka ditandai sebagai 'Berhenti setelah 5 kali percobaan ulang' dan dilewati dengan aman sehingga antrean Anda dapat selesai.",
+        "type": "info"
+      },
+      {
+        "heading": "Modal Coba Lagi (Kontrol Manual)",
+        "body": "Semua file yang gagal disimpan di Retry Modal (dapat diakses melalui tombol penghitung Gagal berwarna merah). Dalam modal ini, Anda dapat memeriksa kode kesalahan, klik 'Buka Postingan' untuk melihat postingan sumber, klik 'Uji Tautan', atau pilih file tertentu untuk dicoba ulang secara manual.",
+        "type": "tip"
+      },
+      {
+        "heading": "Coba Ulang Otomatis di Akhir Antrean",
+        "body": "Ketika 'Coba Ulang Otomatis' diaktifkan, pengunduh secara otomatis menelusuri semua file yang gagal setelah antrean utama mencapai 0, mencobanya lagi hingga batas 5 percobaan sebelum menyimpulkan.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Daftar Pantauan & Pemeriksaan Otomatis",
+    "icon": "👁️",
+    "summary": "Melacak artis, pemeriksaan startup, penghitung yang belum dibaca, dan folder khusus.",
+    "content": [
+      {
+        "heading": "Menambahkan Kreator ke Daftar Tontonan",
+        "body": "Klik tombol Bookmark/Daftar Tontonan di samping pembuat konten mana pun untuk menambahkannya ke daftar tontonan Anda. Aplikasi ini mengingat tanggal pengunduhan terakhir dan offset posting.",
+        "type": "info"
+      },
+      {
+        "heading": "Periksa Otomatis pada Startup & Lencana",
+        "body": "Setiap artis yang mengaktifkan 'Periksa otomatis saat peluncuran' akan diperiksa di latar belakang saat aplikasi dibuka. Artis dengan postingan baru diurutkan ke atas dengan sorotan notifikasi yang dinamis dan penghitung postingan baru yang tepat.",
+        "type": "tip"
+      },
+      {
+        "heading": "Folder Khusus Per Pembuat",
+        "body": "Anda dapat menetapkan direktori unduhan khusus untuk masing-masing artis menggunakan ikon folder di sebelah kartunya. Dekompresor dan antrian mengikuti jalur ini secara otomatis.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Dekompresor Massal",
+    "icon": "📦",
+    "summary": "Mesin 7-Zip, pemindaian arsip rekursif, pemeriksaan disk sebelum penerbangan.",
+    "content": [
+      {
+        "heading": "Mesin Kinerja Tinggi 7-Zip",
+        "body": "Didukung oleh 7za dengan dukungan multithreading (-mmt). Secara otomatis menemukan 7za.exe di direktori proyek Anda, PATH sistem, atau instalasi program default.",
+        "type": "info"
+      },
+      {
+        "heading": "Pemindaian Rekursif & Deteksi Multi-Volume",
+        "body": "Memindai semua folder unduhan artis secara rekursif untuk arsip .zip, .rar, .7z, .cbz, dan .tar. Bagian sekunder dari arsip multi-volume (.part2.rar, .002) disaring dengan cerdas sehingga hanya bagian 1 yang diekstraksi.",
+        "type": "tip"
+      },
+      {
+        "heading": "Pemeriksaan Ruang Disk Sebelum Penerbangan",
+        "body": "Sebelum mengekstraksi, mesin menghitung ruang disk terkompresi yang diperlukan per drive dan memberi tahu Anda jika ruang disk kosong tidak mencukupi, sehingga mencegah penulisan yang terhenti atau drive rusak.",
+        "type": "warning"
+      },
+      {
+        "heading": "Hapus Arsip Setelah Ekstraksi",
+        "body": "Jika diaktifkan, arsip dihapus dengan aman hanya jika 7-Zip keluar dengan kode 0 (ekstraksi terverifikasi). Jika arsip rusak atau dilindungi kata sandi, file asli akan dipertahankan.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Laporan Pasca Tindakan & Desktop",
+    "icon": "🌙",
+    "summary": "Pemicu Shutdown, Sleep, Hibernate dan laporan ringkasan Desktop otomatis.",
+    "content": [
+      {
+        "heading": "Apa yang Harus Dilakukan Setelah Selesai",
+        "body": "Pilih tindakan pasca-pengunduhan otomatis dari dropdown di footer antrean: 'Tutup Aplikasi', 'Tidur', 'Hibernasi', 'Matikan', atau 'Mulai Ulang'.",
+        "type": "info"
+      },
+      {
+        "heading": "Hitung Mundur Keamanan 15 Detik",
+        "body": "Sebelum komputer Anda mati atau masuk ke mode tidur, modal hitung mundur 15 detik muncul di layar dengan tombol 'Batal' yang menonjol sehingga Anda dapat menghentikan tindakan jika Anda masih bekerja.",
+        "type": "tip"
+      },
+      {
+        "heading": "Laporan Desktop Otomatis (HTML & TXT)",
+        "body": "Setiap kali tindakan pasca-pengunduhan aktif, aplikasi menyusun laporan ringkasan komprehensif dan menyimpannya langsung ke Desktop Anda. Laporan ini menampilkan pembuat yang sudah selesai, penggunaan ruang disk, dan tautan penuh yang dapat diklik untuk semua file yang gagal.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Pembaruan Dalam Aplikasi",
+    "icon": "🔄",
+    "summary": "Sumber vs pembaruan yang dikompilasi, pelacakan penerapan GitHub, dan mulai ulang dengan aman.",
+    "content": [
+      {
+        "heading": "Deteksi Cerdas (main.py vs .exe)",
+        "body": "Pembaru mendeteksi apakah Anda menjalankan dari sumber Python atau .exe mandiri yang dikompilasi. Untuk sumber yang dijalankan, ia melacak komitmen di cabang utama sehingga Anda menerima pembaruan pada setiap push. Untuk menjalankan .exe, ia memeriksa Rilis GitHub.",
+        "type": "info"
+      },
+      {
+        "heading": "Perbarui Lencana & Pemberitahuan",
+        "body": "Saat pembaruan baru ditemukan, pil '✨ Perbarui' yang menyala muncul di bilah navigasi atas. Mengkliknya akan membuka dialog Perbarui yang menampilkan catatan penerapan dan kemajuan pengunduhan.",
+        "type": "tip"
+      },
+      {
+        "heading": "Penyerahan Windows yang Aman",
+        "body": "Pembaruan melindungi semua file pribadi Anda: daftar pantauan, pengaturan, dan file unduhan Anda tidak pernah ditimpa. Skrip pembantu yang terpisah menunggu aplikasi ditutup, memperbarui file, dan diluncurkan kembali secara otomatis.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Gudang Tautan Permanen & Kata Sandi",
+    "icon": "🗝️",
+    "summary": "Pengarsipan tautan cloud tanpa batasan, kata sandi multibahasa, penyelamatan lintas pos, dan sinkronisasi Dekompresor.",
+    "content": [
+      {
+        "heading": "Arsip Teks Biasa yang Persisten",
+        "body": "Link Vault secara permanen menyimpan setiap tautan cloud (Mega, Google Drive, Dropbox, Pixeldrain, Bunkr, dll.) yang diekstraksi di seluruh sesi unduhan Anda di config/link_vault.json dengan pencadangan atom otomatis. Tautan dikelompokkan ke dalam tampilan hierarki Pembuat > Postingan > Tautan yang intuitif.",
+        "type": "intro"
+      },
+      {
+        "heading": "Pemecah Kata Sandi Multibahasa",
+        "body": "Secara otomatis mengidentifikasi kata sandi arsip dalam bahasa Inggris, Jepang (パスワード), China (密码), Rusia (пароль), Korea (암호), Prancis, dan Jerman menggunakan penilaian jarak berdasarkan jarak. Menampilkan kata sandi tepat di samping setiap tautan dengan salinan 1-klik.",
+        "type": "tip"
+      },
+      {
+        "heading": "Pengikis Lintas-Posting & Komentar 1-Hop",
+        "body": "Saat artis memposting pengumuman pembaruan yang tertaut ke postingan lain atau menyembunyikan kata sandi di dalam komentar, Link Vault mengikuti tautan lintas postingan (1-hop) dan menguraikan komentar pembuat konten untuk mengungkap semua tujuan download dan kata sandi yang tersembunyi.",
+        "type": "info"
+      },
+      {
+        "heading": "Pengumpanan Otomatis ke Dekompresor Massal",
+        "body": "Klik 'Sinkronkan Kata Sandi ke Decompressor' untuk secara otomatis mengekspor semua kata sandi yang dikumpulkan ke dalam daftar kata sandi Decompressor, memungkinkan ekstraksi arsip tanpa hambatan tanpa hambatan.",
+        "type": "tip"
+      },
+      {
+        "heading": "Pemeriksaan Kesehatan Langsung & Pembersihan Tautan Mati",
+        "body": "Klik 'Periksa Kesehatan Tautan' untuk menyelidiki tautan secara paralel tanpa pemblokiran. Tautan mati atau dihapus ditandai dengan warna merah, dan 'Bersihkan Tautan Mati' memungkinkan Anda memangkas tautan yang tidak berfungsi dengan satu klik.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Kumpulan Penyimpanan Multi-Drive",
+    "icon": "💽",
+    "summary": "Rentang otomatis di seluruh hard drive cadangan untuk mencegah error 'Tidak ada ruang tersisa di perangkat'.",
+    "content": [
+      {
+        "heading": "Menghilangkan Kegagalan Disk Penuh",
+        "body": "Arsip artis yang besar dapat dengan mudah membebani satu hard drive. Kumpulan Penyimpanan memantau kapasitas disk sebelum menulis setiap aliran file. Ketika drive utama turun di bawah margin keamanan Anda (misalnya 10 GB), file berikutnya secara otomatis dirutekan ke drive sekunder.",
+        "type": "intro"
+      },
+      {
+        "heading": "Pelestarian Hierarki Folder",
+        "body": "Saat meluap ke drive sekunder, Pawchive mereplikasi hierarki folder yang sama (misalnya 'E:/Kemono/Patreon/Artist/Post/file.mp4'). Organisasi file Anda tetap konsisten sepenuhnya di semua drive fisik.",
+        "type": "info"
+      },
+      {
+        "heading": "Menambahkan Kumpulan Penyimpanan Sekunder",
+        "body": "Navigasikan ke Pengaturan -> Penyimpanan & Pemrosesan File -> Multi-Drive Overflow, aktifkan fitur tersebut, dan klik 'Tambahkan Drive / Folder Overflow' untuk memilih hard drive tambahan atau berbagi jaringan.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "1-Klik Pengimpor Cookie Browser",
+    "icon": "🍪",
+    "summary": "Ekstraksi sesi langsung dari Chrome, Edge, Brave, Opera, Firefox dan pemantauan kedaluwarsa waktu nyata.",
+    "content": [
+      {
+        "heading": "Tidak Diperlukan DevTools (Firefox, Edge, Brave)",
+        "body": "Tidak perlu membuka Alat Pengembang F12 atau menyalin cookie sesi secara manual. Pawchive dengan aman membaca database cookie browser yang Anda instal melalui Windows DPAPI dan AES-256-GCM tanpa mengunci tab browser yang terbuka.\n\nCukup buka Pengaturan → Jaringan & Otentikasi, pilih browser Anda (atau biarkan Deteksi Otomatis), dan klik ⚡ Impor dari Browser. Firefox, Edge, dan Opera GX direkomendasikan untuk impor otomatis.",
+        "type": "intro"
+      },
+      {
+        "heading": "Pengawas Kedaluwarsa Waktu Nyata",
+        "body": "Lencana kedaluwarsa melacak validitas sesi yang tersisa:\n🟢 Aktif · Sesi Terverifikasi — sehat, tidak perlu tindakan apa pun\n🟡 Segera Kedaluwarsa (Xh kiri) — segera diimpor kembali\n🔴 Sesi Kedaluwarsa — segera impor ulang\n\nLencana diperbarui setiap 60 detik sehingga Anda selalu mengetahuinya sebelum pengunduhan gagal di tengah sesi.",
+        "type": "info"
+      },
+      {
+        "heading": "⚠️ Google Chrome 127+: Diperlukan Ekstraksi Cookie Manual",
+        "body": "Google Chrome 127 memperkenalkan Enkripsi Terikat Aplikasi yang mencegah alat eksternal apa pun membaca basis data cookie Chrome. Jika Anda menggunakan Chrome sebagai browser utama, Anda memiliki dua opsi:\n\n• Direkomendasikan: Masuk ke kemono.su / coomer.su di Mozilla Firefox atau Microsoft Edge dan gunakan importir 1-Klik dari sana.\n\n• Manual (browser apa pun): Salin string cookie sesi Anda secara manual menggunakan DevTools (lihat kartu berikutnya untuk petunjuk langkah demi langkah).",
+        "type": "warning"
+      },
+      {
+        "heading": "Ekstraksi Manual — Chrome / Browser Apa Pun (Langkah demi Langkah)",
+        "body": "1. Buka browser Anda dan login ke kemono.su atau coomer.su.\n\n2. Tekan F12 untuk membuka Alat Pengembang (atau klik kanan halaman → Inspeksi).\n\n3. Klik tab Aplikasi di bagian atas DevTools (Anda mungkin perlu mengklik ≫ untuk melihatnya).\n\n4. Di sidebar kiri, perluas Penyimpanan → Cookies → https://kemono.su (atau coomer.su).\n\n5. Cari cookie bernama 'session' — klik cookie tersebut dan salin Nilai lengkap dari panel bawah.\n\n6. Di Pawchive, buka bidang Pengaturan → Jaringan & Otentikasi → Cookie Sesi.\n\n7. Ketik: session= dan tempelkan nilai Anda tepat setelahnya. Contoh:\n   sesi=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n\n8. Secara opsional tambahkan cf_clearance dengan cara yang sama, dipisahkan dengan titik koma:\n   sesi=ABC123; cf_clearance=XYZ789\n\n9. Klik Simpan Pengaturan. Cookie Anda sekarang aktif.",
+        "type": "tip"
+      },
+      {
+        "heading": "Di mana Menemukan Setiap Cookie",
+        "body": "• kemono.su / coomer.su → Nama cookie: 'sesi'\n• Patreon.com → Nama cookie: 'session_id' (ditemukan di www.patreon.com)\n• Fanbox (fanbox.cc) → Nama cookie: 'FANBOXSESSID'\n• Cloudflare bypass → Nama cookie: 'cf_clearance' (domain yang sama dengan situs yang Anda akses)\n\nAnda hanya memerlukan satu cookie untuk situs mana pun Anda mengunduh. Anda tidak membutuhkan semuanya.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Penjadwal Tugas & Pusat Otomatisasi",
+    "icon": "⏰",
+    "summary": "Sinkronisasi delta Daftar Pantauan otomatis, pencadangan pembuat terjadwal, jendela Night Owl, dan batas thread yang terkunci.",
+    "content": [
+      {
+        "heading": "Otomatisasi Arsip Bebas Genggam",
+        "body": "Buat tugas latar belakang berulang untuk melakukan polling pada Daftar Pantauan Anda untuk postingan baru setiap beberapa jam atau jadwalkan pencadangan pembuat konten secara rutin pada waktu harian yang tetap (misalnya, pukul 03:00).",
+        "type": "intro"
+      },
+      {
+        "heading": "Thread & Mode Penundaan yang Dikunci Pengguna",
+        "body": "Jika Anda telah menyetel dengan cermat jumlah thread pekerja dan penundaan pengunduhan untuk koneksi Anda, aktifkan 'Kunci Thread & Penundaan Kustom'. Hal ini secara ketat mencegah algoritme adaptif atau tugas pembersihan latar belakang mengubah pengaturan khusus Anda.",
+        "type": "tip"
+      },
+      {
+        "heading": "Jendela Burung Hantu Malam di Luar Puncak",
+        "body": "Konfigurasikan jendela pengunduhan di luar jam sibuk (misalnya 01:00 hingga 07:00). Tugas yang dijadwalkan akan diantri dan dijeda hingga jendela di luar jam sibuk terbuka, sehingga memaksimalkan kecepatan pengunduhan saat bandwidth ISP paling murah.",
+        "type": "info"
+      },
+      {
+        "heading": "Pencegahan Tidur Windows (Tetap Terjaga)",
+        "body": "Melibatkan tanda status eksekusi kernel Windows (ES_SYSTEM_REQUIRED) saat tugas otomatis diunduh secara aktif, menjaga PC Anda tetap aktif sepanjang malam tanpa mengubah pengaturan daya Windows.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Referensi Tooltip Lengkap",
+    "icon": "💡",
+    "summary": "Lembar contekan singkat yang menjelaskan setiap tombol, ikon, dan lencana di seluruh antarmuka.",
+    "content": [
+      {
+        "heading": "Ikon Navigasi Tajuk",
+        "body": "• ❓ Tutorial: Membuka panduan interaktif ini.\n• ✨ Pembaruan: Menunjukkan versi yang lebih baru tersedia di GitHub.\n• ⚙️ Pengaturan: Membuka pengaturan aplikasi (direktori unduhan, konkurensi, proksi).\n• 📜 Konsol: Membuka aktivitas real-time dan jendela log jaringan.",
+        "type": "info"
+      },
+      {
+        "heading": "Tombol Antrian & Filter",
+        "body": "• Coba Ulang Otomatis: Secara otomatis memulai ulang download yang gagal di akhir antrian.\n• Mode Manga: Menormalkan nama file gambar untuk urutan pembacaan yang bersih dan berurutan.\n• Konkurensi Adaptif: Secara otomatis menyesuaikan thread ketika batas kecepatan server tercapai.\n• 📂 Ikon Folder: Membuka folder unduhan target di Windows File Explorer.",
+        "type": "tip"
+      },
+      {
+        "heading": "Tautan Vault & Kontrol Penjadwal",
+        "body": "• 🗝️ Link Vault: Arsip permanen dari semua tautan cloud yang diambil dan kata sandi yang diekstraksi.\n• ⏰ Penjadwal: Pusat otomatisasi untuk sinkronisasi Daftar Pantauan berulang dan tugas Night Owl.\n• 🔒 Lock Threads: Melindungi jumlah thread khusus dan penundaan jaringan dari pembatasan otomatis.\n• 💽 Kumpulan Penyimpanan: Mereplikasi pohon folder di seluruh drive sekunder ketika ruang disk hampir habis.\n• 🍪 Pengimpor Cookie: Ekstraktor sesi browser 1-klik dengan pengawas kedaluwarsa waktu nyata.",
+        "type": "info"
+      },
+      {
+        "heading": "Coba lagi Tindakan Modal",
+        "body": "• 🔗 Buka Postingan: Membuka postingan sumber di Kemono/Coomer di browser web Anda.\n• 📥 Tautan Tes: Menguji atau mengunduh file langsung di browser Anda.\n• 🔁 Mencoba Nx: Menampilkan berapa kali file telah dicoba ulang.\n• 🛑 5/5 Percobaan Ulang Maks: Menunjukkan percobaan ulang otomatis telah berhenti mencoba file ini.",
+        "type": "info"
+      }
+    ]
+  }
+]

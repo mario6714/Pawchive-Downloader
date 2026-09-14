@@ -282,6 +282,31 @@ class KemonoDownloader:
                     found.append(val)
         return found
 
+    @staticmethod
+    def extract_norm_rel_key(f_dict: Dict[str, Any]) -> str:
+        """
+        Extracts a canonical relative key/hash identifying the exact underlying file across mirrors.
+        Handles relative paths (/ab/cd/...), thumbnail URLs, CDN URLs, and cum.st storage keys.
+        """
+        if not isinstance(f_dict, dict):
+            return ""
+        rp = f_dict.get("path") or f_dict.get("storageKey") or ""
+        if not rp:
+            return ""
+        rp = rp.split("?")[0]
+        if re.match(r'^[0-9a-f]{16,}$', rp):
+            return rp.lower()
+        m_match = re.search(r'/(?:data|thumbnail/data)?(/[0-9a-f]{2}/[0-9a-f]{2}/[^\s?#]+)', rp, re.IGNORECASE)
+        if m_match:
+            return m_match.group(1).lower()
+        if "://" in rp:
+            rp = "/" + rp.split("://")[-1].partition("/")[-1]
+        if rp.startswith("/data/"):
+            rp = rp[5:]
+        if not rp.startswith("/"):
+            rp = f"/{rp}"
+        return rp.lower()
+
     def build_tasks_from_posts(
         self,
         posts: List[Dict[str, Any]],
@@ -335,10 +360,7 @@ class KemonoDownloader:
         post_folder_registry: Dict[str, str] = {}
         # Track target paths already assigned in this build mapping to metadata: {post_id, post_title, rel_path}
         _batch_paths: Dict[str, Dict[str, Any]] = {}
-        # Guard against duplicate rel_paths within the same post (e.g. Pawchive mirrors
-        # post.file into attachments). With index prefix on, the two entries would otherwise
-        # get different seq_idx values and bypass the target_path collision check.
-        _seen_file_ids: set = set()
+        _batch_rel_paths: Dict[str, Set[str]] = defaultdict(set)
         _post_dup_counts: Dict[Tuple[str, str], int] = defaultdict(int)
 
         for post_idx, post in enumerate(posts_to_process, 1):
@@ -483,13 +505,22 @@ class KemonoDownloader:
 
                         # Collect attached file names (built from the files already collected below)
                         all_file_names = []
+                        seen_info_keys = set()
                         _main_f = post.get("file")
                         if isinstance(_main_f, dict) and (_main_f.get("path") or _main_f.get("storageKey")):
+                            _k = self.extract_norm_rel_key(_main_f)
+                            if _k:
+                                seen_info_keys.add(_k)
                             _fname = (_main_f.get("name") or "").strip().rstrip(".,;!?")
                             if _fname:
                                 all_file_names.append(_fname)
                         for _att in (post.get("attachments") or []):
                             if isinstance(_att, dict) and (_att.get("path") or _att.get("storageKey")):
+                                _k = self.extract_norm_rel_key(_att)
+                                if not options.keep_duplicates and _k and _k in seen_info_keys:
+                                    continue
+                                if _k:
+                                    seen_info_keys.add(_k)
                                 _fname = (_att.get("name") or "").strip().rstrip(".,;!?")
                                 if _fname:
                                     all_file_names.append(_fname)
@@ -551,24 +582,76 @@ class KemonoDownloader:
                 except Exception as ex:
                     logger.debug(f"Could not save post_info.txt for {post_id}: {ex}", category="file")
 
-            # Collect files: post.file and post.attachments
+            # Collect files: post.file and post.attachments with deduplication
             files_to_process = []
-            main_file = post.get("file")
-            if main_file and isinstance(main_file, dict) and (main_file.get("path") or main_file.get("storageKey")):
-                files_to_process.append(main_file)
+            seen_post_file_keys: Dict[str, int] = {}
 
-            attachments = post.get("attachments", [])
+            main_file = post.get("file")
+            attachments = post.get("attachments", []) or []
+
+            # Check if post contains attachments or inline content images
+            has_valid_attachments = any(
+                isinstance(a, dict) and (a.get("path") or a.get("storageKey")) and not a.get("locked")
+                for a in attachments
+            )
+            has_content_images = False
+            if options.scan_content_images:
+                content_html = post.get("content", "") or post.get("captionHtml", "") or ""
+                if FilterEngine.extract_content_images(content_html):
+                    has_content_images = True
+            has_other_files = has_valid_attachments or has_content_images
+
+            # Determine whether to skip the primary post.file (cover picture)
+            skip_main_cover = False
+            if options.skip_post_covers:
+                if has_other_files:
+                    skip_main_cover = True
+                elif main_file and isinstance(main_file, dict):
+                    mf_name = (main_file.get("name") or main_file.get("originalFilename") or "").lower()
+                    if mf_name.startswith("cover.") or mf_name.startswith("cover_") or mf_name.startswith("preview."):
+                        skip_main_cover = True
+
+            if not skip_main_cover and main_file and isinstance(main_file, dict) and (main_file.get("path") or main_file.get("storageKey")):
+                k = self.extract_norm_rel_key(main_file)
+                if k:
+                    seen_post_file_keys[k] = 0
+                files_to_process.append(dict(main_file))
+
             if isinstance(attachments, list):
                 for att in attachments:
                     if isinstance(att, dict) and (att.get("path") or att.get("storageKey")):
-                        files_to_process.append(att)
+                        # If skip_post_covers is enabled, skip attachments named cover.* when other files exist
+                        if options.skip_post_covers and (has_other_files or len(attachments) > 1):
+                            att_name = (att.get("name") or att.get("originalFilename") or "").lower()
+                            if att_name.startswith("cover.") or att_name.startswith("cover_") or att_name.startswith("preview."):
+                                continue
+
+                        k = self.extract_norm_rel_key(att)
+                        if not options.keep_duplicates and k and k in seen_post_file_keys:
+                            # Upgrade metadata if att has non-preview or better name
+                            idx = seen_post_file_keys[k]
+                            existing = files_to_process[idx]
+                            if existing.get("preview_only") and not att.get("preview_only"):
+                                existing["preview_only"] = False
+                            if att.get("name") and not att.get("name", "").lower().startswith("cover"):
+                                existing["name"] = att.get("name")
+                            continue
+                        if k:
+                            seen_post_file_keys[k] = len(files_to_process)
+                        files_to_process.append(dict(att))
 
             # Scan inline content images if enabled
             if options.scan_content_images:
                 content_html = post.get("content", "") or post.get("captionHtml", "") or ""
                 content_imgs = FilterEngine.extract_content_images(content_html)
                 for ci in content_imgs:
-                    files_to_process.append({"name": os.path.basename(ci), "path": ci})
+                    ci_dict = {"name": os.path.basename(ci), "path": ci}
+                    k = self.extract_norm_rel_key(ci_dict)
+                    if not options.keep_duplicates and k and k in seen_post_file_keys:
+                        continue
+                    if k:
+                        seen_post_file_keys[k] = len(files_to_process)
+                    files_to_process.append(ci_dict)
 
             # Process each file attachment
             for file_idx, fobj in enumerate(files_to_process, 1):
@@ -609,24 +692,6 @@ class KemonoDownloader:
                 if not keep_file:
                     logger.debug(f"Skipped file '{raw_name}': {f_reason}", category="filter")
                     continue
-
-                # Track sequential file index per folder
-                folder_file_counts[post_folder] += 1
-                seq_idx = folder_file_counts[post_folder]
-
-                # Format filename based on selected naming style
-                sanitized_name = FilterEngine.format_custom_filename(
-                    original_filename=raw_name,
-                    post_title=post_title,
-                    post_date=date_str,
-                    post_index=post_idx,
-                    file_index=file_idx,
-                    options=options,
-                    folder_index=seq_idx
-                )
-                # Strip trailing punctuation/commas that would corrupt the ?f= CDN query parameter
-                # and trigger ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION in browsers.
-                sanitized_name = sanitized_name.rstrip(".,;!? \t")
 
                 # Normalize relative path (strip full host prefixes if present in inline content)
                 original_url = None  # preserve original full URL as first candidate
@@ -689,6 +754,34 @@ class KemonoDownloader:
                 if not clean_rel.startswith("/"):
                     clean_rel = f"/{clean_rel}"
 
+                # Deduplication check before incrementing folder file counts:
+                # Prevents incrementing the sequence counter (001_, 002_, ...) for duplicate files
+                norm_key = self.extract_norm_rel_key(fobj) or clean_rel.lower()
+                if not options.keep_duplicates and norm_key in _batch_rel_paths[post_folder]:
+                    logger.debug(
+                        f"Skipping identical duplicate attachment: '{raw_name}' ({clean_rel}) in post '{post_title}'",
+                        category="file"
+                    )
+                    continue
+
+                # Track sequential file index per folder
+                folder_file_counts[post_folder] += 1
+                seq_idx = folder_file_counts[post_folder]
+
+                # Format filename based on selected naming style
+                sanitized_name = FilterEngine.format_custom_filename(
+                    original_filename=raw_name,
+                    post_title=post_title,
+                    post_date=date_str,
+                    post_index=post_idx,
+                    file_index=file_idx,
+                    options=options,
+                    folder_index=seq_idx
+                )
+                # Strip trailing punctuation/commas that would corrupt the ?f= CDN query parameter
+                # and trigger ERR_RESPONSE_HEADERS_MULTIPLE_CONTENT_DISPOSITION in browsers.
+                sanitized_name = sanitized_name.rstrip(".,;!? \t")
+
                 # Auto-detect provider from original URL host if present (overrides domain arg)
                 effective_domain = domain
                 if original_url:
@@ -705,8 +798,9 @@ class KemonoDownloader:
                 is_preview_only = bool(fobj.get("preview_only"))
                 candidate_urls = []
 
-                if is_preview_only:
-                    # When an attachment is flagged preview_only, only the thumbnail server has it
+                if is_preview_only or options.download_thumbnails_only:
+                    # When download_thumbnails_only is enabled or an attachment is flagged preview_only,
+                    # strictly query thumbnail CDN servers — never pull the heavy full-sized original file.
                     if "pawchive" in effective_domain:
                         candidate_urls.append(f"https://img.pawchive.pw/thumbnail/data{clean_rel}")
                     elif "cum.st" in effective_domain:
@@ -715,80 +809,52 @@ class KemonoDownloader:
                         candidate_urls.append(f"https://img.coomer.su/thumbnail/data{clean_rel}")
                     else:
                         candidate_urls.append(f"https://img.kemono.su/thumbnail/data{clean_rel}")
+
+                    # If this is a video file, the thumbnail is served as an image, so adjust filename extension
+                    _, orig_ext = os.path.splitext(sanitized_name.lower())
+                    if orig_ext in MediaTypes.VIDEO_EXTS:
+                        sanitized_name = f"{os.path.splitext(sanitized_name)[0]}.jpg"
                 else:
                     # Always try the original source URL first if we have one
                     if original_url:
                         candidate_urls.append(f"{original_url}?f={sanitized_name}")
 
                     if "cum.st" in effective_domain:
-                        if options.download_thumbnails_only:
-                            if not original_url:
-                                candidate_urls.append(f"https://img.cum.st/thumbnail/data{clean_rel}")
-                        else:
-                            # Append any secondary variants (e.g. 720p.mp4, 240p.mp4) from the API as immediate fallbacks
-                            if is_storage_key:
-                                for ev in extra_cum_variants:
-                                    u_ev = f"https://e1.cum.st/media/{rel_path}/{ev}"
-                                    if u_ev not in candidate_urls:
-                                        candidate_urls.append(u_ev)
-                            elif not original_url:
-                                candidate_urls.append(f"https://cum.st/data{clean_rel}?f={sanitized_name}")
-                            # Fallbacks
-                            candidate_urls.append(f"https://cum.st/data{clean_rel}")
-                            candidate_urls.append(f"https://img.cum.st/data{clean_rel}")
+                        # Append any secondary variants (e.g. 720p.mp4, 240p.mp4) from the API as immediate fallbacks
+                        if is_storage_key:
+                            for ev in extra_cum_variants:
+                                u_ev = f"https://e1.cum.st/media/{rel_path}/{ev}"
+                                if u_ev not in candidate_urls:
+                                    candidate_urls.append(u_ev)
+                        elif not original_url:
+                            candidate_urls.append(f"https://cum.st/data{clean_rel}?f={sanitized_name}")
+                        # Fallbacks
+                        candidate_urls.append(f"https://cum.st/data{clean_rel}")
+                        candidate_urls.append(f"https://img.cum.st/data{clean_rel}")
                     elif "pawchive" in effective_domain:
-                        if options.download_thumbnails_only:
-                            if not original_url:
-                                candidate_urls.append(f"https://img.pawchive.pw/thumbnail/data{clean_rel}")
-                        else:
-                            # Only use confirmed live Pawchive mirrors
-                            if "file.pawchive.pw" not in (original_url or ""):
-                                candidate_urls.append(f"https://file.pawchive.pw/data{clean_rel}?f={sanitized_name}")
-                            # Fallback mirror for missing / preview files
-                            candidate_urls.append(f"https://img.pawchive.pw/thumbnail/data{clean_rel}")
-                    elif "coomer" in effective_domain:
-                        if options.download_thumbnails_only:
-                            if not original_url:
-                                candidate_urls.append(f"https://img.coomer.su/thumbnail/data{clean_rel}")
-                        else:
-                            for sub in ["c1", "c2", "c3", "n1", "n2", "n3", "n4"]:
-                                u = f"https://{sub}.coomer.su/data{clean_rel}?f={sanitized_name}"
-                                if u not in candidate_urls:
-                                    candidate_urls.append(u)
-                            candidate_urls.append(f"https://img.coomer.su/thumbnail/data{clean_rel}")
-                    else:  # kemono.su / default
-                        if options.download_thumbnails_only:
-                            if not original_url:
-                                candidate_urls.append(f"https://img.kemono.su/thumbnail/data{clean_rel}")
-                        else:
-                            for sub in ["c1", "c2", "c3", "n1", "n2", "n3", "n4"]:
-                                u = f"https://{sub}.kemono.su/data{clean_rel}?f={sanitized_name}"
-                                if u not in candidate_urls:
-                                    candidate_urls.append(u)
+                        # Only use confirmed live Pawchive mirrors
+                        if "file.pawchive.pw" not in (original_url or ""):
                             candidate_urls.append(f"https://file.pawchive.pw/data{clean_rel}?f={sanitized_name}")
-                            candidate_urls.append(f"https://img.kemono.su/thumbnail/data{clean_rel}")
+                        # Fallback mirror for missing / preview files
+                        candidate_urls.append(f"https://img.pawchive.pw/thumbnail/data{clean_rel}")
+                    elif "coomer" in effective_domain:
+                        for sub in ["c1", "c2", "c3", "n1", "n2", "n3", "n4"]:
+                            u = f"https://{sub}.coomer.su/data{clean_rel}?f={sanitized_name}"
                             if u not in candidate_urls:
                                 candidate_urls.append(u)
+                        candidate_urls.append(f"https://img.coomer.su/thumbnail/data{clean_rel}")
+                    else:  # kemono.su / default
+                        for sub in ["c1", "c2", "c3", "n1", "n2", "n3", "n4"]:
+                            u = f"https://{sub}.kemono.su/data{clean_rel}?f={sanitized_name}"
+                            if u not in candidate_urls:
+                                candidate_urls.append(u)
+                        candidate_urls.append(f"https://file.pawchive.pw/data{clean_rel}?f={sanitized_name}")
+                        candidate_urls.append(f"https://img.kemono.su/thumbnail/data{clean_rel}")
                         candidate_urls.append(f"https://file.pawchive.pw/data{clean_rel}?f={sanitized_name}")
 
                 file_url = candidate_urls[0] if candidate_urls else f"https://file.pawchive.pw/data{clean_rel}?f={sanitized_name}"
                 target_path = os.path.join(post_folder, sanitized_name)
                 file_id = f"{post_id}_{clean_rel}"
-
-                # Skip true duplicate files (same post + same rel_path) regardless of
-                # index prefix. Pawchive sometimes mirrors post.file into attachments so
-                # the same underlying file appears twice in files_to_process — with index
-                # prefix enabled they'd get different seq_idx values (001_ / 002_) and
-                # slip past the target_path collision check.
-                if file_id in _seen_file_ids:
-                    folder_file_counts[post_folder] -= 1  # reclaim the wasted index slot
-                    logger.debug(
-                        f"Skipping duplicate file '{clean_rel}' in post '{post_title}' "
-                        f"(same rel_path already queued — likely mirrored in both post.file and attachments).",
-                        category="file"
-                    )
-                    continue
-                _seen_file_ids.add(file_id)
 
                 # Resolve filename collisions: distinguish between duplicate attachments in the SAME post
                 # versus collisions from a DIFFERENT post (e.g. when subfolders are disabled).
@@ -851,19 +917,29 @@ class KemonoDownloader:
                     "post_title": post_title,
                     "rel_path": clean_rel
                 }
+                # Record the normalised key so future files in this folder can detect duplicates
+                # regardless of whether an index prefix changes their target filename.
+                _batch_rel_paths[post_folder].add(norm_key)
 
                 webp_path = os.path.splitext(target_path)[0] + ".webp"
                 raw_path = os.path.join(post_folder, raw_name)
                 raw_webp = os.path.splitext(raw_path)[0] + ".webp"
+                # Also check for the prefixed variant on disk (e.g. "001_filename.jpg") so that
+                # re-runs with index prefix enabled don't re-download already-saved files.
+                prefixed_raw = os.path.join(post_folder, f"{seq_idx:03d}_{raw_name}")
+                prefixed_webp = os.path.splitext(prefixed_raw)[0] + ".webp"
 
                 # Skip if already exists on disk at target_path, webp path, or raw name path
                 if not options.keep_duplicates:
                     if (os.path.exists(target_path) and os.path.getsize(target_path) > 0) or \
                        (os.path.exists(webp_path) and os.path.getsize(webp_path) > 0) or \
                        (os.path.exists(raw_path) and os.path.getsize(raw_path) > 0) or \
-                       (os.path.exists(raw_webp) and os.path.getsize(raw_webp) > 0):
+                       (os.path.exists(raw_webp) and os.path.getsize(raw_webp) > 0) or \
+                       (os.path.exists(prefixed_raw) and os.path.getsize(prefixed_raw) > 0) or \
+                       (os.path.exists(prefixed_webp) and os.path.getsize(prefixed_webp) > 0):
                         logger.info(f"⏳ Skipping existing file: '{os.path.basename(target_path)}' (already present on disk)", category="file")
                         continue
+
 
                 expected_sha = str(fobj.get("sha256") or fobj.get("hash") or "")
 

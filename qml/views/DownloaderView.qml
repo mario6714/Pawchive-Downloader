@@ -36,6 +36,7 @@ SmoothFlickable {
                 StyledTextField {
                     id: dirInput
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     text: root.bridge ? root.bridge.downloadDir : ""
                     leadingIcon: "💾"
                     showClearButton: false
@@ -86,6 +87,7 @@ SmoothFlickable {
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 4
                         Text {
                             text: root.tr("label_filter_characters", "Filter by Character(s) (comma-separated):")
@@ -95,6 +97,7 @@ SmoothFlickable {
                         }
                         StyledTextField {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             placeholderText: root.tr("placeholder_characters", "e.g., Tifa, Aerith, (Cloud, Zack)")
                             text: root.bridge ? root.bridge.filterCharacters : ""
                             onTextChanged: {
@@ -135,15 +138,17 @@ SmoothFlickable {
                     }
                 }
 
-                // Skip words & Remove words row
-                RowLayout {
+                // Skip words & Remove words row (Responsive Grid: 2 columns when wide, 1 column when narrow)
+                GridLayout {
+                    columns: root.width > 540 ? 2 : 1
                     Layout.fillWidth: true
-                    spacing: 12
+                    rowSpacing: 10
+                    columnSpacing: 12
 
                     // Skip words
                     ColumnLayout {
                         Layout.fillWidth: true
-                        Layout.preferredWidth: 3
+                        Layout.minimumWidth: 0
                         spacing: 4
 
                         Text {
@@ -159,6 +164,7 @@ SmoothFlickable {
 
                             StyledTextField {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 placeholderText: root.tr("placeholder_skip_words", "e.g., WM, WIP, sketch, preview")
                                 text: root.bridge ? root.bridge.skipWords : ""
                                 onTextChanged: {
@@ -189,7 +195,7 @@ SmoothFlickable {
                     // Remove words
                     ColumnLayout {
                         Layout.fillWidth: true
-                        Layout.preferredWidth: 2
+                        Layout.minimumWidth: 0
                         spacing: 4
 
                         Text {
@@ -201,6 +207,7 @@ SmoothFlickable {
 
                         StyledTextField {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             placeholderText: root.tr("placeholder_remove_words", "e.g., patreon, HD, [sample]")
                             text: root.bridge ? root.bridge.removeWords : ""
                             onTextChanged: {
@@ -209,6 +216,188 @@ SmoothFlickable {
                                 }
                             }
                         }
+                    }
+                }
+
+                // Post Date Range Filter (From / To)
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    spacing: 4
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        Text {
+                            text: root.tr("label_post_date_range", "📅 Post Date Range:")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            color: "#94A3B8"
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        // Quick clear button when either field has content
+                        Text {
+                            visible: (root.bridge && ((root.bridge.dateAfter && root.bridge.dateAfter.length > 0) || (root.bridge.dateBefore && root.bridge.dateBefore.length > 0)))
+                            text: root.tr("btn_clear_dates", "Clear Range ✕")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 10
+                            color: dateClearMouse.containsMouse ? "#F87171" : "#94A3B8"
+                            MouseArea {
+                                id: dateClearMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (root.bridge) {
+                                        root.bridge.dateAfter = ""
+                                        root.bridge.dateBefore = ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Format explanation subtitle
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.tr("hint_date_formats", "Accepts full dates (2024-06-15), year & month (2024-06), or year only (2024)")
+                        font.family: "Segoe UI, sans-serif"
+                        font.pixelSize: 10
+                        color: "#64748B"
+                    }
+
+                    GridLayout {
+                        columns: root.width > 540 ? 2 : 1
+                        Layout.fillWidth: true
+                        rowSpacing: 6
+                        columnSpacing: 12
+
+                        // Date After (From)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            spacing: 8
+
+                            Text {
+                                text: root.tr("label_date_from", "From:")
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 11
+                                color: "#64748B"
+                            }
+
+                            StyledTextField {
+                                id: dateAfterInput
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                placeholderText: root.tr("ph_date_from", "e.g. 2024, 2024-06, 2024-06-15")
+                                tooltip: root.tr("tip_date_from", "Earliest date to include. Supports a full year (e.g. 2024 starts Jan 1), month (2024-06 starts 1st), or exact day.")
+                                text: root.bridge ? root.bridge.dateAfter : ""
+                                onTextChanged: {
+                                    if (root.bridge && root.bridge.dateAfter !== text) {
+                                        root.bridge.dateAfter = text
+                                    }
+                                }
+                            }
+                        }
+
+                        // Date Before (To)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            spacing: 8
+
+                            Text {
+                                text: root.tr("label_date_to", "To:")
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 11
+                                color: "#64748B"
+                            }
+
+                            StyledTextField {
+                                id: dateBeforeInput
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                placeholderText: root.tr("ph_date_to", "e.g. 2024, 2024-12, 2024-12-31")
+                                tooltip: root.tr("tip_date_to", "Latest date to include. Supports a full year (e.g. 2024 ends Dec 31), month (2024-06 ends June 30), or exact day.")
+                                text: root.bridge ? root.bridge.dateBefore : ""
+                                onTextChanged: {
+                                    if (root.bridge && root.bridge.dateBefore !== text) {
+                                        root.bridge.dateBefore = text
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Live interpreted range badge
+                    Rectangle {
+                        id: dateRangeBadge
+                        property string afterText: root.bridge ? (root.bridge.dateAfter || "").trim() : ""
+                        property string beforeText: root.bridge ? (root.bridge.dateBefore || "").trim() : ""
+                        visible: afterText.length > 0 || beforeText.length > 0
+                        Layout.fillWidth: true
+                        implicitHeight: 22
+                        radius: 4
+                        color: "#0F172A"
+                        border.color: "#1E293B"
+                        border.width: 1
+
+                        function describeRange() {
+                            if (afterText.length > 0 && beforeText.length > 0) {
+                                if (afterText === beforeText) {
+                                    if (afterText.length === 4) return "Entire year " + afterText + " (Jan 1, " + afterText + " - Dec 31, " + afterText + ")"
+                                    if (afterText.length === 7) return "Entire month of " + afterText
+                                }
+                                return "Filtering posts: " + afterText + "  →  " + beforeText
+                            } else if (afterText.length > 0) {
+                                if (afterText.length === 4) return "Filtering posts from " + afterText + " onwards (Jan 1, " + afterText + " +)"
+                                if (afterText.length === 7) return "Filtering posts from " + afterText + " onwards"
+                                return "Filtering posts from " + afterText + " onwards"
+                            } else if (beforeText.length > 0) {
+                                if (beforeText.length === 4) return "Filtering posts up through end of " + beforeText + " (Dec 31, " + beforeText + ")"
+                                if (beforeText.length === 7) return "Filtering posts up through end of " + beforeText
+                                return "Filtering posts up to " + beforeText
+                            }
+                            return ""
+                        }
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 6
+
+                            Text {
+                                text: "🗓️"
+                                font.pixelSize: 10
+                            }
+                            Text {
+                                text: dateRangeBadge.describeRange()
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                color: "#38BDF8"
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                        }
+                    }
+                }
+
+                // Auto-scan pages checkbox -- only shown when a date filter is active
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    visible: root.bridge ? ((root.bridge.dateAfter && root.bridge.dateAfter.length > 0) || (root.bridge.dateBefore && root.bridge.dateBefore.length > 0)) : false
+
+                    StyledCheckBox {
+                        id: dateAutoScanCheck
+                        text: root.tr("opt_date_auto_scan", "Auto-scan all pages for this range")
+                        tooltip: root.tr("opt_date_auto_scan_tip", "Automatically scan past the Page End limit to find all posts within the selected date range. Uncheck to strictly respect your Page Start / End settings.")
+                        checked: root.bridge ? root.bridge.dateAutoScanPages : true
+                        onCheckedChanged: if (root.bridge) root.bridge.dateAutoScanPages = checked
                     }
                 }
             }
@@ -223,11 +412,15 @@ SmoothFlickable {
 
             ColumnLayout {
                 width: parent.width
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 10
 
                 // Media type filter pills (Single-select category)
                 Flow {
+                    width: parent.width
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 6
 
                     FilterCheckbox {
@@ -281,7 +474,9 @@ SmoothFlickable {
 
                 // Checkbox & Modifier options
                 Flow {
+                    width: parent.width
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 12
 
                     FilterCheckbox {
@@ -305,6 +500,13 @@ SmoothFlickable {
                         tooltip: root.tr("opt_thumbnails_only_tip", "Download lightweight preview thumbnails instead of full original files")
                         checked: root.bridge ? root.bridge.downloadThumbnailsOnly : false
                         onCheckedChanged: if (root.bridge) root.bridge.downloadThumbnailsOnly = checked
+                    }
+
+                    StyledCheckBox {
+                        text: root.tr("opt_skip_post_covers", "Skip Post Cover Images")
+                        tooltip: root.tr("opt_skip_post_covers_tip", "Do not download the post's featured cover/thumbnail image when attachments or content are present")
+                        checked: root.bridge ? root.bridge.skipPostCovers : false
+                        onCheckedChanged: if (root.bridge) root.bridge.skipPostCovers = checked
                     }
 
                     StyledCheckBox {
@@ -349,6 +551,7 @@ SmoothFlickable {
                 spacing: 10
 
                 Flow {
+                    width: parent.width
                     Layout.fillWidth: true
                     spacing: 14
 
@@ -440,8 +643,10 @@ SmoothFlickable {
                 }
 
                 // Concurrency & Threads with CPU Detection & Thread Lock
-                RowLayout {
-                    spacing: 10
+                Flow {
+                    width: parent.width
+                    Layout.fillWidth: true
+                    spacing: 8
                     // Dim the slider when Adaptive Threading is on
                     opacity: (root.bridge && root.bridge.adaptiveThreading) ? 0.38 : 1.0
                     Behavior on opacity { NumberAnimation { duration: 180 } }
@@ -451,278 +656,299 @@ SmoothFlickable {
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 12
                         color: "#94A3B8"
+                        height: 32
+                        verticalAlignment: Text.AlignVCenter
                     }
 
-                    Slider {
-                        id: threadSlider
-                        from: 1
-                        to: root.bridge ? root.bridge.maxCpuThreads : 24
-                        stepSize: 1
-                        value: root.bridge ? root.bridge.threadsCount : 4
-                        implicitWidth: 180
-                        implicitHeight: 32
-                        // Disable interaction when Adaptive Threading is managing concurrency
-                        enabled: root.bridge ? !root.bridge.adaptiveThreading : true
-                        onMoved: if (root.bridge) root.bridge.threadsCount = Math.round(value)
+                    RowLayout {
+                        height: 32
+                        spacing: 8
 
-                        background: Item {
-                            x: threadSlider.leftPadding
-                            y: threadSlider.topPadding + threadSlider.availableHeight / 2 - height / 2
-                            width:  threadSlider.availableWidth
-                            implicitHeight: 6
-                            height: 6
+                        Slider {
+                            id: threadSlider
+                            from: 1
+                            to: root.bridge ? root.bridge.maxCpuThreads : 24
+                            stepSize: 1
+                            value: root.bridge ? root.bridge.threadsCount : 4
+                            implicitWidth: root.width > 540 ? 160 : 110
+                            implicitHeight: 32
+                            // Disable interaction when Adaptive Threading is managing concurrency
+                            enabled: root.bridge ? !root.bridge.adaptiveThreading : true
+                            onMoved: if (root.bridge) root.bridge.threadsCount = Math.round(value)
 
-                            // Empty track
-                            Rectangle {
-                                width: parent.width; height: parent.height
-                                radius: 3
-                                color: "#101827"
-                                border.color: "#1E2D42"
-                                border.width: 1
-                            }
-                            // Filled portion
-                            Rectangle {
-                                width: Math.max(6, threadSlider.visualPosition * parent.width)
-                                height: parent.height
-                                radius: 3
-                                color: "#38BDF8"
-                                opacity: threadSlider.enabled ? 1.0 : 0.35
-                            }
-                        }
+                            background: Item {
+                                x: threadSlider.leftPadding
+                                y: threadSlider.topPadding + threadSlider.availableHeight / 2 - height / 2
+                                width:  threadSlider.availableWidth
+                                implicitHeight: 6
+                                height: 6
 
-                        handle: Item {
-                            x: threadSlider.leftPadding + threadSlider.visualPosition * (threadSlider.availableWidth - width)
-                            y: threadSlider.topPadding + threadSlider.availableHeight / 2 - height / 2
-                            width: 28; height: 28
-
-                            // Outer glow ring — appears on hover / press
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 28; height: 28; radius: 14
-                                color: "transparent"
-                                border.color: "#38BDF8"
-                                border.width: 1
-                                opacity: (threadSlider.pressed || threadSlider.hovered) ? 0.5 : 0.0
-                                Behavior on opacity { NumberAnimation { duration: 160 } }
-                            }
-                            // Core circle
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 16; height: 16; radius: 8
-                                color: "#38BDF8"
-                                opacity: threadSlider.enabled ? 1.0 : 0.3
-                                scale: threadSlider.pressed ? 0.78 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
-                            }
-                        }
-                    }
-
-                    // Value chip
-                    Rectangle {
-                        implicitWidth: workerVal.implicitWidth + 18
-                        height: 24; radius: 12
-                        color: "#0C1828"
-                        border.color: (root.bridge && root.bridge.threadsLocked) ? "#7F1D1D" : "#164E63"
-                        border.width: 1
-                        Text {
-                            id: workerVal
-                            anchors.centerIn: parent
-                            text: root.bridge && root.bridge.adaptiveThreading
-                                  ? root.bridge.threadsCount.toString()
-                                  : Math.round(threadSlider.value).toString()
-                            font.family: "Segoe UI, sans-serif"
-                            font.bold: true
-                            font.pixelSize: 11
-                            color: (root.bridge && root.bridge.threadsLocked) ? "#FCA5A5" : "#7DD3FA"
-                        }
-                    }
-
-                    // Thread Lock Button (toggles sweetspot thread lock)
-                    Rectangle {
-                        id: lockBtn
-                        height: 24
-                        radius: 5
-                        implicitWidth: lockRow.implicitWidth + 16
-                        color: (root.bridge && root.bridge.threadsLocked)
-                               ? (lockMouse.containsMouse ? "#3A1A1C" : "#2D1517")
-                               : (lockMouse.containsMouse ? "#1E293B" : "#161E2E")
-                        border.color: (root.bridge && root.bridge.threadsLocked)
-                                      ? (lockMouse.containsMouse ? "#F87171" : "#EF4444")
-                                      : (lockMouse.containsMouse ? "#475569" : "#242A38")
-                        border.width: 1
-                        scale: lockMouse.pressed ? 0.95 : (lockMouse.containsMouse ? 1.03 : 1.0)
-
-                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack } }
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                        RowLayout {
-                            id: lockRow
-                            anchors.centerIn: parent
-                            spacing: 4
-
-                            Text {
-                                text: (root.bridge && root.bridge.threadsLocked) ? "🔒" : "🔓"
-                                font.pixelSize: 11
+                                // Empty track
+                                Rectangle {
+                                    width: parent.width; height: parent.height
+                                    radius: 3
+                                    color: "#101827"
+                                    border.color: "#1E2D42"
+                                    border.width: 1
+                                }
+                                // Filled portion
+                                Rectangle {
+                                    width: Math.max(6, threadSlider.visualPosition * parent.width)
+                                    height: parent.height
+                                    radius: 3
+                                    color: "#38BDF8"
+                                    opacity: threadSlider.enabled ? 1.0 : 0.35
+                                }
                             }
 
-                            Text {
-                                text: (root.bridge && root.bridge.threadsLocked)
-                                      ? root.tr("btn_thread_locked", "Locked")
-                                      : root.tr("btn_thread_lock", "Lock")
-                                font.family: "Segoe UI, sans-serif"
-                                font.bold: true
-                                font.pixelSize: 11
-                                color: (root.bridge && root.bridge.threadsLocked) ? "#F87171" : "#94A3B8"
-                            }
-                        }
+                            handle: Item {
+                                x: threadSlider.leftPadding + threadSlider.visualPosition * (threadSlider.availableWidth - width)
+                                y: threadSlider.topPadding + threadSlider.availableHeight / 2 - height / 2
+                                width: 28; height: 28
 
-                        MouseArea {
-                            id: lockMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.bridge) {
-                                    root.bridge.threadsLocked = !root.bridge.threadsLocked
+                                // Outer glow ring — appears on hover / press
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 28; height: 28; radius: 14
+                                    color: "transparent"
+                                    border.color: "#38BDF8"
+                                    border.width: 1
+                                    opacity: (threadSlider.pressed || threadSlider.hovered) ? 0.5 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                                }
+                                // Core circle
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 16; height: 16; radius: 8
+                                    color: "#38BDF8"
+                                    opacity: threadSlider.enabled ? 1.0 : 0.3
+                                    scale: threadSlider.pressed ? 0.78 : 1.0
+                                    Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
                                 }
                             }
                         }
 
-                        ToolTip {
-                            id: lockToolTip
-                            visible: lockMouse.containsMouse
-                            delay: 400
-                            timeout: 5000
-                            text: (root.bridge && root.bridge.threadsLocked)
-                                  ? (root.tr("tip_thread_locked_active", "Thread Lock Active: Worker concurrency is locked. Adaptive scaling is disabled and HTTP 429 cooldown is 30s."))
-                                  : (root.tr("tip_thread_lock", "Lock Thread Sweetspot: Lock current concurrency. Disables adaptive scaling and prevents rate limits from altering your thread count."))
-                            contentItem: Text {
-                                text: lockToolTip.text
-                                font.family: "Segoe UI, Inter, sans-serif"
+                        // Value chip
+                        Rectangle {
+                            implicitWidth: workerVal.implicitWidth + 18
+                            height: 24; radius: 12
+                            color: "#0C1828"
+                            border.color: (root.bridge && root.bridge.threadsLocked) ? "#7F1D1D" : "#164E63"
+                            border.width: 1
+                            Text {
+                                id: workerVal
+                                anchors.centerIn: parent
+                                text: root.bridge && root.bridge.adaptiveThreading
+                                      ? root.bridge.threadsCount.toString()
+                                      : Math.round(threadSlider.value).toString()
+                                font.family: "Segoe UI, sans-serif"
+                                font.bold: true
                                 font.pixelSize: 11
-                                color: "#F1F5F9"
-                            }
-                            background: Rectangle {
-                                color: "#181B24"
-                                border.color: (root.bridge && root.bridge.threadsLocked) ? "#EF4444" : "#38BDF8"
-                                border.width: 1
-                                radius: 6
+                                color: (root.bridge && root.bridge.threadsLocked) ? "#FCA5A5" : "#7DD3FA"
                             }
                         }
                     }
 
-                    Rectangle {
-                        height: 22
-                        radius: 4
-                        color: "#161E2E"
-                        border.color: "#1E293B"
-                        border.width: 1
-                        implicitWidth: cpuBadgeText.implicitWidth + 12
+                    RowLayout {
+                        height: 32
+                        spacing: 8
 
-                        Text {
-                            id: cpuBadgeText
-                            anchors.centerIn: parent
-                            text: (root.bridge && root.bridge.threadsLocked)
-                                  ? ("🔒 " + root.tr("badge_locked", "Locked:") + " " + root.bridge.threadsCount + "T")
-                                  : (root.bridge && root.bridge.adaptiveThreading
-                                     ? root.tr("badge_adaptive", "⚡ Adaptive")
-                                     : (root.bridge ? (root.tr("badge_cpu_cores", "⚡ CPU Cores:") + " " + root.bridge.maxCpuThreads) : root.tr("badge_cpu_auto", "⚡ CPU Auto")))
-                            font.family: "Segoe UI, sans-serif"
-                            font.pixelSize: 10
+                        // Thread Lock Button (toggles sweetspot thread lock)
+                        Rectangle {
+                            id: lockBtn
+                            height: 24
+                            radius: 5
+                            implicitWidth: lockRow.implicitWidth + 16
                             color: (root.bridge && root.bridge.threadsLocked)
-                                   ? "#F87171"
-                                   : (root.bridge && root.bridge.adaptiveThreading ? "#FBBF24" : "#38BDF8")
+                                   ? (lockMouse.containsMouse ? "#3A1A1C" : "#2D1517")
+                                   : (lockMouse.containsMouse ? "#1E293B" : "#161E2E")
+                            border.color: (root.bridge && root.bridge.threadsLocked)
+                                          ? (lockMouse.containsMouse ? "#F87171" : "#EF4444")
+                                          : (lockMouse.containsMouse ? "#475569" : "#242A38")
+                            border.width: 1
+                            scale: lockMouse.pressed ? 0.95 : (lockMouse.containsMouse ? 1.03 : 1.0)
+
+                            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutBack } }
+                            Behavior on color { ColorAnimation { duration: 140 } }
+                            Behavior on border.color { ColorAnimation { duration: 140 } }
+
+                            RowLayout {
+                                id: lockRow
+                                anchors.centerIn: parent
+                                spacing: 4
+
+                                Text {
+                                    text: (root.bridge && root.bridge.threadsLocked) ? "🔒" : "🔓"
+                                    font.pixelSize: 11
+                                }
+
+                                Text {
+                                    text: (root.bridge && root.bridge.threadsLocked)
+                                          ? root.tr("btn_thread_locked", "Locked")
+                                          : root.tr("btn_thread_lock", "Lock")
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.bold: true
+                                    font.pixelSize: 11
+                                    color: (root.bridge && root.bridge.threadsLocked) ? "#F87171" : "#94A3B8"
+                                }
+                            }
+
+                            MouseArea {
+                                id: lockMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (root.bridge) {
+                                        root.bridge.threadsLocked = !root.bridge.threadsLocked
+                                    }
+                                }
+                            }
+
+                            ToolTip {
+                                id: lockToolTip
+                                visible: lockMouse.containsMouse
+                                delay: 400
+                                timeout: 5000
+                                text: (root.bridge && root.bridge.threadsLocked)
+                                      ? (root.tr("tip_thread_locked_active", "Thread Lock Active: Worker concurrency is locked. Adaptive scaling is disabled and HTTP 429 cooldown is 30s."))
+                                      : (root.tr("tip_thread_lock", "Lock Thread Sweetspot: Lock current concurrency. Disables adaptive scaling and prevents rate limits from altering your thread count."))
+                                contentItem: Text {
+                                    text: lockToolTip.text
+                                    font.family: "Segoe UI, Inter, sans-serif"
+                                    font.pixelSize: 11
+                                    color: "#F1F5F9"
+                                }
+                                background: Rectangle {
+                                    color: "#181B24"
+                                    border.color: (root.bridge && root.bridge.threadsLocked) ? "#EF4444" : "#38BDF8"
+                                    border.width: 1
+                                    radius: 6
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            height: 22
+                            radius: 4
+                            color: "#161E2E"
+                            border.color: "#1E293B"
+                            border.width: 1
+                            implicitWidth: cpuBadgeText.implicitWidth + 12
+
+                            Text {
+                                id: cpuBadgeText
+                                anchors.centerIn: parent
+                                text: (root.bridge && root.bridge.threadsLocked)
+                                      ? ("🔒 " + root.tr("badge_locked", "Locked:") + " " + root.bridge.threadsCount + "T")
+                                      : (root.bridge && root.bridge.adaptiveThreading
+                                         ? root.tr("badge_adaptive", "⚡ Adaptive")
+                                         : (root.bridge ? (root.tr("badge_cpu_cores", "⚡ CPU Cores:") + " " + root.bridge.maxCpuThreads) : root.tr("badge_cpu_auto", "⚡ CPU Auto")))
+                                font.family: "Segoe UI, sans-serif"
+                                font.pixelSize: 10
+                                color: (root.bridge && root.bridge.threadsLocked)
+                                       ? "#F87171"
+                                       : (root.bridge && root.bridge.adaptiveThreading ? "#FBBF24" : "#38BDF8")
+                            }
                         }
                     }
                 }
 
                 // Post-Download Delay per Thread (Anti-429 Rate-Limit Mitigation)
-                RowLayout {
-                    spacing: 10
+                Flow {
+                    width: parent.width
+                    Layout.fillWidth: true
+                    spacing: 8
 
                     Text {
                         text: root.tr("label_thread_delay", "⏱️ Thread Delay After Download:")
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 12
                         color: "#94A3B8"
+                        height: 32
+                        verticalAlignment: Text.AlignVCenter
                     }
 
-                    Slider {
-                        id: delaySlider
-                        from: 0.0
-                        to: 10.0
-                        stepSize: 0.5
-                        value: root.bridge ? root.bridge.downloadDelay : 2.0
-                        implicitWidth: 180
-                        implicitHeight: 32
-                        onMoved: if (root.bridge) root.bridge.downloadDelay = value
+                    RowLayout {
+                        height: 32
+                        spacing: 8
 
-                        background: Item {
-                            x: delaySlider.leftPadding
-                            y: delaySlider.topPadding + delaySlider.availableHeight / 2 - height / 2
-                            width: delaySlider.availableWidth
-                            implicitHeight: 6
-                            height: 6
+                        Slider {
+                            id: delaySlider
+                            from: 0.0
+                            to: 10.0
+                            stepSize: 0.5
+                            value: root.bridge ? root.bridge.downloadDelay : 2.0
+                            implicitWidth: root.width > 540 ? 160 : 110
+                            implicitHeight: 32
+                            onMoved: if (root.bridge) root.bridge.downloadDelay = value
 
-                            // Empty track
-                            Rectangle {
-                                width: parent.width; height: parent.height
-                                radius: 3
-                                color: "#100D1E"
-                                border.color: "#231A40"
-                                border.width: 1
+                            background: Item {
+                                x: delaySlider.leftPadding
+                                y: delaySlider.topPadding + delaySlider.availableHeight / 2 - height / 2
+                                width: delaySlider.availableWidth
+                                implicitHeight: 6
+                                height: 6
+
+                                // Empty track
+                                Rectangle {
+                                    width: parent.width; height: parent.height
+                                    radius: 3
+                                    color: "#100D1E"
+                                    border.color: "#231A40"
+                                    border.width: 1
+                                }
+                                // Filled portion
+                                Rectangle {
+                                    width: Math.max(6, delaySlider.visualPosition * parent.width)
+                                    height: parent.height
+                                    radius: 3
+                                    color: "#A78BFA"
+                                }
                             }
-                            // Filled portion
-                            Rectangle {
-                                width: Math.max(6, delaySlider.visualPosition * parent.width)
-                                height: parent.height
-                                radius: 3
-                                color: "#A78BFA"
+
+                            handle: Item {
+                                x: delaySlider.leftPadding + delaySlider.visualPosition * (delaySlider.availableWidth - width)
+                                y: delaySlider.topPadding + delaySlider.availableHeight / 2 - height / 2
+                                width: 28; height: 28
+
+                                // Outer glow ring
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 28; height: 28; radius: 14
+                                    color: "transparent"
+                                    border.color: "#A78BFA"
+                                    border.width: 1
+                                    opacity: (delaySlider.pressed || delaySlider.hovered) ? 0.5 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                                }
+                                // Core circle
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 16; height: 16; radius: 8
+                                    color: "#A78BFA"
+                                    scale: delaySlider.pressed ? 0.78 : 1.0
+                                    Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
+                                }
                             }
                         }
 
-                        handle: Item {
-                            x: delaySlider.leftPadding + delaySlider.visualPosition * (delaySlider.availableWidth - width)
-                            y: delaySlider.topPadding + delaySlider.availableHeight / 2 - height / 2
-                            width: 28; height: 28
-
-                            // Outer glow ring
-                            Rectangle {
+                        // Value chip
+                        Rectangle {
+                            implicitWidth: delayVal.implicitWidth + 18
+                            height: 24; radius: 12
+                            color: "#0D0A1E"
+                            border.color: "#3B2A6B"
+                            border.width: 1
+                            Text {
+                                id: delayVal
                                 anchors.centerIn: parent
-                                width: 28; height: 28; radius: 14
-                                color: "transparent"
-                                border.color: "#A78BFA"
-                                border.width: 1
-                                opacity: (delaySlider.pressed || delaySlider.hovered) ? 0.5 : 0.0
-                                Behavior on opacity { NumberAnimation { duration: 160 } }
+                                text: (root.bridge ? root.bridge.downloadDelay.toFixed(1) : "2.0") + "s"
+                                font.family: "Segoe UI, sans-serif"
+                                font.bold: true
+                                font.pixelSize: 11
+                                color: "#C4B5FD"
                             }
-                            // Core circle
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 16; height: 16; radius: 8
-                                color: "#A78BFA"
-                                scale: delaySlider.pressed ? 0.78 : 1.0
-                                Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutBack } }
-                            }
-                        }
-                    }
-
-                    // Value chip
-                    Rectangle {
-                        implicitWidth: delayVal.implicitWidth + 18
-                        height: 24; radius: 12
-                        color: "#0D0A1E"
-                        border.color: "#3B2A6B"
-                        border.width: 1
-                        Text {
-                            id: delayVal
-                            anchors.centerIn: parent
-                            text: (root.bridge ? root.bridge.downloadDelay.toFixed(1) : "2.0") + "s"
-                            font.family: "Segoe UI, sans-serif"
-                            font.bold: true
-                            font.pixelSize: 11
-                            color: "#C4B5FD"
                         }
                     }
 
@@ -731,12 +957,15 @@ SmoothFlickable {
                         font.family: "Segoe UI, sans-serif"
                         font.pixelSize: 11
                         color: "#64748B"
+                        height: 32
+                        verticalAlignment: Text.AlignVCenter
                     }
                 }
 
 
-                // Post-completion toggles
-                RowLayout {
+                // Post-completion toggles (Responsive Flow wraps across rows)
+                Flow {
+                    width: parent.width
                     Layout.fillWidth: true
                     spacing: 10
 
@@ -744,7 +973,7 @@ SmoothFlickable {
                     Rectangle {
                         id: saveMetaToggle
                         property bool active: root.bridge ? root.bridge.savePostMetadata : true
-                        implicitWidth: 230
+                        implicitWidth: Math.min(230, parent.width)
                         implicitHeight: 36
                         radius: 10
                         color: active ? "#1E1B35" : "#141922"
@@ -826,7 +1055,7 @@ SmoothFlickable {
                     Rectangle {
                         id: openFolderToggle
                         property bool active: root.bridge ? root.bridge.openFolderOnComplete : false
-                        implicitWidth: 210
+                        implicitWidth: Math.min(210, parent.width)
                         implicitHeight: 36
                         radius: 10
                         color: active ? "#0D1F1A" : "#141922"
@@ -905,7 +1134,7 @@ SmoothFlickable {
                     Rectangle {
                         id: desktopReportToggle
                         property bool active: root.bridge ? root.bridge.saveDesktopReport : false
-                        implicitWidth: 210
+                        implicitWidth: Math.min(210, parent.width)
                         implicitHeight: 36
                         radius: 10
                         color: active ? "#0C202F" : "#141922"
@@ -979,8 +1208,6 @@ SmoothFlickable {
                             }
                         }
                     }
-
-                    Item { Layout.fillWidth: true }
                 }
             }
         }

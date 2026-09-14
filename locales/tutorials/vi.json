@@ -1,0 +1,394 @@
+[
+  {
+    "title": "Bắt đầu nhanh & Tổng quan",
+    "icon": "🚀",
+    "summary": "Các trang web được hỗ trợ, tham quan giao diện và tải xuống lần đầu nhanh chóng.",
+    "content": [
+      {
+        "heading": "Chào mừng bạn đến với Trình tải xuống Pawchive",
+        "body": "Pawchive Downloader là một công cụ lưu trữ đa luồng, tốc độ cao được xây dựng dành riêng cho các nghệ sĩ và nền tảng nội dung. Nó kết nối trực tiếp với các API và mạng nhân bản với tính năng bảo vệ giới hạn tốc độ tích hợp, nhận dạng ký tự, bỏ qua trùng lặp và trích xuất kho lưu trữ tự động.",
+        "type": "intro"
+      },
+      {
+        "heading": "Nền tảng được hỗ trợ",
+        "body": "• Kemono & Coomer (Patreon, Pixiv Fanbox, Fantia, Discord, Boosty, Gumroad, Afdian, DLsite, Đăng ký)\n• Album và thư mục Bunkr\n• Phòng trưng bày nHentai\n• Máy chủ đám mây: liên kết Mega.nz, Dropbox, Google Drive được nhúng bên trong bài đăng",
+        "type": "info"
+      },
+      {
+        "heading": "Quy trình tải xuống lần đầu tiên",
+        "body": "1. Dán URL của người sáng tạo hoặc URL bài đăng vào thanh tìm kiếm trên cùng (ví dụ: https://kemono.su/patreon/user/123456).\n2. Chọn phạm vi trang hoặc để lại là 'Tất cả'.\n3. Nhấp vào 'Scrape & Queue' hoặc nhấn Enter.\n4. Nhấp vào 'Bắt ​​đầu tải xuống' trong bảng điều khiển hàng đợi để bắt đầu.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Chế độ nhập và quét URL",
+    "icon": "📥",
+    "summary": "Quét người sáng tạo, chế độ bài đăng đơn, phạm vi trang và thu thập liên kết.",
+    "content": [
+      {
+        "heading": "URL của người sáng tạo so với URL của một bài đăng",
+        "body": "• URL của người sáng tạo (chứa /user/): Quét toàn bộ kho lưu trữ của nghệ sĩ trên tất cả các bài đăng. Bạn có thể chỉ định phạm vi trang (ví dụ: 1..3) để chỉ tìm nạp nội dung gần đây.\n• URL của một bài đăng (chứa /post/): Ngay lập tức loại bỏ và xếp hàng các tệp và liên kết từ bài đăng cụ thể đó.\n• URL tệp trực tiếp: Nếu bạn dán URL phương tiện trực tiếp hoặc URL đám mây, ứng dụng sẽ phát hiện chúng và truy vấn trình phân giải liên kết đám mây.",
+        "type": "info"
+      },
+      {
+        "heading": "Bộ chọn phạm vi trang",
+        "body": "Thanh trượt trang cho phép bạn chọn trang nào cần cạo. Mỗi trang có 50 bài viết. Trang 1 là nội dung mới nhất. Việc đặt 'Tất cả' sẽ xóa toàn bộ lịch sử của người sáng tạo.",
+        "type": "tip"
+      },
+      {
+        "heading": "Chế độ trích xuất liên kết đám mây",
+        "body": "Các bài viết thường có nội dung văn bản chứa liên kết Mega.nz, Google Drive hoặc Bunkr. Công cụ quét tự động kiểm tra nội dung bài viết và nội dung nhúng, trích xuất các liên kết thô trên đám mây vào hàng tải xuống hoặc tab xuất liên kết.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Lọc quy tắc & phạm vi",
+    "icon": "🔍",
+    "summary": "Các loại tệp, hình ảnh nội dung, các từ bao gồm/loại trừ và phạm vi.",
+    "content": [
+      {
+        "heading": "Bộ lọc danh mục tệp",
+        "body": "• Hình ảnh: .png, .jpg, .jpeg, .webp, .gif, .bmp, .psd, .clip\n• Video: .mp4, .mkv, .webm, .mov, .avi, .m4v\n• Âm thanh: .mp3, .wav, .flac, .ogg, .m4a\n• Kho lưu trữ: .zip, .rar, .7z, .tar, .gz\n• Văn bản/Tài liệu: .pdf, .txt, .epub, .doc, .docx",
+        "type": "info"
+      },
+      {
+        "heading": "Nội dung Hình ảnh Chuyển đổi",
+        "body": "Hình ảnh nội dung là các hình minh họa và bản xem trước nội tuyến được nhúng trong nội dung văn bản của bài đăng (ngược lại với tệp đính kèm). Việc BẬT tính năng này sẽ đảm bảo không có bản vẽ nhúng nào bị bỏ sót.",
+        "type": "tip"
+      },
+      {
+        "heading": "Từ khóa bao gồm & loại trừ",
+        "body": "• Keep Words: Chỉ những tệp khớp với bất kỳ từ khóa nào được phân tách bằng dấu phẩy mới được tải xuống.\n• Bỏ qua các từ: Các tập tin chứa bất kỳ từ khóa nào trong số này sẽ bị bỏ qua.\n• Phạm vi (Tệp và Ký tự): 'Tệp' khớp với tên tệp. 'Cả hai' khớp với tên tệp, tiêu đề bài đăng và thẻ ký tự.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Tải xuống Mega & Đám mây",
+    "icon": "☁️",
+    "summary": "Sử dụng bộ lọc 'Chỉ liên kết', trích xuất liên kết Mega, tải xuống và xuất và bỏ qua hạn ngạch.",
+    "content": [
+      {
+        "heading": "Bước 1: Kích hoạt bộ lọc 'Chỉ liên kết'",
+        "body": "Trong tab Trình tải xuống, bên dưới Loại tệp, hãy chọn bộ lọc radio 'Chỉ liên kết'. Điều này hướng dẫn Pawchive Downloader bỏ qua việc tải xuống các tệp đính kèm hình ảnh/video tiêu chuẩn và thay vào đó phân tích các mô tả bài đăng, nội dung và nhận xét cụ thể cho các liên kết đám mây được nhúng.",
+        "type": "tip"
+      },
+      {
+        "heading": "Bước 2: Scrap Creator hoặc Post",
+        "body": "Dán URL của người sáng tạo hoặc bài đăng vào thanh tìm kiếm và nhấp vào 'Scrape & Queue'. Công cụ quét tự động phát hiện và trích xuất các URL Mega (cả các liên kết thư mục như mega.nz/folder/... và các liên kết tệp đơn lẻ như mega.nz/file/...), Google Drive, Dropbox, Bunkr và các liên kết khác vào kho lưu trữ Liên kết Thu hoạch của bạn.",
+        "type": "info"
+      },
+      {
+        "heading": "Bước 3: Tải xuống trực tiếp và xuất liên kết",
+        "body": "• Tùy chọn A (Tải xuống qua Ứng dụng): Nhấp vào 'Tải xuống trên đám mây' trong hàng đợi hoặc thanh điều hướng. Trình tải xuống đám mây tích hợp sẵn truy vấn API Mega, phân giải hệ thống phân cấp thư mục và truyền trực tiếp các tệp AES-CTR đã được giải mã vào đĩa của bạn bằng các trình xử lý đa luồng.\n• Tùy chọn B (Xuất liên kết): Chuyển đến tab Xuất/Liên kết và nhấp vào 'Xuất liên kết thu hoạch' để lưu tệp .txt sạch chứa tất cả các URL Mega thô, sẵn sàng dán trực tiếp vào JDownloader, MegaSync hoặc aria2.",
+        "type": "info"
+      },
+      {
+        "heading": "Vượt qua hạn ngạch băng thông lớn (VPN & Proxy)",
+        "body": "Mega giới hạn tài khoản miễn phí ở mức ~5 GB chuyển khoản cứ sau 6 giờ cho mỗi địa chỉ IP. Khi đạt đến giới hạn hạn ngạch:\n• Bỏ qua VPN: Chuyển máy chủ VPN của bạn sang thành phố hoặc quốc gia khác để lấy địa chỉ IP mới, sau đó tiếp tục tải xuống.\n• Cài đặt proxy: Mở Cài đặt -> Mạng & Proxy và nhập URL proxy HTTP hoặc SOCKS5 của bạn (ví dụ: socks5://127.0.0.1:1080). Pawchive sẽ định tuyến các yêu cầu chunk thông qua proxy, ngay lập tức bỏ qua khối hạn ngạch.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Học ký tự & Thư mục",
+    "icon": "🏷️",
+    "summary": "Tổ chức thư mục ký tự thông minh, khớp từ điển và học tập.",
+    "content": [
+      {
+        "heading": "Tự động sắp xếp thư mục con",
+        "body": "Khi Tổ chức ký tự được bật, các tệp sẽ tự động được sắp xếp vào các thư mục được đặt tên theo ký tự được phát hiện (ví dụ: 'Người tạo [dịch vụ] / Tên ký tự / file.png').",
+        "type": "info"
+      },
+      {
+        "heading": "Cơ sở dữ liệu chính Known.txt",
+        "body": "Ứng dụng này đi kèm với một từ điển chính được tích hợp sẵn gồm hơn 100.000 nhân vật anime, game và truyện tranh. Trình mã thông báo chia nhỏ tên tệp và khớp với tên ký tự cụ thể nhất.",
+        "type": "info"
+      },
+      {
+        "heading": "Hệ thống học nhân vật thông minh",
+        "body": "Nếu tên ký tự xuất hiện lặp lại trên tiêu đề hoặc thẻ bài đăng, ứng dụng sẽ tự động tìm hiểu tên đó và tạo các thư mục phù hợp ngay cả khi ký tự đó chưa có trong Known.txt.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Hàng đợi, đồng thời và giới hạn tỷ lệ",
+    "icon": "⚡",
+    "summary": "Luồng công nhân, phát hiện giới hạn tốc độ và tối ưu hóa tốc độ.",
+    "content": [
+      {
+        "heading": "Thanh trượt chủ đề công nhân",
+        "body": "Điều chỉnh đồng thời tải xuống song song (1 đến 16 luồng). 3–5 luồng nói chung là điểm lý tưởng để đạt được thông lượng tối đa mà không cần kích hoạt điều chỉnh máy chủ.",
+        "type": "tip"
+      },
+      {
+        "heading": "Đồng thời thích ứng & Bảo vệ 429",
+        "body": "Máy chủ nhân bản Kemono thực thi giới hạn tốc độ. Nếu máy chủ trả về HTTP 429 (Quá nhiều yêu cầu), ứng dụng sẽ tự động điều tiết đồng thời xuống còn 2 luồng và áp dụng thời gian chờ theo cấp số nhân trước khi tiếp tục suôn sẻ.",
+        "type": "warning"
+      },
+      {
+        "heading": "Hàng đợi đang hoạt động so với Hàng đợi đã hoàn thành",
+        "body": "Sử dụng thanh bộ lọc phía trên danh sách hàng đợi để chuyển đổi giữa các mục 'Tất cả', 'Đang tải xuống', 'Đã hoàn thành' và 'Không thành công'. Bạn có thể tạm dừng, hủy hoặc ưu tiên các nhiệm vụ một cách nhanh chóng.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Tự động thử lại & xử lý lỗi",
+    "icon": "🔄",
+    "summary": "Giới hạn 5 lần thử lại, chuyển đổi tự động thử lại và Phương thức thử lại.",
+    "content": [
+      {
+        "heading": "Giới hạn tự động thử lại (Tối đa 5 lần thử lại)",
+        "body": "Để ngăn chặn các vòng thử lại vô hạn trên các URL bị hỏng hoặc các tệp bị thiếu, tính năng tự động thử lại sẽ thử lại một tệp bị lỗi tối đa 5 lần. Nếu không thành công ở lần thử thứ 5, nó sẽ được đánh dấu là 'Đã dừng sau 5 lần thử lại' và được bỏ qua một cách an toàn để hàng đợi của bạn có thể kết thúc.",
+        "type": "info"
+      },
+      {
+        "heading": "Thử lại phương thức (Điều khiển thủ công)",
+        "body": "Tất cả các tệp bị lỗi đều được giữ lại trong Phương thức thử lại (có thể truy cập thông qua nút Bộ đếm không thành công màu đỏ). Trong phương thức này, bạn có thể kiểm tra mã lỗi, nhấp vào 'Mở bài đăng' để xem bài đăng nguồn, nhấp vào 'Kiểm tra liên kết' hoặc chọn các tệp cụ thể để thử lại theo cách thủ công.",
+        "type": "tip"
+      },
+      {
+        "heading": "Tự động thử lại khi kết thúc hàng đợi",
+        "body": "Khi BẬT 'Tự động thử lại', trình tải xuống sẽ tự động duyệt qua tất cả các tệp bị lỗi khi hàng đợi chính về 0, thử lại chúng đến giới hạn 5 lần thử trước khi kết thúc.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Danh sách theo dõi & Tự động kiểm tra",
+    "icon": "👁️",
+    "summary": "Theo dõi nghệ sĩ, kiểm tra khởi động, bộ đếm chưa đọc và thư mục tùy chỉnh.",
+    "content": [
+      {
+        "heading": "Thêm người sáng tạo vào danh sách theo dõi",
+        "body": "Nhấp vào nút Dấu trang/Danh sách theo dõi bên cạnh bất kỳ người sáng tạo nào để thêm họ vào danh sách theo dõi của bạn. Ứng dụng ghi nhớ ngày tải xuống cuối cùng của họ và phần bù bài đăng.",
+        "type": "info"
+      },
+      {
+        "heading": "Tự động kiểm tra khi khởi động và huy hiệu",
+        "body": "Mọi nghệ sĩ đã bật 'Tự động kiểm tra khi khởi chạy' sẽ được kiểm tra ở chế độ nền khi ứng dụng mở ra. Các nghệ sĩ có bài đăng mới được sắp xếp lên hàng đầu với phần thông báo nổi bật sống động và bộ đếm chính xác các bài đăng mới.",
+        "type": "tip"
+      },
+      {
+        "heading": "Thư mục tùy chỉnh cho mỗi người sáng tạo",
+        "body": "Bạn có thể chỉ định thư mục tải xuống dành riêng cho mỗi nghệ sĩ bằng cách sử dụng biểu tượng thư mục bên cạnh thẻ của họ. Bộ giải nén và hàng đợi tự động tôn trọng các đường dẫn này.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Bộ giải nén số lượng lớn",
+    "icon": "📦",
+    "summary": "Công cụ 7-Zip, quét kho lưu trữ đệ quy, kiểm tra đĩa trước chuyến bay.",
+    "content": [
+      {
+        "heading": "Công cụ hiệu suất cao 7-Zip",
+        "body": "Được hỗ trợ bởi 7za với hỗ trợ đa luồng (-mmt). Nó tự động phát hiện 7za.exe trong thư mục dự án, PATH hệ thống hoặc cài đặt chương trình mặc định của bạn.",
+        "type": "info"
+      },
+      {
+        "heading": "Quét đệ quy & Phát hiện nhiều tập",
+        "body": "Quét đệ quy tất cả các thư mục tải xuống của nghệ sĩ để tìm các kho lưu trữ .zip, .rar, .7z, .cbz và .tar. Các phần phụ của kho lưu trữ nhiều tập (.part2.rar, .002) được lọc ra một cách thông minh nên chỉ phần 1 được trích xuất.",
+        "type": "tip"
+      },
+      {
+        "heading": "Kiểm tra dung lượng đĩa trước chuyến bay",
+        "body": "Trước khi giải nén, công cụ này sẽ tính toán dung lượng đĩa không nén cần thiết cho mỗi ổ đĩa và cảnh báo bạn nếu dung lượng đĩa trống không đủ, ngăn chặn việc ghi bị treo hoặc ổ đĩa bị hỏng.",
+        "type": "warning"
+      },
+      {
+        "heading": "Xóa kho lưu trữ sau khi giải nén",
+        "body": "Khi được bật, các bản lưu trữ chỉ bị xóa an toàn nếu 7-Zip thoát với mã 0 (trích xuất đã được xác minh). Nếu kho lưu trữ bị hỏng hoặc được bảo vệ bằng mật khẩu, tệp gốc sẽ được giữ nguyên.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Báo cáo sau hành động & trên màn hình",
+    "icon": "🌙",
+    "summary": "Trình kích hoạt Tắt máy, Ngủ, Ngủ đông và báo cáo tóm tắt Màn hình nền tự động.",
+    "content": [
+      {
+        "heading": "Phải làm gì sau khi hoàn thành",
+        "body": "Chọn hành động tự động tải xuống sau từ danh sách thả xuống ở chân trang hàng đợi: 'Đóng ứng dụng', 'Ngủ', 'Ngủ đông', 'Tắt máy' hoặc 'Khởi động lại'.",
+        "type": "info"
+      },
+      {
+        "heading": "Đếm ngược an toàn 15 giây",
+        "body": "Trước khi máy tính của bạn tắt hoặc chuyển sang chế độ ngủ, chế độ đếm ngược 15 giây sẽ xuất hiện trên màn hình với nút 'Hủy' nổi bật để bạn có thể dừng hành động nếu vẫn đang làm việc.",
+        "type": "tip"
+      },
+      {
+        "heading": "Báo cáo màn hình tự động (HTML & TXT)",
+        "body": "Bất cứ khi nào hành động sau tải xuống được kích hoạt, ứng dụng sẽ biên soạn một báo cáo tóm tắt toàn diện và lưu trực tiếp vào Màn hình của bạn. Báo cáo nêu rõ những người tạo đã hoàn thành, mức sử dụng dung lượng ổ đĩa và các liên kết đầy đủ có thể nhấp vào cho bất kỳ tệp nào không thành công.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Trình cập nhật trong ứng dụng",
+    "icon": "🔄",
+    "summary": "Nguồn so với các bản cập nhật đã biên dịch, theo dõi cam kết GitHub và khởi động lại an toàn.",
+    "content": [
+      {
+        "heading": "Phát hiện thông minh (main.py vs .exe)",
+        "body": "Trình cập nhật sẽ phát hiện xem bạn đang chạy từ nguồn Python hay một tệp .exe độc ​​lập được biên dịch. Đối với các lần chạy nguồn, nó theo dõi các cam kết trên nhánh chính để bạn nhận được thông tin cập nhật sau mỗi lần đẩy. Đối với các lần chạy .exe, nó sẽ kiểm tra Bản phát hành GitHub.",
+        "type": "info"
+      },
+      {
+        "heading": "Cập nhật huy hiệu & thông báo",
+        "body": "Khi tìm thấy bản cập nhật mới, viên thuốc '✨ Cập nhật' phát sáng sẽ xuất hiện trên thanh điều hướng trên cùng. Nhấp vào nó sẽ mở hộp thoại Cập nhật hiển thị ghi chú cam kết và tiến trình tải xuống.",
+        "type": "tip"
+      },
+      {
+        "heading": "Tắt Windows an toàn",
+        "body": "Việc cập nhật sẽ bảo vệ tất cả các tệp cá nhân của bạn: danh sách theo dõi, cài đặt và tệp đã tải xuống của bạn không bao giờ bị ghi đè. Tập lệnh trợ giúp tách rời sẽ đợi ứng dụng đóng, cập nhật tệp và tự động khởi chạy lại.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Vault liên kết vĩnh viễn & mật khẩu",
+    "icon": "🗝️",
+    "summary": "Lưu trữ liên kết đám mây chưa được khai thác, mật khẩu đa ngôn ngữ, cứu hộ trên nhiều bài đăng và đồng bộ hóa Bộ giải nén.",
+    "content": [
+      {
+        "heading": "Lưu trữ văn bản thuần túy liên tục",
+        "body": "Link Vault lưu trữ vĩnh viễn mọi liên kết đám mây (Mega, Google Drive, Dropbox, Pixeldrain, Bunkr, v.v.) được trích xuất qua các phiên tải xuống của bạn trong config/link_vault.json bằng các bản sao lưu nguyên tử tự động. Các liên kết được nhóm thành một chế độ xem trực quan như Creator > Post > Links tree.",
+        "type": "intro"
+      },
+      {
+        "heading": "Trình giải quyết mật khẩu đa ngôn ngữ",
+        "body": "Tự động xác định mật khẩu lưu trữ bằng tiếng Anh, tiếng Nhật (パスワード), tiếng Trung (密码), tiếng Nga (пароль), tiếng Hàn (암호), tiếng Pháp và tiếng Đức bằng cách sử dụng tính năng tính điểm khoảng cách theo độ gần. Hiển thị mật khẩu ngay bên cạnh mỗi liên kết với bản sao chỉ bằng 1 cú nhấp chuột.",
+        "type": "tip"
+      },
+      {
+        "heading": "Công cụ quét chéo bài đăng và nhận xét 1-Hop",
+        "body": "Khi nghệ sĩ đăng thông báo cập nhật liên kết đến các bài đăng khác hoặc ẩn mật khẩu bên trong nhận xét, Link Vault sẽ đi theo các liên kết giữa các bài đăng (1-hop) và phân tích nhận xét của người sáng tạo để tìm ra tất cả đích tải xuống và mật khẩu ẩn.",
+        "type": "info"
+      },
+      {
+        "heading": "Tự động nạp vào bộ giải nén số lượng lớn",
+        "body": "Nhấp vào 'Đồng bộ hóa mật khẩu với Bộ giải nén' để tự động xuất tất cả mật khẩu đã thu thập vào danh sách mật khẩu của Bộ giải nén, cho phép trích xuất kho lưu trữ không cần nhắc nhở liền mạch.",
+        "type": "tip"
+      },
+      {
+        "heading": "Kiểm tra sức khỏe trực tiếp & Dọn dẹp liên kết chết",
+        "body": "Nhấp vào 'Kiểm tra tình trạng liên kết' để thăm dò các liên kết không bị chặn song song. Các liên kết chết hoặc bị gỡ xuống được gắn cờ màu đỏ và 'Làm sạch các liên kết chết' cho phép bạn loại bỏ các liên kết không hoạt động chỉ bằng một cú nhấp chuột.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Bể lưu trữ nhiều ổ đĩa",
+    "icon": "💽",
+    "summary": "Tự động mở rộng trên các ổ cứng dự phòng để ngăn chặn sự cố 'Không còn dung lượng trên thiết bị'.",
+    "content": [
+      {
+        "heading": "Loại bỏ lỗi đầy đĩa",
+        "body": "Kho lưu trữ nghệ sĩ lớn có thể dễ dàng tràn ngập một ổ cứng. Kho lưu trữ giám sát dung lượng ổ đĩa trước khi ghi từng luồng tệp. Khi ổ đĩa chính giảm xuống dưới giới hạn an toàn của bạn (ví dụ: 10 GB), các tệp tiếp theo sẽ tự động định tuyến đến ổ đĩa phụ.",
+        "type": "intro"
+      },
+      {
+        "heading": "Bảo quản phân cấp thư mục",
+        "body": "Khi tràn sang ổ đĩa phụ, Pawchive sẽ sao chép hệ thống phân cấp thư mục giống hệt nhau (ví dụ: 'E:/Kemono/Patreon/Artist/Post/file.mp4'). Tổ chức tệp của bạn vẫn hoàn toàn nhất quán trên tất cả các ổ đĩa vật lý.",
+        "type": "info"
+      },
+      {
+        "heading": "Thêm nhóm lưu trữ thứ cấp",
+        "body": "Điều hướng đến Cài đặt -> Lưu trữ & Xử lý tệp -> Tràn nhiều ổ đĩa, bật tính năng này và nhấp vào 'Thêm ổ đĩa / thư mục tràn' để chọn thêm ổ cứng hoặc chia sẻ mạng.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Trình nhập cookie trình duyệt 1 lần nhấp",
+    "icon": "🍪",
+    "summary": "Trích xuất phiên trực tiếp từ Chrome, Edge, Brave, Opera, Firefox và theo dõi hết hạn theo thời gian thực.",
+    "content": [
+      {
+        "heading": "Không cần DevTools (Firefox, Edge, Brave)",
+        "body": "Không cần mở Công cụ dành cho nhà phát triển F12 hoặc sao chép cookie phiên theo cách thủ công. Pawchive đọc cơ sở dữ liệu cookie của trình duyệt đã cài đặt của bạn một cách an toàn thông qua Windows DPAPI và AES-256-GCM mà không cần khóa các tab trình duyệt đang mở.\n\nChỉ cần đi tới Cài đặt → Mạng & Xác thực, chọn trình duyệt của bạn (hoặc để ở chế độ Tự động phát hiện) và nhấp vào ⚡ Nhập từ trình duyệt. Firefox, Edge và Opera GX được khuyên dùng để nhập tự động.",
+        "type": "intro"
+      },
+      {
+        "heading": "Cơ quan giám sát hết hạn theo thời gian thực",
+        "body": "Huy hiệu hết hạn theo dõi tính hợp lệ của phiên còn lại:\n🟢 Đang hoạt động · Phiên đã được xác minh - lành mạnh, không cần thực hiện hành động nào\n🟡 Sắp hết hạn (Xh trái) — sắp nhập lại\n🔴 Phiên đã hết hạn — nhập lại ngay lập tức\n\nHuy hiệu cập nhật 60 giây một lần để bạn luôn biết trước khi quá trình tải xuống không thành công vào giữa phiên.",
+        "type": "info"
+      },
+      {
+        "heading": "⚠️ Google Chrome 127+: Yêu cầu trích xuất cookie thủ công",
+        "body": "Google Chrome 127 đã giới thiệu Mã hóa giới hạn ứng dụng nhằm ngăn mọi công cụ bên ngoài đọc cơ sở dữ liệu cookie của Chrome. Nếu sử dụng Chrome làm trình duyệt chính, bạn có hai tùy chọn:\n\n• Khuyến nghị: Đăng nhập vào kemono.su / coomer.su trong Mozilla Firefox hoặc Microsoft Edge và sử dụng trình nhập 1-Click từ đó.\n\n• Thủ công (bất kỳ trình duyệt nào): Sao chép chuỗi cookie phiên của bạn theo cách thủ công bằng DevTools (xem thẻ tiếp theo để biết hướng dẫn từng bước).",
+        "type": "warning"
+      },
+      {
+        "heading": "Trích xuất thủ công - Chrome / Bất kỳ trình duyệt nào (Từng bước)",
+        "body": "1. Mở trình duyệt của bạn và đăng nhập vào kemono.su hoặc coomer.su.\n\n2. Nhấn F12 để mở Công cụ dành cho nhà phát triển (hoặc nhấp chuột phải vào trang → Kiểm tra).\n\n3. Nhấp vào tab Ứng dụng ở đầu DevTools (bạn có thể cần nhấp vào ≫ để xem nó).\n\n4. Ở thanh bên trái, mở rộng Bộ nhớ → Cookies → https://kemono.su (hoặc coomer.su).\n\n5. Tìm cookie có tên 'session' — nhấp vào nó và sao chép toàn bộ Giá trị từ bảng dưới cùng.\n\n6. Trong Pawchive, đi tới Cài đặt → Mạng & Xác thực → trường Cookie phiên.\n\n7. Nhập: session= và dán giá trị của bạn ngay sau nó. Ví dụ:\n   session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n\n8. Tùy ý thêm cf_clearance theo cách tương tự, cách nhau bằng dấu chấm phẩy:\n   phiên=ABC123; cf_clearance=XYZ789\n\n9. Nhấp vào Lưu cài đặt. Cookie của bạn hiện đang hoạt động.",
+        "type": "tip"
+      },
+      {
+        "heading": "Nơi tìm từng cookie",
+        "body": "• kemono.su / coomer.su → Tên cookie: 'session'\n• Patreon.com → Tên cookie: 'session_id' (tìm thấy tại www.patreon.com)\n• Fanbox (fanbox.cc) → Tên cookie: 'FANBOXSESSID'\n• Bỏ qua Cloudflare → Tên cookie: 'cf_clearance' (cùng tên miền với trang bạn đang truy cập)\n\nBạn chỉ cần một cookie cho bất kỳ trang web nào bạn đang tải xuống. Bạn không cần tất cả chúng.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Trung tâm lập lịch tác vụ & tự động hóa",
+    "icon": "⏰",
+    "summary": "Đồng bộ hóa delta danh sách theo dõi tự động, sao lưu người tạo theo lịch trình, cửa sổ Night Owl và giới hạn chuỗi bị khóa.",
+    "content": [
+      {
+        "heading": "Tự động lưu trữ rảnh tay",
+        "body": "Tạo các tác vụ nền định kỳ để thăm dò Danh sách theo dõi của bạn cho các bài đăng mới vài giờ một lần hoặc lên lịch sao lưu thường xuyên cho người sáng tạo vào các thời điểm cố định hàng ngày (ví dụ: 03:00 sáng).",
+        "type": "intro"
+      },
+      {
+        "heading": "Chủ đề do người dùng khóa & Chế độ trễ",
+        "body": "Nếu bạn đã điều chỉnh cẩn thận số lượng chuỗi công việc và độ trễ tải xuống cho kết nối của mình, hãy bật 'Khóa chuỗi & độ trễ tùy chỉnh'. Điều này ngăn chặn nghiêm ngặt các thuật toán thích ứng hoặc tác vụ quét nền thay đổi cài đặt tùy chỉnh của bạn.",
+        "type": "tip"
+      },
+      {
+        "heading": "Cửa sổ ngoài giờ cao điểm của Cú đêm",
+        "body": "Định cấu hình cửa sổ tải xuống ngoài giờ cao điểm (ví dụ: 01:00 đến 07:00). Các tác vụ đã lên lịch sẽ xếp hàng và tạm dừng cho đến khi cửa sổ ngoài giờ cao điểm mở ra, tối đa hóa tốc độ tải xuống khi băng thông của ISP rẻ nhất.",
+        "type": "info"
+      },
+      {
+        "heading": "Ngăn chặn giấc ngủ của Windows (Luôn tỉnh táo)",
+        "body": "Gắn cờ trạng thái thực thi nhân Windows (ES_SYSTEM_REQUIRED) trong khi các tác vụ tự động đang tích cực tải xuống, giúp PC của bạn luôn hoạt động qua nhiều đợt qua đêm mà không thay đổi cài đặt nguồn Windows.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Tham khảo chú giải công cụ hoàn chỉnh",
+    "icon": "💡",
+    "summary": "Bảng tóm tắt nhanh giải thích mọi nút, biểu tượng và huy hiệu trên giao diện.",
+    "content": [
+      {
+        "heading": "Biểu tượng điều hướng tiêu đề",
+        "body": "• ❓ Hướng dẫn: Mở hướng dẫn tương tác này.\n• ✨ Cập nhật: Cho biết có phiên bản mới hơn trên GitHub.\n• ⚙️ Cài đặt: Mở cài đặt ứng dụng (thư mục tải xuống, đồng thời, proxy).\n• 📜 Bảng điều khiển: Mở cửa sổ nhật ký mạng và hoạt động theo thời gian thực.",
+        "type": "info"
+      },
+      {
+        "heading": "Nút xếp hàng & bộ lọc",
+        "body": "• Tự động thử lại: Tự động khởi động lại các bản tải xuống không thành công khi kết thúc hàng đợi.\n• Chế độ Manga: Chuẩn hóa tên tập tin hình ảnh để có thứ tự đọc tuần tự rõ ràng.\n• Thích ứng đồng thời: Tự động điều chỉnh các luồng khi đạt đến giới hạn tốc độ máy chủ.\n• 📂 Biểu tượng Thư mục: Mở thư mục tải xuống mục tiêu trong Windows File Explorer.",
+        "type": "tip"
+      },
+      {
+        "heading": "Điều khiển Vault liên kết và bộ lập lịch",
+        "body": "• 🗝️ Link Vault: Lưu trữ vĩnh viễn tất cả các liên kết đám mây đã thu thập và mật khẩu được trích xuất.\n• ⏰ Trình lập lịch biểu: Trung tâm tự động hóa để đồng bộ hóa Danh sách theo dõi định kỳ và các nhiệm vụ Cú đêm.\n• 🔒 Khóa chủ đề: Bảo vệ số lượng chủ đề tùy chỉnh và độ trễ mạng khỏi việc tự động điều chỉnh.\n• 💽 Kho lưu trữ: Sao chép cây thư mục trên các ổ đĩa phụ khi dung lượng ổ đĩa sắp hết.\n• 🍪 Trình nhập cookie: Trình trích xuất phiên trình duyệt chỉ bằng 1 cú nhấp chuột với cơ quan giám sát hết hạn theo thời gian thực.",
+        "type": "info"
+      },
+      {
+        "heading": "Thử lại các hành động theo phương thức",
+        "body": "• 🔗 Mở bài: Mở bài nguồn trên Kemono/Coomer trong trình duyệt web của bạn.\n• 📥 Kiểm tra liên kết: Kiểm tra hoặc tải xuống tệp trực tiếp trong trình duyệt của bạn.\n• 🔁 Đã thử Nx: Hiển thị số lần file đã được thử lại.\n• 🛑 5/5 Số lần thử lại tối đa: Cho biết tính năng tự động thử lại đã ngừng thử tệp này.",
+        "type": "info"
+      }
+    ]
+  }
+]

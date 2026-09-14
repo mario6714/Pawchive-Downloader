@@ -167,16 +167,21 @@ Item {
 
                         ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             spacing: 4
 
-                            RowLayout {
-                                spacing: 10
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 8
+
                                 Text {
                                     text: schedViewRoot.tr("scheduler_title", "Task Scheduler & Automation Hub")
                                     font.family: "Segoe UI, sans-serif"
                                     font.pixelSize: 17
                                     font.weight: Font.Bold
                                     color: "#F8FAFC"
+                                    wrapMode: Text.WordWrap
+                                    width: Math.min(implicitWidth, parent.width)
                                 }
 
                                 // Master active badge
@@ -306,7 +311,7 @@ Item {
 
                         Rectangle {
                             height: 34
-                            implicitWidth: newBtnRow2.implicitWidth + 20
+                            implicitWidth: schedViewRoot.width < 450 ? 34 : (newBtnRow2.implicitWidth + 20)
                             radius: 8
                             color: newSchedMouse2.containsMouse ? "#4338CA" : "#4F46E5"
                             border.color: newSchedMouse2.containsMouse ? "#A5B4FC" : "#818CF8"
@@ -320,6 +325,7 @@ Item {
                                 spacing: 6
                                 Text { text: "➕"; font.pixelSize: 11; color: "#FFFFFF"; anchors.verticalCenter: parent.verticalCenter }
                                 Text {
+                                    visible: schedViewRoot.width >= 450
                                     text: schedViewRoot.tr("scheduler_btn_new", "New Schedule")
                                     font.family: "Segoe UI, sans-serif"
                                     font.pixelSize: 11
@@ -333,6 +339,9 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
+                                ToolTip.visible: containsMouse && schedViewRoot.width < 450
+                                ToolTip.delay: 200
+                                ToolTip.text: schedViewRoot.tr("scheduler_btn_new", "New Schedule")
                                 onClicked: schedViewRoot.openScheduleDialog(null)
                             }
                         }
@@ -375,6 +384,8 @@ Item {
                             font.pixelSize: 13
                             font.weight: Font.Bold
                             color: "#E2E8F0"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
                     }
 
@@ -391,6 +402,7 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: Math.max(68, safe1Row.implicitHeight + 20)
                             radius: 8
+                            clip: true
                             color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerLockThreadsDelay) ? "#1E1B4B" : "#1E293B"
                             border.color: safe1Hover.hovered ? "#A5B4FC" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerLockThreadsDelay) ? "#818CF8" : "#334155")
                             border.width: 1
@@ -424,6 +436,7 @@ Item {
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     spacing: 4
 
                                     // Flow allows badges to wrap below title cleanly when space is tight
@@ -509,12 +522,13 @@ Item {
                             }
                         }
 
-                        // Safeguard 2: Night Owl Off-Peak Window (Redesigned Active Window Pill)
+                        // Safeguard 2: Night Owl Off-Peak Window (Redesigned Responsive Window Layout)
                         Rectangle {
                             id: safe2Card
                             Layout.fillWidth: true
-                            implicitHeight: Math.max(76, safe2Row.implicitHeight + 24)
+                            implicitHeight: Math.max(76, safe2Col.implicitHeight + 20)
                             radius: 8
+                            clip: true
                             color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#042F2E" : "#1E293B"
                             border.color: safe2Hover.hovered ? "#5EEAD4" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#334155")
                             border.width: 1
@@ -530,28 +544,33 @@ Item {
 
                             HoverHandler { id: safe2Hover }
 
-                            RowLayout {
-                                id: safe2Row
+                            ColumnLayout {
+                                id: safe2Col
                                 anchors.fill: parent
                                 anchors.margins: 10
-                                spacing: 10
+                                spacing: 8
 
-                                Rectangle {
-                                    width: 36; height: 36; radius: 6
-                                    color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#134E4A" : "#0F172A"
-                                    scale: safe2Hover.hovered && !schedViewRoot.isScrolling ? 1.12 : 1.0
-                                    Behavior on scale {
-                                        SpringAnimation { spring: 5.0; damping: 0.35; mass: 0.75 }
-                                    }
-                                    Text { anchors.centerIn: parent; text: "🌙"; font.pixelSize: 17 }
-                                }
-
-                                ColumnLayout {
+                                // Top Row: Icon + Title & Active Badge + StyledSwitch
+                                RowLayout {
                                     Layout.fillWidth: true
-                                    spacing: 6
+                                    spacing: 8
 
-                                    RowLayout {
-                                        spacing: 8
+                                    Rectangle {
+                                        width: 32; height: 32; radius: 6
+                                        color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#134E4A" : "#0F172A"
+                                        scale: safe2Hover.hovered && !schedViewRoot.isScrolling ? 1.12 : 1.0
+                                        Behavior on scale {
+                                            SpringAnimation { spring: 5.0; damping: 0.35; mass: 0.75 }
+                                        }
+                                        Text { anchors.centerIn: parent; text: "🌙"; font.pixelSize: 16 }
+                                    }
+
+                                    Flow {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
+                                        spacing: 6
+                                        Layout.alignment: Qt.AlignVCenter
+
                                         Text {
                                             text: schedViewRoot.tr("scheduler_night_owl_title", "Night Owl Off-Peak Window")
                                             font.family: "Segoe UI, sans-serif"
@@ -578,92 +597,92 @@ Item {
                                         }
                                     }
 
-                                    // Sleek Modern Time Window Pill with Taller Inputs (Never Cut Off)
-                                    Rectangle {
-                                        height: 32
-                                        implicitWidth: timePillRow.implicitWidth + 20
-                                        radius: 6
-                                        color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#042528" : "#0F172A"
-                                        border.color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#334155"
-                                        border.width: 1
-
-                                        RowLayout {
-                                            id: timePillRow
-                                            anchors.centerIn: parent
-                                            spacing: 8
-
-                                            Text {
-                                                text: "⏰ " + schedViewRoot.tr("scheduler_night_owl_window_label", "Window:")
-                                                font.pixelSize: 11
-                                                font.weight: 600
-                                                color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#5EEAD4" : "#94A3B8"
-                                            }
-
-                                            TextField {
-                                                id: nightStartInput
-                                                text: schedViewRoot.bridge ? schedViewRoot.bridge.schedulerNightOwlStart : "01:00"
-                                                font.pixelSize: 12
-                                                font.weight: Font.Bold
-                                                Layout.preferredWidth: 56
-                                                Layout.preferredHeight: 24
-                                                verticalAlignment: TextInput.AlignVCenter
-                                                horizontalAlignment: TextInput.AlignHCenter
-                                                padding: 0
-                                                topPadding: 0
-                                                bottomPadding: 0
-                                                background: Rectangle {
-                                                    color: nightStartInput.activeFocus ? "#115E59" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#0A3B3E" : "#1E293B")
-                                                    radius: 4
-                                                    border.color: nightStartInput.activeFocus ? "#2DD4BF" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#475569")
-                                                }
-                                                color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#5EEAD4" : "#E2E8F0"
-                                                selectByMouse: true
-                                                onEditingFinished: {
-                                                    schedViewRoot.saveGlobalSettings(undefined, undefined, undefined, text, nightEndInput.text, undefined, undefined)
-                                                }
-                                            }
-
-                                            Text {
-                                                text: "→"
-                                                font.pixelSize: 12
-                                                font.weight: Font.Bold
-                                                color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#2DD4BF" : "#64748B"
-                                            }
-
-                                            TextField {
-                                                id: nightEndInput
-                                                text: schedViewRoot.bridge ? schedViewRoot.bridge.schedulerNightOwlEnd : "07:00"
-                                                font.pixelSize: 12
-                                                font.weight: Font.Bold
-                                                Layout.preferredWidth: 56
-                                                Layout.preferredHeight: 24
-                                                verticalAlignment: TextInput.AlignVCenter
-                                                horizontalAlignment: TextInput.AlignHCenter
-                                                padding: 0
-                                                topPadding: 0
-                                                bottomPadding: 0
-                                                background: Rectangle {
-                                                    color: nightEndInput.activeFocus ? "#115E59" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#0A3B3E" : "#1E293B")
-                                                    radius: 4
-                                                    border.color: nightEndInput.activeFocus ? "#2DD4BF" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#475569")
-                                                }
-                                                color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#5EEAD4" : "#E2E8F0"
-                                                selectByMouse: true
-                                                onEditingFinished: {
-                                                    schedViewRoot.saveGlobalSettings(undefined, undefined, undefined, nightStartInput.text, text, undefined, undefined)
-                                                }
-                                            }
+                                    StyledSwitch {
+                                        checked: schedViewRoot.bridge ? schedViewRoot.bridge.schedulerNightOwlEnabled : false
+                                        accentColor: "#14B8A6"
+                                        onToggled: function(isChecked) {
+                                            schedViewRoot.saveGlobalSettings(undefined, undefined, isChecked, nightStartInput.text, nightEndInput.text, undefined, undefined)
+                                            schedViewRoot.showToast(isChecked ? schedViewRoot.tr("toast_night_owl_on", "Night Owl window enabled") : schedViewRoot.tr("toast_night_owl_off", "Night Owl window disabled"))
                                         }
                                     }
                                 }
 
+                                // Bottom Row: Sleek Modern Time Window Pill (Spans full available width)
+                                Rectangle {
+                                    height: 30
+                                    Layout.fillWidth: true
+                                    Layout.maximumWidth: timePillRow.implicitWidth + 20
+                                    radius: 6
+                                    color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#042528" : "#0F172A"
+                                    border.color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#334155"
+                                    border.width: 1
 
-                                StyledSwitch {
-                                    checked: schedViewRoot.bridge ? schedViewRoot.bridge.schedulerNightOwlEnabled : false
-                                    accentColor: "#14B8A6"
-                                    onToggled: function(isChecked) {
-                                        schedViewRoot.saveGlobalSettings(undefined, undefined, isChecked, nightStartInput.text, nightEndInput.text, undefined, undefined)
-                                        schedViewRoot.showToast(isChecked ? schedViewRoot.tr("toast_night_owl_on", "Night Owl window enabled") : schedViewRoot.tr("toast_night_owl_off", "Night Owl window disabled"))
+                                    RowLayout {
+                                        id: timePillRow
+                                        anchors.centerIn: parent
+                                        spacing: 6
+
+                                        Text {
+                                            text: "⏰ " + schedViewRoot.tr("scheduler_night_owl_window_label", "Window:")
+                                            font.pixelSize: 11
+                                            font.weight: 600
+                                            color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#5EEAD4" : "#94A3B8"
+                                        }
+
+                                        TextField {
+                                            id: nightStartInput
+                                            text: schedViewRoot.bridge ? schedViewRoot.bridge.schedulerNightOwlStart : "01:00"
+                                            font.pixelSize: 11
+                                            font.weight: Font.Bold
+                                            Layout.preferredWidth: 48
+                                            Layout.preferredHeight: 22
+                                            verticalAlignment: TextInput.AlignVCenter
+                                            horizontalAlignment: TextInput.AlignHCenter
+                                            padding: 0
+                                            topPadding: 0
+                                            bottomPadding: 0
+                                            background: Rectangle {
+                                                color: nightStartInput.activeFocus ? "#115E59" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#0A3B3E" : "#1E293B")
+                                                radius: 4
+                                                border.color: nightStartInput.activeFocus ? "#2DD4BF" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#475569")
+                                            }
+                                            color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#5EEAD4" : "#E2E8F0"
+                                            selectByMouse: true
+                                            onEditingFinished: {
+                                                schedViewRoot.saveGlobalSettings(undefined, undefined, undefined, text, nightEndInput.text, undefined, undefined)
+                                            }
+                                        }
+
+                                        Text {
+                                            text: "→"
+                                            font.pixelSize: 11
+                                            font.weight: Font.Bold
+                                            color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#2DD4BF" : "#64748B"
+                                        }
+
+                                        TextField {
+                                            id: nightEndInput
+                                            text: schedViewRoot.bridge ? schedViewRoot.bridge.schedulerNightOwlEnd : "07:00"
+                                            font.pixelSize: 11
+                                            font.weight: Font.Bold
+                                            Layout.preferredWidth: 48
+                                            Layout.preferredHeight: 22
+                                            verticalAlignment: TextInput.AlignVCenter
+                                            horizontalAlignment: TextInput.AlignHCenter
+                                            padding: 0
+                                            topPadding: 0
+                                            bottomPadding: 0
+                                            background: Rectangle {
+                                                color: nightEndInput.activeFocus ? "#115E59" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#0A3B3E" : "#1E293B")
+                                                radius: 4
+                                                border.color: nightEndInput.activeFocus ? "#2DD4BF" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#14B8A6" : "#475569")
+                                            }
+                                            color: (schedViewRoot.bridge && schedViewRoot.bridge.schedulerNightOwlEnabled) ? "#5EEAD4" : "#E2E8F0"
+                                            selectByMouse: true
+                                            onEditingFinished: {
+                                                schedViewRoot.saveGlobalSettings(undefined, undefined, undefined, nightStartInput.text, text, undefined, undefined)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -675,6 +694,7 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: Math.max(68, safe3Row.implicitHeight + 20)
                             radius: 8
+                            clip: true
                             color: "#1E293B"
                             border.color: safe3Hover.hovered ? "#7DD3FC" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerPreventSleep) ? "#38BDF8" : "#334155")
                             border.width: 1
@@ -707,6 +727,7 @@ Item {
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     spacing: 2
                                     Text {
                                         text: schedViewRoot.tr("scheduler_prevent_sleep_title", "Windows Sleep Prevention")
@@ -743,6 +764,7 @@ Item {
                             Layout.fillWidth: true
                             implicitHeight: Math.max(68, safe4Row.implicitHeight + 20)
                             radius: 8
+                            clip: true
                             color: "#1E293B"
                             border.color: safe4Hover.hovered ? "#D8B4FE" : ((schedViewRoot.bridge && schedViewRoot.bridge.schedulerSweepRetry) ? "#A855F7" : "#334155")
                             border.width: 1
@@ -775,6 +797,7 @@ Item {
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     spacing: 2
                                     Text {
                                         text: schedViewRoot.tr("scheduler_sweep_retry_title", "Sweep Auto-Retry Pass")
@@ -828,6 +851,8 @@ Item {
                     font.pixelSize: 14
                     font.weight: Font.Bold
                     color: "#E2E8F0"
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
                 }
 
                 Rectangle {
@@ -868,12 +893,16 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 200
                     radius: 10
+                    clip: true
                     color: "#0F172A"
                     border.color: "#334155"
                     border.width: 1
 
                     ColumnLayout {
-                        anchors.centerIn: parent
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.margins: 20
                         spacing: 12
 
                         Text {
@@ -889,6 +918,10 @@ Item {
                             font.weight: Font.Bold
                             color: "#E2E8F0"
                             Layout.alignment: Qt.AlignHCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                         }
 
                         Text {
@@ -896,6 +929,10 @@ Item {
                             font.pixelSize: 12
                             color: "#94A3B8"
                             Layout.alignment: Qt.AlignHCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                         }
 
                         Rectangle {
@@ -940,6 +977,7 @@ Item {
                         Layout.fillWidth: true
                         implicitHeight: Math.max(76, cardRow.implicitHeight + 24)
                         radius: 10
+                        clip: true
                         color: modelData.enabled ? (cardHover.hovered ? "#243044" : "#1E293B") : "#0F172A"
                         border.color: cardHover.hovered ? "#818CF8" : (modelData.enabled ? "#334155" : "#1E293B")
                         border.width: 1
@@ -983,10 +1021,12 @@ Item {
                             // Details Column (Responsive Flow for Metadata Tags)
                             ColumnLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 spacing: 4
 
                                 RowLayout {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     spacing: 8
 
                                     Text {
@@ -1197,12 +1237,13 @@ Item {
         Rectangle {
             id: modalBox
             anchors.centerIn: parent
-            width: Math.min(parent.width - 40, 520)
-            implicitHeight: addDialogCol.implicitHeight + 36
+            width: Math.min(Math.max(parent.width - 32, 260), 480)
+            height: Math.min(addDialogCol.implicitHeight + 36, parent.height - 32)
             radius: 12
             color: "#0F172A"
             border.color: "#334155"
             border.width: 1.5
+            clip: true
 
             scale: schedViewRoot.showAddDialog ? 1.0 : 0.90
             transform: Translate {
@@ -1215,388 +1256,414 @@ Item {
                 SpringAnimation { spring: 4.5; damping: 0.38; mass: 1.0 }
             }
 
-            ColumnLayout {
-                id: addDialogCol
+            Flickable {
+                id: modalFlick
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 16
+                anchors.margins: 18
+                contentWidth: width
+                contentHeight: addDialogCol.implicitHeight
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
 
-                // Modal Header
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-                    Text { text: schedViewRoot.editingScheduleId ? "✏️" : "⏰"; font.pixelSize: 18 }
-                    Text {
-                        text: schedViewRoot.editingScheduleId ?
-                              schedViewRoot.tr("scheduler_modal_edit_title", "Modify Automation Schedule") :
-                              schedViewRoot.tr("scheduler_modal_title", "Create Automation Schedule")
-                        font.family: "Segoe UI, sans-serif"
-                        font.pixelSize: 16
-                        font.weight: Font.Bold
-                        color: "#F8FAFC"
-                    }
-                    Item { Layout.fillWidth: true }
-                    Rectangle {
-                        width: 28; height: 28; radius: 14; color: closeMouse.containsMouse ? "#334155" : "transparent"
-                        scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.1 : 1.0)
-                        Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.35; mass: 0.7 } }
-                        Text { anchors.centerIn: parent; text: "✖"; font.pixelSize: 12; color: "#94A3B8" }
-                        MouseArea {
-                            id: closeMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: schedViewRoot.showAddDialog = false
-                        }
-                    }
-                }
-
-                // Schedule Name Input
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
-                    Text {
-                        text: schedViewRoot.tr("scheduler_modal_name_label", "Schedule Name")
-                        font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
-                    }
-                    TextField {
-                        id: taskNameInput
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 34
-                        placeholderText: schedViewRoot.tr("scheduler_modal_name_placeholder", "e.g., Nightly Watchlist Sync")
-                        color: "#F8FAFC"
-                        placeholderTextColor: "#64748B"
-                        font.pixelSize: 12
-                        background: Rectangle { color: "#1E293B"; radius: 6; border.color: taskNameInput.activeFocus ? "#818CF8" : "#334155" }
-                    }
-                }
+                    id: addDialogCol
+                    width: modalFlick.width
+                    spacing: 14
 
-                // Target Type Switcher
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-                    Text {
-                        text: schedViewRoot.tr("scheduler_modal_target_label", "Target Action")
-                        font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
-                    }
-
+                    // Modal Header
                     RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        // Watchlist Option
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 38
-                            radius: 6
-                            color: addDialogModal.selectedTarget === "watchlist" ? "#2E1065" : "#1E293B"
-                            border.color: addDialogModal.selectedTarget === "watchlist" ? "#A855F7" : "#334155"
-                            border.width: 1
-
-                            scale: watchOptMouse.pressed ? 0.96 : (watchOptMouse.containsMouse ? 1.02 : 1.0)
-                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 8
-                                Text { text: "⭐"; font.pixelSize: 12 }
-                                Text {
-                                    text: schedViewRoot.tr("scheduler_target_watchlist", "Watchlist Delta Check")
-                                    font.pixelSize: 11
-                                    font.weight: 600
-                                    color: addDialogModal.selectedTarget === "watchlist" ? "#F8FAFC" : "#94A3B8"
-                                }
-                            }
-                            MouseArea {
-                                id: watchOptMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: addDialogModal.selectedTarget = "watchlist"
-                            }
-                        }
-
-                        // Creator Option
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 38
-                            radius: 6
-                            color: addDialogModal.selectedTarget === "creator" ? "#0C4A6E" : "#1E293B"
-                            border.color: addDialogModal.selectedTarget === "creator" ? "#0284C7" : "#334155"
-                            border.width: 1
-
-                            scale: creatOptMouse.pressed ? 0.96 : (creatOptMouse.containsMouse ? 1.02 : 1.0)
-                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 8
-                                Text { text: "🌐"; font.pixelSize: 12 }
-                                Text {
-                                    text: schedViewRoot.tr("scheduler_target_creator", "Specific Creator URL")
-                                    font.pixelSize: 11
-                                    font.weight: 600
-                                    color: addDialogModal.selectedTarget === "creator" ? "#F8FAFC" : "#94A3B8"
-                                }
-                            }
-                            MouseArea {
-                                id: creatOptMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: addDialogModal.selectedTarget = "creator"
-                            }
-                        }
-                    }
-                }
-
-                // Creator URL Input (Visible only if creator target chosen)
-                ColumnLayout {
-                    id: creatorUrlSection
-                    visible: addDialogModal.selectedTarget === "creator"
-                    Layout.fillWidth: true
-                    spacing: 4
-                    Text {
-                        text: schedViewRoot.tr("scheduler_modal_url_label", "Creator Page URL")
-                        font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
-                    }
-                    TextField {
-                        id: taskUrlInput
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 34
-                        placeholderText: "https://kemono.su/patreon/user/12345"
-                        color: "#F8FAFC"
-                        placeholderTextColor: "#64748B"
-                        font.pixelSize: 12
-                        background: Rectangle { color: "#1E293B"; radius: 6; border.color: taskUrlInput.activeFocus ? "#38BDF8" : "#334155" }
-                    }
-                }
-
-                // Cadence Trigger Type
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-
-                    Text {
-                        text: schedViewRoot.tr("scheduler_modal_trigger_label", "Trigger Schedule")
-                        font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        // Interval Option
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 34
-                            radius: 6
-                            color: addDialogModal.selectedTrigger === "interval" ? "#1E1B4B" : "#1E293B"
-                            border.color: addDialogModal.selectedTrigger === "interval" ? "#818CF8" : "#334155"
-                            border.width: 1
-
-                            scale: intOptMouse.pressed ? 0.96 : (intOptMouse.containsMouse ? 1.02 : 1.0)
-                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Text { text: "⏱️"; font.pixelSize: 11 }
-                                Text {
-                                    text: schedViewRoot.tr("scheduler_trigger_interval", "Repeating Interval")
-                                    font.pixelSize: 11
-                                    font.weight: 600
-                                    color: addDialogModal.selectedTrigger === "interval" ? "#F8FAFC" : "#94A3B8"
-                                }
-                            }
-                            MouseArea {
-                                id: intOptMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: addDialogModal.selectedTrigger = "interval"
-                            }
-                        }
-
-                        // Time of Day Option
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 34
-                            radius: 6
-                            color: addDialogModal.selectedTrigger === "time_of_day" ? "#1E1B4B" : "#1E293B"
-                            border.color: addDialogModal.selectedTrigger === "time_of_day" ? "#818CF8" : "#334155"
-                            border.width: 1
-
-                            scale: timeOptMouse.pressed ? 0.96 : (timeOptMouse.containsMouse ? 1.02 : 1.0)
-                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 6
-                                Text { text: "⏰"; font.pixelSize: 11 }
-                                Text {
-                                    text: schedViewRoot.tr("scheduler_trigger_fixed", "Daily Fixed Time")
-                                    font.pixelSize: 11
-                                    font.weight: 600
-                                    color: addDialogModal.selectedTrigger === "time_of_day" ? "#F8FAFC" : "#94A3B8"
-                                }
-                            }
-                            MouseArea {
-                                id: timeOptMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: addDialogModal.selectedTrigger = "time_of_day"
-                            }
-                        }
-                    }
-
-                    // Interval Hours Selector
-                    RowLayout {
-                        visible: addDialogModal.selectedTrigger === "interval"
                         Layout.fillWidth: true
                         spacing: 8
-
+                        Text { text: schedViewRoot.editingScheduleId ? "✏️" : "⏰"; font.pixelSize: 18 }
                         Text {
-                            text: schedViewRoot.tr("scheduler_every_hours", "Run every:")
-                            font.pixelSize: 12; color: "#CBD5E1"
-                        }
-
-                        StyledSpinBox {
-                            id: intervalSpin
-                            from: 1; to: 72; value: 6; stepSize: 1
-                            suffix: " hrs"
-                            accentColor: "#38BDF8"
-                            implicitWidth: 130
-                        }
-
-                        Text {
-                            text: schedViewRoot.tr("scheduler_hours_unit", "hours")
-                            font.pixelSize: 12; color: "#94A3B8"
-                        }
-                    }
-
-                    // Daily Fixed Time Selector
-                    RowLayout {
-                        visible: addDialogModal.selectedTrigger === "time_of_day"
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Text {
-                            text: schedViewRoot.tr("scheduler_at_time", "Run daily at:")
-                            font.pixelSize: 12; color: "#CBD5E1"
-                        }
-
-                        TextField {
-                            id: timeOfDayInput
-                            text: "03:00"
-                            Layout.preferredWidth: 70
-                            Layout.preferredHeight: 30
-                            horizontalAlignment: TextInput.AlignHCenter
-                            font.pixelSize: 12
-                            color: "#38BDF8"
-                            background: Rectangle { color: "#1E293B"; radius: 4; border.color: "#334155" }
-                        }
-
-                        Text {
-                            text: "(24h format HH:MM)"
-                            font.pixelSize: 11; color: "#64748B"
-                        }
-                    }
-                }
-
-                // Modal Action Buttons
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 12
-
-                    Item { Layout.fillWidth: true }
-
-                    // Cancel Button
-                    Rectangle {
-                        height: 36
-                        implicitWidth: 84
-                        radius: 8
-                        color: cancelMouse.containsMouse ? "#334155" : "#1E293B"
-                        border.color: "#475569"; border.width: 1
-
-                        scale: cancelMouse.pressed ? 0.94 : (cancelMouse.containsMouse ? 1.02 : 1.0)
-                        Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
-                        Behavior on color { ColorAnimation { duration: 120 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: schedViewRoot.tr("btn_cancel", "Cancel")
-                            font.pixelSize: 12
-                            color: "#E2E8F0"
-                        }
-                        MouseArea {
-                            id: cancelMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: schedViewRoot.showAddDialog = false
-                        }
-                    }
-
-                    // Save / Update Schedule Button
-                    Rectangle {
-                        height: 36
-                        implicitWidth: 140
-                        radius: 8
-                        color: createBtnMouse.containsMouse ? "#4338CA" : "#4F46E5"
-                        border.color: createBtnMouse.containsMouse ? "#A5B4FC" : "#818CF8"
-                        border.width: 1
-
-                        scale: createBtnMouse.pressed ? 0.94 : (createBtnMouse.containsMouse ? 1.04 : 1.0)
-                        Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                        Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                        Text {
-                            anchors.centerIn: parent
                             text: schedViewRoot.editingScheduleId ?
-                                  schedViewRoot.tr("scheduler_modal_update_btn", "Update Schedule") :
-                                  schedViewRoot.tr("scheduler_modal_create_btn", "Save Schedule")
-                            font.pixelSize: 12
+                                  schedViewRoot.tr("scheduler_modal_edit_title", "Modify Automation Schedule") :
+                                  schedViewRoot.tr("scheduler_modal_title", "Create Automation Schedule")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 15
                             font.weight: Font.Bold
-                            color: "#FFFFFF"
+                            color: "#F8FAFC"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+                        Rectangle {
+                            width: 28; height: 28; radius: 14; color: closeMouse.containsMouse ? "#334155" : "transparent"
+                            scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.1 : 1.0)
+                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.35; mass: 0.7 } }
+                            Text { anchors.centerIn: parent; text: "✖"; font.pixelSize: 12; color: "#94A3B8" }
+                            MouseArea {
+                                id: closeMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: schedViewRoot.showAddDialog = false
+                            }
+                        }
+                    }
+
+                    // Schedule Name Input
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+                        Text {
+                            text: schedViewRoot.tr("scheduler_modal_name_label", "Schedule Name")
+                            font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
+                        }
+                        TextField {
+                            id: taskNameInput
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            Layout.preferredHeight: 34
+                            placeholderText: schedViewRoot.tr("scheduler_modal_name_placeholder", "e.g., Nightly Watchlist Sync")
+                            color: "#F8FAFC"
+                            placeholderTextColor: "#64748B"
+                            font.pixelSize: 12
+                            background: Rectangle { color: "#1E293B"; radius: 6; border.color: taskNameInput.activeFocus ? "#818CF8" : "#334155" }
+                        }
+                    }
+
+                    // Target Type Switcher
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text {
+                            text: schedViewRoot.tr("scheduler_modal_target_label", "Target Action")
+                            font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
                         }
 
-                        MouseArea {
-                            id: createBtnMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                var name = taskNameInput.text.trim() || (addDialogModal.selectedTarget === "watchlist" ? "Watchlist Delta Sync" : "Creator Download")
-                                var targetType = addDialogModal.selectedTarget
-                                var targetUrl = targetType === "creator" ? taskUrlInput.text.trim() : ""
-                                var triggerType = addDialogModal.selectedTrigger
-                                var intervalH = intervalSpin.value
-                                var timeVal = timeOfDayInput.text.trim() || "03:00"
+                        GridLayout {
+                            columns: modalBox.width > 380 ? 2 : 1
+                            Layout.fillWidth: true
+                            rowSpacing: 8
+                            columnSpacing: 10
 
-                                if (schedViewRoot.bridge) {
-                                    if (schedViewRoot.editingScheduleId) {
-                                        schedViewRoot.bridge.updateSchedulerTask(schedViewRoot.editingScheduleId, name, targetType, targetUrl, triggerType, intervalH, timeVal)
-                                        schedViewRoot.showToast(schedViewRoot.tr("toast_schedule_updated", "Schedule updated successfully!"))
-                                    } else {
-                                        schedViewRoot.bridge.addSchedulerTask(name, targetType, targetUrl, triggerType, intervalH, timeVal)
-                                        schedViewRoot.showToast(schedViewRoot.tr("toast_schedule_created", "Schedule created successfully!"))
+                            // Watchlist Option
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                height: 38
+                                radius: 6
+                                color: addDialogModal.selectedTarget === "watchlist" ? "#2E1065" : "#1E293B"
+                                border.color: addDialogModal.selectedTarget === "watchlist" ? "#A855F7" : "#334155"
+                                border.width: 1
+
+                                scale: watchOptMouse.pressed ? 0.96 : (watchOptMouse.containsMouse ? 1.02 : 1.0)
+                                Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 8
+                                    Text { text: "⭐"; font.pixelSize: 12 }
+                                    Text {
+                                        text: schedViewRoot.tr("scheduler_target_watchlist", "Watchlist Delta Check")
+                                        font.pixelSize: 11
+                                        font.weight: 600
+                                        color: addDialogModal.selectedTarget === "watchlist" ? "#F8FAFC" : "#94A3B8"
+                                        elide: Text.ElideRight
                                     }
                                 }
-                                schedViewRoot.showAddDialog = false
-                                schedViewRoot.editingScheduleId = ""
-                                taskNameInput.text = ""
-                                taskUrlInput.text = ""
+                                MouseArea {
+                                    id: watchOptMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: addDialogModal.selectedTarget = "watchlist"
+                                }
+                            }
+
+                            // Creator Option
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                height: 38
+                                radius: 6
+                                color: addDialogModal.selectedTarget === "creator" ? "#0C4A6E" : "#1E293B"
+                                border.color: addDialogModal.selectedTarget === "creator" ? "#0284C7" : "#334155"
+                                border.width: 1
+
+                                scale: creatOptMouse.pressed ? 0.96 : (creatOptMouse.containsMouse ? 1.02 : 1.0)
+                                Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 8
+                                    Text { text: "🌐"; font.pixelSize: 12 }
+                                    Text {
+                                        text: schedViewRoot.tr("scheduler_target_creator", "Specific Creator URL")
+                                        font.pixelSize: 11
+                                        font.weight: 600
+                                        color: addDialogModal.selectedTarget === "creator" ? "#F8FAFC" : "#94A3B8"
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                                MouseArea {
+                                    id: creatOptMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: addDialogModal.selectedTarget = "creator"
+                                }
+                            }
+                        }
+                    }
+
+                    // Creator URL Input (Visible only if creator target chosen)
+                    ColumnLayout {
+                        id: creatorUrlSection
+                        visible: addDialogModal.selectedTarget === "creator"
+                        Layout.fillWidth: true
+                        spacing: 4
+                        Text {
+                            text: schedViewRoot.tr("scheduler_modal_url_label", "Creator Page URL")
+                            font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
+                        }
+                        TextField {
+                            id: taskUrlInput
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            Layout.preferredHeight: 34
+                            placeholderText: "https://kemono.su/patreon/user/12345"
+                            color: "#F8FAFC"
+                            placeholderTextColor: "#64748B"
+                            font.pixelSize: 12
+                            background: Rectangle { color: "#1E293B"; radius: 6; border.color: taskUrlInput.activeFocus ? "#38BDF8" : "#334155" }
+                        }
+                    }
+
+                    // Cadence Trigger Type
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+
+                        Text {
+                            text: schedViewRoot.tr("scheduler_modal_trigger_label", "Trigger Schedule")
+                            font.pixelSize: 11; font.weight: 600; color: "#CBD5E1"
+                        }
+
+                        GridLayout {
+                            columns: modalBox.width > 380 ? 2 : 1
+                            Layout.fillWidth: true
+                            rowSpacing: 8
+                            columnSpacing: 10
+
+                            // Interval Option
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                height: 34
+                                radius: 6
+                                color: addDialogModal.selectedTrigger === "interval" ? "#1E1B4B" : "#1E293B"
+                                border.color: addDialogModal.selectedTrigger === "interval" ? "#818CF8" : "#334155"
+                                border.width: 1
+
+                                scale: intOptMouse.pressed ? 0.96 : (intOptMouse.containsMouse ? 1.02 : 1.0)
+                                Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 6
+                                    Text { text: "⏱️"; font.pixelSize: 11 }
+                                    Text {
+                                        text: schedViewRoot.tr("scheduler_trigger_interval", "Repeating Interval")
+                                        font.pixelSize: 11
+                                        font.weight: 600
+                                        color: addDialogModal.selectedTrigger === "interval" ? "#F8FAFC" : "#94A3B8"
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                                MouseArea {
+                                    id: intOptMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: addDialogModal.selectedTrigger = "interval"
+                                }
+                            }
+
+                            // Time of Day Option
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                height: 34
+                                radius: 6
+                                color: addDialogModal.selectedTrigger === "time_of_day" ? "#1E1B4B" : "#1E293B"
+                                border.color: addDialogModal.selectedTrigger === "time_of_day" ? "#818CF8" : "#334155"
+                                border.width: 1
+
+                                scale: timeOptMouse.pressed ? 0.96 : (timeOptMouse.containsMouse ? 1.02 : 1.0)
+                                Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                                RowLayout {
+                                    anchors.centerIn: parent
+                                    spacing: 6
+                                    Text { text: "⏰"; font.pixelSize: 11 }
+                                    Text {
+                                        text: schedViewRoot.tr("scheduler_trigger_fixed", "Daily Fixed Time")
+                                        font.pixelSize: 11
+                                        font.weight: 600
+                                        color: addDialogModal.selectedTrigger === "time_of_day" ? "#F8FAFC" : "#94A3B8"
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                                MouseArea {
+                                    id: timeOptMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: addDialogModal.selectedTrigger = "time_of_day"
+                                }
+                            }
+                        }
+
+                        // Interval Hours Selector
+                        RowLayout {
+                            visible: addDialogModal.selectedTrigger === "interval"
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            spacing: 8
+
+                            Text {
+                                text: schedViewRoot.tr("scheduler_every_hours", "Run every:")
+                                font.pixelSize: 12; color: "#CBD5E1"
+                            }
+
+                            StyledSpinBox {
+                                id: intervalSpin
+                                from: 1; to: 72; value: 6; stepSize: 1
+                                suffix: " hrs"
+                                accentColor: "#38BDF8"
+                                implicitWidth: 120
+                            }
+
+                            Text {
+                                text: schedViewRoot.tr("scheduler_hours_unit", "hours")
+                                font.pixelSize: 12; color: "#94A3B8"
+                            }
+                        }
+
+                        // Daily Fixed Time Selector
+                        RowLayout {
+                            visible: addDialogModal.selectedTrigger === "time_of_day"
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 0
+                            spacing: 8
+
+                            Text {
+                                text: schedViewRoot.tr("scheduler_at_time", "Run daily at:")
+                                font.pixelSize: 12; color: "#CBD5E1"
+                            }
+
+                            TextField {
+                                id: timeOfDayInput
+                                text: "03:00"
+                                Layout.preferredWidth: 70
+                                Layout.preferredHeight: 30
+                                horizontalAlignment: TextInput.AlignHCenter
+                                font.pixelSize: 12
+                                color: "#38BDF8"
+                                background: Rectangle { color: "#1E293B"; radius: 4; border.color: "#334155" }
+                            }
+
+                            Text {
+                                text: "(24h format HH:MM)"
+                                font.pixelSize: 11; color: "#64748B"
+                            }
+                        }
+                    }
+
+                    // Modal Action Buttons
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Item { Layout.fillWidth: true }
+
+                        // Cancel Button
+                        Rectangle {
+                            height: 36
+                            implicitWidth: modalBox.width < 340 ? 72 : 84
+                            radius: 8
+                            color: cancelMouse.containsMouse ? "#334155" : "#1E293B"
+                            border.color: "#475569"; border.width: 1
+
+                            scale: cancelMouse.pressed ? 0.94 : (cancelMouse.containsMouse ? 1.02 : 1.0)
+                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: schedViewRoot.tr("btn_cancel", "Cancel")
+                                font.pixelSize: 12
+                                color: "#E2E8F0"
+                            }
+                            MouseArea {
+                                id: cancelMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: schedViewRoot.showAddDialog = false
+                            }
+                        }
+
+                        // Save / Update Schedule Button
+                        Rectangle {
+                            height: 36
+                            implicitWidth: modalBox.width < 340 ? 116 : 140
+                            radius: 8
+                            color: createBtnMouse.containsMouse ? "#4338CA" : "#4F46E5"
+                            border.color: createBtnMouse.containsMouse ? "#A5B4FC" : "#818CF8"
+                            border.width: 1
+
+                            scale: createBtnMouse.pressed ? 0.94 : (createBtnMouse.containsMouse ? 1.04 : 1.0)
+                            Behavior on scale { SpringAnimation { spring: 5.0; damping: 0.38; mass: 0.8 } }
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: schedViewRoot.editingScheduleId ?
+                                      schedViewRoot.tr("scheduler_modal_update_btn", "Update Schedule") :
+                                      schedViewRoot.tr("scheduler_modal_create_btn", "Save Schedule")
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                color: "#FFFFFF"
+                            }
+
+                            MouseArea {
+                                id: createBtnMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    var name = taskNameInput.text.trim() || (addDialogModal.selectedTarget === "watchlist" ? "Watchlist Delta Sync" : "Creator Download")
+                                    var targetType = addDialogModal.selectedTarget
+                                    var targetUrl = targetType === "creator" ? taskUrlInput.text.trim() : ""
+                                    var triggerType = addDialogModal.selectedTrigger
+                                    var intervalH = intervalSpin.value
+                                    var timeVal = timeOfDayInput.text.trim() || "03:00"
+
+                                    if (schedViewRoot.bridge) {
+                                        if (schedViewRoot.editingScheduleId) {
+                                            schedViewRoot.bridge.updateSchedulerTask(schedViewRoot.editingScheduleId, name, targetType, targetUrl, triggerType, intervalH, timeVal)
+                                            schedViewRoot.showToast(schedViewRoot.tr("toast_schedule_updated", "Schedule updated successfully!"))
+                                        } else {
+                                            schedViewRoot.bridge.addSchedulerTask(name, targetType, targetUrl, triggerType, intervalH, timeVal)
+                                            schedViewRoot.showToast(schedViewRoot.tr("toast_schedule_created", "Schedule created successfully!"))
+                                        }
+                                    }
+                                    schedViewRoot.showAddDialog = false
+                                    schedViewRoot.editingScheduleId = ""
+                                    taskNameInput.text = ""
+                                    taskUrlInput.text = ""
+                                }
                             }
                         }
                     }

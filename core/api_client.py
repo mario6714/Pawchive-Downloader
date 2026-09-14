@@ -300,6 +300,8 @@ class KemonoApiClient:
         page_size: int = 50,
         progress_callback: Optional[Callable] = None,
         cancel_event: Optional[threading.Event] = None,
+        date_after: str = "",
+        date_before: str = "",
     ) -> List[Dict[str, Any]]:
         """
         Paginates through user posts from page_start to page_end.
@@ -410,6 +412,38 @@ class KemonoApiClient:
             if batch < page_size:
                 logger.info(f"Partial page ({batch}<{page_size}) — reached last page.", category="api")
                 break
+
+            # Early-stop: if date_after is set and ALL posts on this page are
+            # older than it, there is nothing useful on subsequent pages.
+            if date_after:
+                from core.filter_engine import FilterEngine as _FE
+                norm_after = _FE.expand_date_start(date_after)
+                norm_before_val = _FE.expand_date_end(date_before) if date_before else ""
+                # Auto-correct inverted range (same as FilterEngine)
+                if norm_after and norm_before_val and norm_after > norm_before_val:
+                    norm_after, norm_before_val = norm_before_val, norm_after
+                if norm_after:
+                    oldest = ""
+                    for p in posts:
+                        pub = p.get("published") or p.get("added") or ""
+                        if isinstance(pub, (int, float)):
+                            try:
+                                import datetime as _dt
+                                d = _dt.datetime.fromtimestamp(pub).strftime("%Y-%m-%d")
+                            except Exception:
+                                d = ""
+                        else:
+                            pub_str = str(pub).strip()
+                            d = pub_str.split("T")[0] if "T" in pub_str else pub_str[:10]
+                        if d and (not oldest or d < oldest):
+                            oldest = d
+                    if oldest and oldest < norm_after:
+                        logger.info(
+                            f"Date early-stop: oldest post on page {current_page} ({oldest}) "
+                            f"is before date range start ({norm_after}) — no need to scan further.",
+                            category="api"
+                        )
+                        break
 
             offset += batch
             current_page += 1

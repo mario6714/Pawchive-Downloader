@@ -505,5 +505,13 @@
   "toast_harvest_success": "収集完了: ",
   "toast_harvest_success_links": " 件の新規リンクを取得しました: ",
   "toast_harvest_failed": "収集に失敗しました: ",
-  "toast_probing_finished": "リンクの有効性確認が完了しました。"
+  "toast_probing_finished": "リンクの有効性確認が完了しました。",
+  "opt_skip_post_covers": "投稿カバー画像をスキップ",
+  "opt_skip_post_covers_tip": "添付ファイルや本文画像が存在する場合、投稿のアイキャッチ・カバー画像をダウンロードしません",
+  "tutorial_modal_title": "Pawchive Downloader — 完全マニュアル＆機能ガイド",
+  "tutorial_modal_subtitle": "詳細ドキュメント、ツールチップ解説、使い方ガイド",
+  "tutorial_tag_tip": "ヒント",
+  "tutorial_tag_important": "重要",
+  "tutorial_tag_overview": "概要",
+  "tutorial_tag_detail": "詳細"
 }

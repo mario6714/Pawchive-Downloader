@@ -505,5 +505,13 @@
   "toast_harvest_success": "Harvested ",
   "toast_harvest_success_links": " new links from ",
   "toast_harvest_failed": "Harvest failed: ",
-  "toast_probing_finished": "Link health verification finished."
+  "toast_probing_finished": "Link health verification finished.",
+  "opt_skip_post_covers": "Skip Post Cover Images",
+  "opt_skip_post_covers_tip": "Do not download the post's featured cover/thumbnail image when attachments or content are present",
+  "tutorial_modal_title": "Pawchive Downloader — Complete Manual & Feature Guide",
+  "tutorial_modal_subtitle": "In-depth documentation, tooltip reference, and workflow tutorials",
+  "tutorial_tag_tip": "TIP",
+  "tutorial_tag_important": "IMPORTANT",
+  "tutorial_tag_overview": "OVERVIEW",
+  "tutorial_tag_detail": "DETAIL"
 }

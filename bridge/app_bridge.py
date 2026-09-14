@@ -59,9 +59,15 @@ class AppBridge(QObject):
     skipWordsChanged = Signal()
     skipScopeChanged = Signal()
     removeWordsChanged = Signal()
+    dateAfterChanged = Signal()
+    dateBeforeChanged = Signal()
+    dateAutoScanPagesChanged = Signal()
+    currentFpsChanged = Signal()
+    screenHzChanged = Signal()
     filterTypeChanged = Signal()
     skipArchivesChanged = Signal()
     downloadThumbnailsOnlyChanged = Signal()
+    skipPostCoversChanged = Signal()
     scanContentImagesChanged = Signal()
     compressWebpChanged = Signal()
     keepDuplicatesChanged = Signal()
@@ -186,9 +192,13 @@ class AppBridge(QObject):
         self._skip_words = ""
         self._skip_scope = saved_settings.get("skip_scope", "posts")
         self._remove_words = ""
+        self._date_after = str(saved_settings.get("date_after", ""))
+        self._date_before = str(saved_settings.get("date_before", ""))
+        self._date_auto_scan_pages = bool(saved_settings.get("date_auto_scan_pages", True))
         self._filter_type = "all"
         self._skip_archives = False
-        self._download_thumbnails_only = False
+        self._download_thumbnails_only = bool(saved_settings.get("download_thumbnails_only", False))
+        self._skip_post_covers = bool(saved_settings.get("skip_post_covers", False))
         self._scan_content_images = saved_settings.get("scan_content_images", True)
         self._compress_webp = saved_settings.get("compress_webp", False)
         self._keep_duplicates = saved_settings.get("keep_duplicates", False)
@@ -222,6 +232,8 @@ class AppBridge(QObject):
         self.known_manager.set_mode(self._known_recognition_mode)
         self._language = str(saved_settings.get("language", "auto"))
         self._console_width = int(saved_settings.get("console_width", 620))
+        self._current_fps = 0
+        self._screen_hz = 60
         self._creator_name = ""
         self._tag_folder_mode = bool(saved_settings.get("tag_folder_mode", False))
 
@@ -452,6 +464,57 @@ class AppBridge(QObject):
             self._remove_words = val
             self.removeWordsChanged.emit()
 
+    @Property(str, notify=dateAfterChanged)
+    def dateAfter(self) -> str:
+        return self._date_after
+
+    @dateAfter.setter
+    def dateAfter(self, val: str):
+        if self._date_after != val:
+            self._date_after = val
+            self.dateAfterChanged.emit()
+
+    @Property(str, notify=dateBeforeChanged)
+    def dateBefore(self) -> str:
+        return self._date_before
+
+    @dateBefore.setter
+    def dateBefore(self, val: str):
+        if self._date_before != val:
+            self._date_before = val
+            self.dateBeforeChanged.emit()
+
+    @Property(bool, notify=dateAutoScanPagesChanged)
+    def dateAutoScanPages(self) -> bool:
+        return self._date_auto_scan_pages
+
+    @dateAutoScanPages.setter
+    def dateAutoScanPages(self, val: bool):
+        if self._date_auto_scan_pages != val:
+            self._date_auto_scan_pages = val
+            self.dateAutoScanPagesChanged.emit()
+            self.saveSettings()
+
+    @Property(int, notify=currentFpsChanged)
+    def currentFps(self) -> int:
+        return self._current_fps
+
+    @Slot(int)
+    def setCurrentFps(self, val: int):
+        if self._current_fps != val:
+            self._current_fps = val
+            self.currentFpsChanged.emit()
+
+    @Property(int, notify=screenHzChanged)
+    def screenHz(self) -> int:
+        return self._screen_hz
+
+    @Slot(int)
+    def setScreenHz(self, val: int):
+        if self._screen_hz != val:
+            self._screen_hz = val
+            self.screenHzChanged.emit()
+
     @Property(str, notify=filterTypeChanged)
     def filterType(self) -> str:
         return self._filter_type
@@ -481,6 +544,18 @@ class AppBridge(QObject):
         if self._download_thumbnails_only != val:
             self._download_thumbnails_only = val
             self.downloadThumbnailsOnlyChanged.emit()
+            self.saveSettings()
+
+    @Property(bool, notify=skipPostCoversChanged)
+    def skipPostCovers(self) -> bool:
+        return self._skip_post_covers
+
+    @skipPostCovers.setter
+    def skipPostCovers(self, val: bool):
+        if self._skip_post_covers != val:
+            self._skip_post_covers = val
+            self.skipPostCoversChanged.emit()
+            self.saveSettings()
 
     @Property(bool, notify=scanContentImagesChanged)
     def scanContentImages(self) -> bool:
@@ -1107,7 +1182,10 @@ class AppBridge(QObject):
             download_delay=self._download_delay,
             save_post_metadata=self._save_post_metadata,
             download_embeds=self._download_embeds,
-            tag_folder_mode=self._tag_folder_mode
+            tag_folder_mode=self._tag_folder_mode,
+            skip_post_covers=self._skip_post_covers,
+            date_after=self._date_after,
+            date_before=self._date_before
         )
 
     def _get_link_identity(self, parsed: URLParseResult) -> tuple[str, str, Optional[str], str]:
@@ -1420,10 +1498,18 @@ class AppBridge(QObject):
                     single = self.api_client.fetch_single_post(parsed)
                     posts = [single] if single else []
                 else:
+                    # If date auto-scan is enabled and a date filter is active,
+                    # override page_end to scan all pages; the API client will
+                    # stop early once it passes the requested date range.
+                    effective_page_end = self._page_end
+                    if self._date_auto_scan_pages and (self._date_after or self._date_before):
+                        effective_page_end = 999999
                     posts = self.api_client.fetch_user_posts(
                         parsed=parsed,
                         page_start=self._page_start,
-                        page_end=self._page_end,
+                        page_end=effective_page_end,
+                        date_after=self._date_after,
+                        date_before=self._date_before,
                         cancel_event=self._scan_cancel_event
                     )
 
@@ -2376,7 +2462,12 @@ class AppBridge(QObject):
             "known_recognition_mode": self._known_recognition_mode,
             "language": self._language,
             "console_width": self._console_width,
-            "tag_folder_mode": self._tag_folder_mode
+            "tag_folder_mode": self._tag_folder_mode,
+            "skip_post_covers": self._skip_post_covers,
+            "download_thumbnails_only": self._download_thumbnails_only,
+            "date_after": self._date_after,
+            "date_before": self._date_before,
+            "date_auto_scan_pages": self._date_auto_scan_pages
         }
         self.session_manager.save_settings(settings_dict, silent=True)
 

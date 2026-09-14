@@ -505,5 +505,13 @@
   "toast_harvest_success": "Berhasil mengumpulkan ",
   "toast_harvest_success_links": " tautan baru dari ",
   "toast_harvest_failed": "Pengumpulan gagal: ",
-  "toast_probing_finished": "Verifikasi kesehatan tautan selesai."
+  "toast_probing_finished": "Verifikasi kesehatan tautan selesai.",
+  "opt_skip_post_covers": "Lewati Gambar Sampul Postingan",
+  "opt_skip_post_covers_tip": "Jangan mengunduh gambar sampul atau thumbnail unggulan jika terdapat lampiran atau konten",
+  "tutorial_modal_title": "Pawchive Downloader — Panduan Lengkap & Fitur",
+  "tutorial_modal_subtitle": "Dokumentasi mendalam, referensi tooltip, dan tutorial alur kerja",
+  "tutorial_tag_tip": "TIPS",
+  "tutorial_tag_important": "PENTING",
+  "tutorial_tag_overview": "IKHTISAR",
+  "tutorial_tag_detail": "DETAIL"
 }

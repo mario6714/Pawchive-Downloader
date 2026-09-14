@@ -505,5 +505,13 @@
   "toast_harvest_success": "수집 완료: ",
   "toast_harvest_success_links": "개의 새로운 링크를 다음에서 수집함: ",
   "toast_harvest_failed": "수집 실패: ",
-  "toast_probing_finished": "링크 유효성 확인이 완료되었습니다."
+  "toast_probing_finished": "링크 유효성 확인이 완료되었습니다.",
+  "opt_skip_post_covers": "게시물 표지 이미지 건너뛰기",
+  "opt_skip_post_covers_tip": "첨부 파일 또는 본문 이미지가 있는 경우 게시물의 대표 표지/썸네일 이미지를 다운로드하지 않습니다",
+  "tutorial_modal_title": "Pawchive Downloader — 종합 사용 설명서 및 기능 가이드",
+  "tutorial_modal_subtitle": "심층 문서, 툴팁 설명 및 작업 흐름 튜토리얼",
+  "tutorial_tag_tip": "팁",
+  "tutorial_tag_important": "중요",
+  "tutorial_tag_overview": "개요",
+  "tutorial_tag_detail": "상세"
 }

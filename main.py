@@ -69,6 +69,44 @@ def main():
         logger.error("Failed to load QML interface. Check console for QML errors.", category="system")
         sys.exit(-1)
 
+    win = engine.rootObjects()[0]
+
+    # Real-time hardware FPS tracking via QQuickWindow.frameSwapped
+    import time
+    recent_frames = []
+
+    def on_frame_swapped():
+        recent_frames.append(time.perf_counter())
+
+    win.frameSwapped.connect(on_frame_swapped)
+
+    def update_screen_hz(target_screen=None):
+        scr = target_screen or win.screen() or app.primaryScreen()
+        if scr:
+            app_bridge.setScreenHz(int(round(scr.refreshRate())))
+
+    update_screen_hz()
+    win.screenChanged.connect(update_screen_hz)
+
+    # DEV DEBUGGING: Hardware FPS measurement loop
+    # fps_timer.setInterval(200)
+    # def compute_fps():
+    #     nonlocal recent_frames
+    #     now = time.perf_counter()
+    #     cutoff = now - 0.5
+    #     recent_frames = [t for t in recent_frames if t >= cutoff]
+    #     count = len(recent_frames)
+    #     if count >= 2:
+    #         span = recent_frames[-1] - recent_frames[0]
+    #         fps = int(round((count - 1) / span)) if span > 0.04 else int(round(count / 0.5))
+    #     elif count == 1:
+    #         fps = 1
+    #     else:
+    #         fps = 0
+    #     app_bridge.setCurrentFps(fps)
+    # fps_timer.timeout.connect(compute_fps)
+    # fps_timer.start()
+
     app.aboutToQuit.connect(app_bridge.onAppClosing)
 
     logger.success("Application interface initialized successfully.", category="system")

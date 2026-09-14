@@ -1,8 +1,8 @@
 {
-    "version": "1.1.2",
+    "version": "1.1.3",
     "commit": "",
     "short_commit": "",
-    "date": "2026-09-13",
+    "date": "2026-09-14",
     "channel": "release",
     "history": [
         {
@@ -69,6 +69,11 @@
             "version": "1.1.2",
             "date": "2026-09-13",
             "notes": "Bunkr 2026 infrastructure overhaul: support for modern domains (bunkr.cr, bunkr.si, bunkr.pk, balbums.st, etc.), dynamic signed token minting via /sign, ?advanced=1 structured album catalog parser, and multi-threaded media resolution. Unicode & Mojibake repair engine: automatic Latin-1/CP1252 recovery, hidden zero-width spaces (\\ufeff BOM, \\u200b) stripping, and Windows-safe filename sanitization. Added Desktop completion report toggle in Settings under Storage & File Processing."
+        },
+        {
+            "version": "1.1.3",
+            "date": "2026-09-14",
+            "notes": "Post date range filtering with full date, year-month, and year-only support, auto-page scanning, and early-stop. Duplicate file detection preventing redundant downloads of files mirrored in both post headers and attachments. Full 14-language localization for the interactive tutorial. Scrollable tabs navigation indicators with edge fade chevrons and persistent scrollbar hint. Fixed crash when toggling thumbnail-only or skip-covers settings."
         }
     ]
 }

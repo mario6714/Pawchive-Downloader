@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 600
     visible: true
-    title: "Pawchive Downloader " + ((typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.1.2")
+    title: "Pawchive Downloader " + ((typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? ("v" + updaterBridge.currentVersion) : "v1.1.3")
     color: "#0F1117"
 
     // Stop active downloads and persist session gracefully when user closes the app
@@ -30,6 +30,12 @@ ApplicationWindow {
 
     property bool showConsole: true
     property int currentTab: 0 // 0: Downloader, 1: Queue, 2: Watchlist, 3: Decompressor, 4: Link Vault, 5: Scheduler, 6: Known, 7: History, 8: Settings
+
+    onCurrentTabChanged: {
+        if (typeof tabsFlickable !== "undefined" && tabsFlickable && tabsFlickable.ensureIndexVisible) {
+            tabsFlickable.ensureIndexVisible(currentTab)
+        }
+    }
 
     function tr(key, fallback) {
         if (!Lang) return fallback !== undefined ? fallback : key
@@ -80,6 +86,37 @@ ApplicationWindow {
                     onWheel: function(event) {
                         var delta = event.angleDelta.y || event.angleDelta.x
                         tabsFlickable.flick(delta * 10, 0)
+                    }
+                }
+
+                NumberAnimation {
+                    id: tabsScrollAnim
+                    target: tabsFlickable
+                    property: "contentX"
+                    duration: 220
+                    easing.type: Easing.OutCubic
+                }
+
+                function scrollBy(delta) {
+                    tabsScrollAnim.stop()
+                    var maxContentX = Math.max(0, contentWidth - width)
+                    var targetX = Math.max(0, Math.min(maxContentX, contentX + delta))
+                    tabsScrollAnim.to = targetX
+                    tabsScrollAnim.start()
+                }
+
+                function ensureIndexVisible(tabIndex) {
+                    if (contentWidth <= width) return
+                    if (tabIndex < 0 || tabIndex >= tabsRow.children.length) return
+                    var tabItem = tabsRow.children[tabIndex]
+                    if (!tabItem) return
+                    var pad = 36
+                    var tabLeft = tabItem.x
+                    var tabRight = tabItem.x + tabItem.width
+                    if (tabLeft < contentX + pad) {
+                        scrollBy(tabLeft - contentX - pad)
+                    } else if (tabRight > contentX + width - pad) {
+                        scrollBy(tabRight - (contentX + width) + pad)
                     }
                 }
 
@@ -515,6 +552,126 @@ ApplicationWindow {
             } // tabsRow
         } // tabsFlickable
 
+            // Left scroll edge hint & button
+            Rectangle {
+                id: tabsScrollLeftBtn
+                anchors.left: tabsFlickable.left
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 28
+                z: 4
+                visible: tabsFlickable.contentWidth > tabsFlickable.width && tabsFlickable.contentX > 4
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "#0B0D12" }
+                    GradientStop { position: 0.65; color: "#D80B0D12" }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                    width: 20
+                    height: 24
+                    radius: 4
+                    color: tabsLeftMouse.containsMouse ? "#1E293B" : "#141720"
+                    border.color: tabsLeftMouse.containsMouse ? "#38BDF8" : "#334155"
+                    border.width: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "‹"
+                        font.bold: true
+                        font.pixelSize: 15
+                        color: tabsLeftMouse.containsMouse ? "#38BDF8" : "#94A3B8"
+                    }
+
+                    MouseArea {
+                        id: tabsLeftMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 300
+                        ToolTip.text: appWindow.tr("tip_scroll_tabs_left", "Scroll tabs left (or use mouse wheel)")
+                        onClicked: tabsFlickable.scrollBy(-180)
+                    }
+                }
+            }
+
+            // Right scroll edge hint & button
+            Rectangle {
+                id: tabsScrollRightBtn
+                anchors.right: tabsFlickable.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: 28
+                z: 4
+                visible: tabsFlickable.contentWidth > tabsFlickable.width && tabsFlickable.contentX < (tabsFlickable.contentWidth - tabsFlickable.width - 4)
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0; color: "transparent" }
+                    GradientStop { position: 0.35; color: "#D80B0D12" }
+                    GradientStop { position: 1.0; color: "#0B0D12" }
+                }
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right
+                    width: 20
+                    height: 24
+                    radius: 4
+                    color: tabsRightMouse.containsMouse ? "#1E293B" : "#141720"
+                    border.color: tabsRightMouse.containsMouse ? "#38BDF8" : "#334155"
+                    border.width: 1
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "›"
+                        font.bold: true
+                        font.pixelSize: 15
+                        color: tabsRightMouse.containsMouse ? "#38BDF8" : "#94A3B8"
+                    }
+
+                    MouseArea {
+                        id: tabsRightMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 300
+                        ToolTip.text: appWindow.tr("tip_scroll_tabs_right", "Scroll tabs right (or use mouse wheel)")
+                        onClicked: tabsFlickable.scrollBy(180)
+                    }
+                }
+            }
+
+            // Micro-scrollbar track and indicator along bottom of tabs strip
+            Rectangle {
+                id: tabsScrollBarTrack
+                anchors.left: tabsFlickable.left
+                anchors.right: tabsFlickable.right
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 1
+                height: 2
+                color: "#161B26"
+                visible: tabsFlickable.contentWidth > tabsFlickable.width
+                z: 3
+                radius: 1
+
+                Rectangle {
+                    id: tabsScrollBarThumb
+                    height: 2
+                    radius: 1
+                    color: (tabsLeftMouse.containsMouse || tabsRightMouse.containsMouse || tabsFlickable.moving || tabsFlickable.flicking) ? "#38BDF8" : "#0284C7"
+                    opacity: tabsFlickable.contentWidth > tabsFlickable.width ? 0.85 : 0.0
+                    x: tabsFlickable.contentWidth > tabsFlickable.width ? Math.max(0, Math.min(tabsScrollBarTrack.width - width, (tabsFlickable.contentX / tabsFlickable.contentWidth) * tabsScrollBarTrack.width)) : 0
+                    width: tabsFlickable.contentWidth > 0 ? Math.max(28, (tabsFlickable.width / tabsFlickable.contentWidth) * tabsScrollBarTrack.width) : 0
+
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                }
+            }
+
             // Right utility buttons: ALWAYS anchored to right edge, NEVER cut off
             RowLayout {
                 id: rightActionRow
@@ -607,6 +764,81 @@ ApplicationWindow {
                     }
                 }
 
+                // DEV DEBUGGING: Real-time FPS & Refresh Rate Counter Pill 
+                /*
+                Rectangle {
+                    id: fpsPill
+                    height: 24
+                    implicitWidth: fpsRow.implicitWidth + 14
+                    radius: 12
+                    color: fpsMouse.containsMouse ? "#182030" : "#111520"
+                    border.color: fpsPill.motionTestActive ? "#4ADE80" : (fpsMouse.containsMouse ? "#38BDF8" : "#1E2738")
+                    border.width: 1
+
+                    property int fps: appBridge ? appBridge.currentFps : 0
+                    property int hz: appBridge ? appBridge.screenHz : (appWindow.screen ? Math.round(appWindow.screen.refreshRate) : 60)
+                    property bool motionTestActive: false
+
+                    // Dummy hidden item that runs a continuous 60-165 FPS animation when fluid motion test is active
+                    Item {
+                        id: dummyMotionDriver
+                        width: 1; height: 1
+                        visible: fpsPill.motionTestActive
+                        NumberAnimation on x {
+                            running: fpsPill.motionTestActive
+                            from: 0; to: 1000; duration: 2000; loops: Animation.Infinite
+                        }
+                    }
+
+                    RowLayout {
+                        id: fpsRow
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        // Real-time status dot
+                        Rectangle {
+                            width: 6
+                            height: 6
+                            radius: 3
+                            color: {
+                                if (fpsPill.motionTestActive) return "#4ADE80"
+                                if (fpsPill.fps >= (fpsPill.hz - 8)) return "#4ADE80"
+                                if (fpsPill.fps > 0) return "#38BDF8"
+                                return "#64748B"
+                            }
+                            Behavior on color { ColorAnimation { duration: 180 } }
+                        }
+
+                        Text {
+                            text: {
+                                if (fpsPill.fps > 0) return fpsPill.fps + " FPS"
+                                return fpsPill.hz + " Hz"
+                            }
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 10
+                            font.weight: 600
+                            color: {
+                                if (fpsPill.motionTestActive) return "#4ADE80"
+                                if (fpsPill.fps >= (fpsPill.hz - 8)) return "#4ADE80"
+                                if (fpsPill.fps > 0) return "#38BDF8"
+                                return "#94A3B8"
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: fpsMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse
+                        ToolTip.delay: 250
+                        ToolTip.text: appWindow.tr("tip_fps_pill", "Hardware Display: " + fpsPill.hz + "Hz. Click to " + (fpsPill.motionTestActive ? "stop" : "start") + " fluid " + fpsPill.hz + " FPS motion test.")
+                        onClicked: fpsPill.motionTestActive = !fpsPill.motionTestActive
+                    }
+                }
+                */
+
                 // Version Badge
                 Rectangle {
                     height: 24
@@ -630,7 +862,7 @@ ApplicationWindow {
                         }
 
                         Text {
-                            text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? updaterBridge.currentVersion : "1.1.2"
+                            text: (typeof updaterBridge !== "undefined" && updaterBridge && updaterBridge.currentVersion) ? updaterBridge.currentVersion : "1.1.3"
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 11
                             font.weight: 700
@@ -801,12 +1033,14 @@ ApplicationWindow {
             color: "#0C0F16"
             border.color: "#1A2035"
             border.width: 1
+            clip: true
 
             // Subtle gradient top accent line
             Rectangle {
                 width: parent.width
                 height: 1
                 anchors.top: parent.top
+                z: 1
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: "transparent" }
@@ -816,10 +1050,28 @@ ApplicationWindow {
                 }
             }
 
-            RowLayout {
+            Flickable {
+                id: actionBarFlickable
                 anchors.fill: parent
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
+                contentWidth: actionBarRow.implicitWidth
+                contentHeight: height
+                flickableDirection: Flickable.HorizontalFlick
+                boundsBehavior: Flickable.StopAtBounds
+                clip: true
+
+                WheelHandler {
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                    onWheel: function(event) {
+                        var delta = event.angleDelta.y || event.angleDelta.x
+                        actionBarFlickable.flick(delta * 10, 0)
+                    }
+                }
+
+            RowLayout {
+                id: actionBarRow
+                height: parent.height
                 spacing: 6
 
                 // ── PRIMARY: Start Download / Extract Links / Downloading indicator ────
@@ -1485,6 +1737,7 @@ ApplicationWindow {
                     }
                 }
             }
+            } // end Flickable (actionBarFlickable)
         }
 
         // 3. Main Split Content Area
@@ -1516,7 +1769,8 @@ ApplicationWindow {
                             mainSplitView.isHandleDragging = SplitHandle.pressed
                             if (!SplitHandle.pressed && splitHandle.wasPressed) {
                                 if (consoleContainer.visible && consoleContainer.width >= 320 && appBridge) {
-                                    appBridge.consoleWidth = Math.round(consoleContainer.width)
+                                    var clampedW = Math.round(Math.min(consoleContainer.maxAllowedConsoleWidth, consoleContainer.width))
+                                    appBridge.consoleWidth = clampedW
                                 }
                             }
                             splitHandle.wasPressed = SplitHandle.pressed
@@ -1673,7 +1927,11 @@ ApplicationWindow {
                 Rectangle {
                     id: consoleContainer
 
-                    readonly property real baseConsoleWidth: appBridge ? appBridge.consoleWidth : 680
+                    readonly property real maxAllowedConsoleWidth: Math.max(320, mainSplitView.width - 380)
+                    readonly property real baseConsoleWidth: {
+                        var raw = appBridge ? appBridge.consoleWidth : 680
+                        return Math.min(raw, maxAllowedConsoleWidth)
+                    }
                     property real targetConsoleWidth: appWindow.showConsole ? baseConsoleWidth : 0
                     property real animConsoleWidth: targetConsoleWidth
                     property bool isOpeningOrClosing: Math.abs(animConsoleWidth - targetConsoleWidth) > 1
@@ -1681,15 +1939,14 @@ ApplicationWindow {
                     Behavior on animConsoleWidth {
                         enabled: !mainSplitView.isHandleDragging
                         NumberAnimation {
-                            duration: appWindow.showConsole ? 380 : 300
-                            easing.type: appWindow.showConsole ? Easing.OutBack : Easing.InOutCubic
-                            easing.overshoot: 1.15
+                            duration: appWindow.showConsole ? 320 : 260
+                            easing.type: Easing.OutCubic
                         }
                     }
 
                     SplitView.preferredWidth: mainSplitView.isHandleDragging ? width : animConsoleWidth
                     SplitView.minimumWidth: (appWindow.showConsole && !isOpeningOrClosing) ? 320 : 0
-                    SplitView.maximumWidth: Math.max(320, mainSplitView.width - 380)
+                    SplitView.maximumWidth: appWindow.showConsole ? maxAllowedConsoleWidth : 0
                     visible: animConsoleWidth > 2
                     clip: true
                     color: "#0B0D12"

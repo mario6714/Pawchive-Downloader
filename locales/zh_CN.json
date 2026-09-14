@@ -505,5 +505,13 @@
   "toast_harvest_success": "成功抓取 ",
   "toast_harvest_success_links": " 条新链接，来自 ",
   "toast_harvest_failed": "抓取失败：",
-  "toast_probing_finished": "链接有效性检测已完成。"
+  "toast_probing_finished": "链接有效性检测已完成。",
+  "opt_skip_post_covers": "跳过帖子封面图片",
+  "opt_skip_post_covers_tip": "当帖子包含附件或正文图片时，不下载帖子的展示封面/预览缩略图",
+  "tutorial_modal_title": "Pawchive Downloader — 完整使用手册与功能指南",
+  "tutorial_modal_subtitle": "深度文档、提示说明与工作流使用教程",
+  "tutorial_tag_tip": "提示",
+  "tutorial_tag_important": "重要",
+  "tutorial_tag_overview": "概述",
+  "tutorial_tag_detail": "详情"
 }

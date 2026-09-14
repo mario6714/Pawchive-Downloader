@@ -505,5 +505,13 @@
   "toast_harvest_success": "Đã thu thập thành công ",
   "toast_harvest_success_links": " liên kết mới từ ",
   "toast_harvest_failed": "Thu thập thất bại: ",
-  "toast_probing_finished": "Đã hoàn thành kiểm tra tình trạng liên kết."
+  "toast_probing_finished": "Đã hoàn thành kiểm tra tình trạng liên kết.",
+  "opt_skip_post_covers": "Bỏ qua ảnh bìa bài viết",
+  "opt_skip_post_covers_tip": "Không tải ảnh bìa hoặc hình thu nhỏ xem trước khi bài viết đã có tệp đính kèm hoặc hình ảnh",
+  "tutorial_modal_title": "Pawchive Downloader — Hướng dẫn sử dụng toàn diện",
+  "tutorial_modal_subtitle": "Tài liệu chuyên sâu, giải thích chú giải và quy trình sử dụng",
+  "tutorial_tag_tip": "MẸO",
+  "tutorial_tag_important": "QUAN TRỌNG",
+  "tutorial_tag_overview": "TỔNG QUAN",
+  "tutorial_tag_detail": "CHI TIẾT"
 }

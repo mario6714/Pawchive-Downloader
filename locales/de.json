@@ -505,5 +505,13 @@
   "toast_harvest_success": "Erfolgreich ",
   "toast_harvest_success_links": " neue Links erfasst von ",
   "toast_harvest_failed": "Erfassung fehlgeschlagen: ",
-  "toast_probing_finished": "Überprüfung des Link-Status abgeschlossen."
+  "toast_probing_finished": "Überprüfung des Link-Status abgeschlossen.",
+  "opt_skip_post_covers": "Beitrags-Titelbilder überspringen",
+  "opt_skip_post_covers_tip": "Titelbilder oder Vorschaubilder nicht herunterladen, wenn Anhänge oder Inhalte vorhanden sind",
+  "tutorial_modal_title": "Pawchive Downloader — Vollständiges Handbuch & Funktionsübersicht",
+  "tutorial_modal_subtitle": "Ausführliche Dokumentation, Tooltip-Referenz und Schritt-für-Schritt-Anleitungen",
+  "tutorial_tag_tip": "TIPP",
+  "tutorial_tag_important": "WICHTIG",
+  "tutorial_tag_overview": "ÜBERSICHT",
+  "tutorial_tag_detail": "DETAIL"
 }

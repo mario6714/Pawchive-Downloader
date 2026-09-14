@@ -19,6 +19,9 @@ Rectangle {
     opacity: root.entranceOpacity
 
     implicitHeight: mainCol.implicitHeight + 28
+    implicitWidth: 0
+    Layout.fillWidth: true
+    Layout.minimumWidth: 0
 
     HoverHandler {
         id: cardHover
@@ -80,6 +83,8 @@ Rectangle {
                 font.weight: 600
                 color: (cardHover.hovered && root.interactive) ? "#F1F5F9" : "#CBD5E1"
                 Layout.fillWidth: true
+                elide: Text.ElideRight
+                wrapMode: Text.NoWrap
 
                 Behavior on color {
                     ColorAnimation { duration: 160 }
@@ -91,6 +96,8 @@ Rectangle {
         Item {
             id: contentContainer
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            implicitWidth: 0
             implicitHeight: {
                 if (children.length === 1) {
                     var single = children[0];

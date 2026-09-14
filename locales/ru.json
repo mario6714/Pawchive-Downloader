@@ -505,5 +505,13 @@
   "toast_harvest_success": "Успешно собрано ",
   "toast_harvest_success_links": " новых ссылок от ",
   "toast_harvest_failed": "Ошибка сбора: ",
-  "toast_probing_finished": "Проверка доступности ссылок завершена."
+  "toast_probing_finished": "Проверка доступности ссылок завершена.",
+  "opt_skip_post_covers": "Пропускать обложки постов",
+  "opt_skip_post_covers_tip": "Не скачивать обложку или превью поста, если присутствуют вложения или содержимое",
+  "tutorial_modal_title": "Pawchive Downloader — Руководство пользователя и справка",
+  "tutorial_modal_subtitle": "Подробная документация, пояснения к кнопкам и инструкции",
+  "tutorial_tag_tip": "СОВЕТ",
+  "tutorial_tag_important": "ВАЖНО",
+  "tutorial_tag_overview": "ОБЗОР",
+  "tutorial_tag_detail": "ПОДРОБНЕЕ"
 }

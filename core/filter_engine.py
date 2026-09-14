@@ -9,6 +9,7 @@ import os
 import unicodedata
 import csv
 import io
+import datetime
 from typing import List, Dict, Any, Optional, Tuple
 
 
@@ -64,7 +65,10 @@ class FilterOptions:
         save_post_metadata: bool = True,
         download_embeds: bool = True,
         file_index_prefix: bool = False,
-        tag_folder_mode: bool = False
+        tag_folder_mode: bool = False,
+        skip_post_covers: bool = False,
+        date_after: str = "",
+        date_before: str = ""
     ):
         self.characters = characters
         self.character_scope = character_scope
@@ -95,6 +99,9 @@ class FilterOptions:
         self.save_post_metadata = save_post_metadata
         self.download_embeds = download_embeds
         self.file_index_prefix = file_index_prefix
+        self.skip_post_covers = skip_post_covers
+        self.date_after = date_after
+        self.date_before = date_before
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize filter options to dictionary for persistence."""
@@ -128,6 +135,9 @@ class FilterOptions:
             "save_post_metadata": self.save_post_metadata,
             "download_embeds": self.download_embeds,
             "file_index_prefix": self.file_index_prefix,
+            "skip_post_covers": self.skip_post_covers,
+            "date_after": self.date_after,
+            "date_before": self.date_before,
         }
 
     @classmethod
@@ -165,11 +175,88 @@ class FilterOptions:
             save_post_metadata=bool(d.get("save_post_metadata", True)),
             download_embeds=bool(d.get("download_embeds", True)),
             file_index_prefix=bool(d.get("file_index_prefix", False)),
+            skip_post_covers=bool(d.get("skip_post_covers", False)),
+            date_after=d.get("date_after", ""),
+            date_before=d.get("date_before", ""),
         )
 
 
 
 class FilterEngine:
+    @staticmethod
+    def normalize_date(date_str: str) -> str:
+        """Normalizes user-supplied date string into YYYY-MM-DD format.
+
+        Supports:
+          - YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD  → returned as-is (fully expanded)
+          - YYYY-MM / YYYY/MM / YYYY.MM           → returned as YYYY-MM (caller expands)
+          - YYYY                                   → returned as YYYY (caller expands)
+        """
+        if not date_str:
+            return ""
+        s = date_str.strip().replace("/", "-").replace(".", "-")
+        parts = s.split("-")
+        if len(parts) == 3:
+            try:
+                y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+                return f"{y:04d}-{m:02d}-{d:02d}"
+            except ValueError:
+                pass
+        elif len(parts) == 2:
+            try:
+                y, m = int(parts[0]), int(parts[1])
+                return f"{y:04d}-{m:02d}"
+            except ValueError:
+                pass
+        elif len(parts) == 1 and parts[0].isdigit() and len(parts[0]) == 4:
+            return parts[0]  # bare year e.g. "2024"
+        return s[:10]
+
+    @classmethod
+    def expand_date_start(cls, date_str: str) -> str:
+        """Expand a partial date to the *earliest* possible full YYYY-MM-DD.
+
+        Examples:
+          "2024"    → "2024-01-01"
+          "2024-06" → "2024-06-01"
+          "2024-06-15" → "2024-06-15"  (unchanged)
+        """
+        n = cls.normalize_date(date_str)
+        if not n:
+            return ""
+        parts = n.split("-")
+        if len(parts) == 1:   # bare year
+            return f"{n}-01-01"
+        if len(parts) == 2:   # year-month
+            return f"{n}-01"
+        return n              # already full
+
+    @classmethod
+    def expand_date_end(cls, date_str: str) -> str:
+        """Expand a partial date to the *latest* possible full YYYY-MM-DD.
+
+        Examples:
+          "2024"    → "2024-12-31"
+          "2024-06" → "2024-06-30"
+          "2024-02" → "2024-02-29" (leap year aware)
+          "2024-06-15" → "2024-06-15"  (unchanged)
+        """
+        import calendar as _cal
+        n = cls.normalize_date(date_str)
+        if not n:
+            return ""
+        parts = n.split("-")
+        if len(parts) == 1:   # bare year
+            return f"{n}-12-31"
+        if len(parts) == 2:   # year-month
+            try:
+                y, m = int(parts[0]), int(parts[1])
+                last_day = _cal.monthrange(y, m)[1]
+                return f"{y:04d}-{m:02d}-{last_day:02d}"
+            except (ValueError, IndexError):
+                return f"{n}-30"  # safe fallback
+        return n              # already full
+
     @staticmethod
     def _parse_comma_list(text: str) -> List[str]:
         if not text:
@@ -195,6 +282,35 @@ class FilterEngine:
     def should_keep_post(cls, post: Dict[str, Any], options: FilterOptions) -> Tuple[bool, str]:
         title = post.get("title", "") or ""
         content = post.get("content", "") or ""
+
+        # Date range filtering (From / To)
+        if options.date_after or options.date_before:
+            published = post.get("published") or post.get("added") or ""
+            post_date = ""
+            if isinstance(published, (int, float)):
+                try:
+                    post_date = datetime.datetime.fromtimestamp(published).strftime("%Y-%m-%d")
+                except Exception:
+                    post_date = str(published)[:10]
+            elif published:
+                pub_str = str(published).strip()
+                post_date = pub_str.split("T")[0] if "T" in pub_str else pub_str[:10]
+
+            if not post_date or post_date == "0000-00-00":
+                return False, "Post has no valid publication date"
+
+            norm_after = cls.expand_date_start(options.date_after)
+            norm_before = cls.expand_date_end(options.date_before)
+
+            # Auto-correct inverted date range if user entered newer date in "From" and older date in "To"
+            if norm_after and norm_before and norm_after > norm_before:
+                norm_after, norm_before = norm_before, norm_after
+
+            if norm_after and post_date < norm_after:
+                return False, f"Post date ({post_date}) is before {norm_after}"
+
+            if norm_before and post_date > norm_before:
+                return False, f"Post date ({post_date}) is after {norm_before}"
 
         if options.skip_words and options.skip_scope in ("posts", "both"):
             skip_list = cls._parse_comma_list(options.skip_words)
@@ -252,6 +368,14 @@ class FilterEngine:
 
         if options.skip_archives and ext in MediaTypes.ARCHIVE_EXTS:
             return False, "Archive skipped due to 'Skip Archives' setting"
+
+        if options.download_thumbnails_only:
+            if ext in MediaTypes.ARCHIVE_EXTS:
+                return False, f"Archive skipped (no thumbnails available for {ext})"
+            if ext in MediaTypes.AUDIO_EXTS:
+                return False, f"Audio skipped (no thumbnails available for {ext})"
+            if ext not in MediaTypes.IMAGE_EXTS and ext not in MediaTypes.VIDEO_EXTS:
+                return False, f"Non-visual file skipped (no thumbnails available for {ext})"
 
         if options.skip_words and options.skip_scope in ("files", "both"):
             skip_list = cls._parse_comma_list(options.skip_words)

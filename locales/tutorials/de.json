@@ -1,0 +1,394 @@
+[
+  {
+    "title": "Schnellstart und Überblick",
+    "icon": "🚀",
+    "summary": "Unterstützte Websites, Schnittstellentour und schneller erster Download.",
+    "content": [
+      {
+        "heading": "Willkommen beim Pawchive Downloader",
+        "body": "Pawchive Downloader ist ein Hochgeschwindigkeits-Archivierungstool mit mehreren Threads, das speziell für Künstler und Content-Plattformen entwickelt wurde. Es stellt eine direkte Verbindung zu APIs und Spiegelnetzwerken her und verfügt über integrierten ratenbegrenzenden Schutz, Zeichenerkennung, Überspringen von Duplikaten und automatische Archivextraktion.",
+        "type": "intro"
+      },
+      {
+        "heading": "Unterstützte Plattformen",
+        "body": "• Kemono & Coomer (Patreon, Pixiv Fanbox, Fantia, Discord, Boosty, Gumroad, Afdian, DLsite, Subscribestar)\n• Bunkr-Alben und -Ordner\n• nHentai-Galerien\n• Cloud-Hosts: Mega.nz-, Dropbox- und Google Drive-Links, eingebettet in Beiträge",
+        "type": "info"
+      },
+      {
+        "heading": "Erstmaliger Download-Workflow",
+        "body": "1. Fügen Sie eine Ersteller-URL oder Beitrags-URL in die obere Suchleiste ein (z. B. https://kemono.su/patreon/user/123456).\n2. Wählen Sie den Seitenbereich oder belassen Sie ihn auf „Alle“.\n3. Klicken Sie auf „Scrape & Queue“ oder drücken Sie die Eingabetaste.\n4. Klicken Sie in den Warteschlangensteuerungen auf „Download starten“, um zu beginnen.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "URL-Eingabe- und Scraper-Modi",
+    "icon": "📥",
+    "summary": "Creator-Scraping, Single-Post-Modus, Seitenbereiche und Link-Harvesting.",
+    "content": [
+      {
+        "heading": "Ersteller-URL vs. Einzelbeitrags-URL",
+        "body": "• Ersteller-URLs (enthalten /user/): Durchsucht gesamte Künstlerarchive aller Beiträge. Sie können Seitenbereiche (z. B. 1..3) angeben, um nur aktuelle Inhalte abzurufen.\n• Einzelne Beitrags-URLs (die /post/ enthalten): Nur Dateien und Links von diesem bestimmten Beitrag werden sofort gelöscht und in die Warteschlange gestellt.\n• Direkte Datei-URLs: Wenn Sie direkte Medien- oder Cloud-URLs einfügen, erkennt die App diese und fragt den Cloud-Link-Resolver ab.",
+        "type": "info"
+      },
+      {
+        "heading": "Seitenbereichsauswahl",
+        "body": "Mit dem Seitenschieberegler können Sie auswählen, welche Seiten gescrollt werden sollen. Jede Seite enthält 50 Beiträge. Seite 1 ist der aktuellste Inhalt. Bei der Einstellung „Alle“ wird der gesamte Erstellerverlauf gelöscht.",
+        "type": "tip"
+      },
+      {
+        "heading": "Cloud Link Extractor-Modus",
+        "body": "Beiträge enthalten oft Textinhalte, die Mega.nz-, Google Drive- oder Bunkr-Links enthalten. Der Scraper überprüft automatisch den Posttext und die Einbettungen und extrahiert rohe Cloud-Links in die Download-Warteschlange oder den Link-Export-Tab.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Filterregeln und -bereiche",
+    "icon": "🔍",
+    "summary": "Dateitypen, Inhaltsbilder, Einschluss-/Ausschlusswörter und Bereiche.",
+    "content": [
+      {
+        "heading": "Dateikategoriefilter",
+        "body": "• Bilder: .png, .jpg, .jpeg, .webp, .gif, .bmp, .psd, .clip\n• Videos: .mp4, .mkv, .webm, .mov, .avi, .m4v\n• Audio: .mp3, .wav, .flac, .ogg, .m4a\n• Archive: .zip, .rar, .7z, .tar, .gz\n• Text/Dokumente: .pdf, .txt, .epub, .doc, .docx",
+        "type": "info"
+      },
+      {
+        "heading": "Inhaltsbilder umschalten",
+        "body": "Inhaltsbilder sind Inline-Illustrationen und Vorschauen, die in den Textkörper von Beiträgen eingebettet sind (im Gegensatz zu Anhängen). Wenn Sie diese Option aktivieren, wird sichergestellt, dass keine eingebetteten Zeichnungen zurückbleiben.",
+        "type": "tip"
+      },
+      {
+        "heading": "Einschluss- und Ausschlussschlüsselwörter",
+        "body": "• Wörter beibehalten: Es werden nur Dateien heruntergeladen, die mit einem dieser durch Kommas getrennten Schlüsselwörter übereinstimmen.\n• Wörter überspringen: Dateien, die eines dieser Schlüsselwörter enthalten, werden übersprungen.\n• Geltungsbereich (Dateien vs. Zeichen): „Dateien“ stimmen mit Dateinamen überein. „Beide“ stimmt mit Dateinamen, Beitragstiteln und Zeichen-Tags überein.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Mega- und Cloud-Downloads",
+    "icon": "☁️",
+    "summary": "Verwendung des Filters „Nur Links“, Extrahieren von Mega-Links, Herunterladen vs. Exportieren und Kontingentumgehung.",
+    "content": [
+      {
+        "heading": "Schritt 1: Aktivieren Sie den Filter „Nur Links“.",
+        "body": "Wählen Sie auf der Registerkarte „Downloader“ unter „Dateitypen“ den Radiofilter „Nur Links“ aus. Dadurch wird Pawchive Downloader angewiesen, das Herunterladen standardmäßiger Bild-/Videoanhänge zu überspringen und stattdessen Beitragsbeschreibungen, Inhaltskörper und Kommentare speziell für eingebettete Cloud-Links zu analysieren.",
+        "type": "tip"
+      },
+      {
+        "heading": "Schritt 2: Scrapen Sie den Ersteller oder Beitrag",
+        "body": "Fügen Sie die Ersteller- oder Beitrags-URL in die Suchleiste ein und klicken Sie auf „Scrape & Queue“. Der Scraper erkennt und extrahiert automatisch Mega-URLs (sowohl Ordner-Links wie mega.nz/folder/... als auch einzelne Datei-Links wie mega.nz/file/...), Google Drive, Dropbox, Bunkr und andere in Ihr Harvested Links-Repository.",
+        "type": "info"
+      },
+      {
+        "heading": "Schritt 3: Direkter Download vs. Link-Export",
+        "body": "• Option A (Download über App): Klicken Sie in der Warteschlange oder Navigationsleiste auf „Cloud-Downloads“. Der integrierte Cloud-Downloader fragt nativ die Mega-API ab, löst die Ordnerhierarchie auf und streamt die entschlüsselten AES-CTR-Dateien mit Multithread-Workern direkt auf Ihre Festplatte.\n• Option B (Links exportieren): Gehen Sie zur Registerkarte „Export/Links“ und klicken Sie auf „Geerntete Links exportieren“, um eine saubere TXT-Datei mit allen rohen Mega-URLs zu speichern, die direkt in JDownloader, MegaSync oder aria2 eingefügt werden kann.",
+        "type": "info"
+      },
+      {
+        "heading": "Umgehen von Mega-Bandbreitenkontingenten (VPN und Proxy)",
+        "body": "Mega begrenzt die Übertragung kostenloser Konten auf ca. 5 GB alle 6 Stunden pro IP-Adresse. Wenn ein Kontingentlimit erreicht ist:\n• VPN-Umgehung: Wechseln Sie Ihren VPN-Server zu einer anderen Stadt oder einem anderen Land, um eine neue IP-Adresse zu erhalten, und setzen Sie dann Ihre Downloads fort.\n• Proxy-Einstellung: Öffnen Sie Einstellungen -> Netzwerk & Proxy und geben Sie Ihre HTTP- oder SOCKS5-Proxy-URL ein (z. B. sock5://127.0.0.1:1080). Pawchive leitet Chunk-Anfragen über den Proxy weiter und umgeht dabei sofort den Kontingentblock.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Charakterlernen und Ordner",
+    "icon": "🏷️",
+    "summary": "Intelligente Organisation von Zeichenordnern, Wörterbuchabgleich und Lernen.",
+    "content": [
+      {
+        "heading": "Automatische Sortierung der Unterordner",
+        "body": "Wenn die Charakterorganisation aktiviert ist, werden Dateien automatisch in Ordner sortiert, die nach dem erkannten Charakter benannt sind (z. B. „Ersteller [Dienst] / Charaktername / Datei.png“).",
+        "type": "info"
+      },
+      {
+        "heading": "Known.txt-Masterdatenbank",
+        "body": "Die App wird mit einem integrierten Hauptwörterbuch mit über 100.000 Anime-, Spiel- und Comicfiguren geliefert. Der Tokenizer zerlegt Dateinamen und sucht nach dem spezifischsten Zeichennamen.",
+        "type": "info"
+      },
+      {
+        "heading": "Intelligentes Charakterlernsystem",
+        "body": "Wenn ein Charaktername wiederholt in Beitragstiteln oder Tags vorkommt, lernt die App ihn dynamisch und erstellt passende Ordner, auch wenn der Charakter noch nicht in Known.txt enthalten ist.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Warteschlange, Parallelität und Ratenlimits",
+    "icon": "⚡",
+    "summary": "Worker-Threads, Erkennung von Ratenlimits und Geschwindigkeitsoptimierung.",
+    "content": [
+      {
+        "heading": "Schieberegler für Arbeitsthreads",
+        "body": "Passt die parallele Download-Parallelität an (1 bis 16 Threads). 3–5 Threads sind im Allgemeinen der ideale Ort für maximalen Durchsatz, ohne Serverdrosseln auszulösen.",
+        "type": "tip"
+      },
+      {
+        "heading": "Adaptive Parallelität und 429-Schutz",
+        "body": "Kemono-Spiegelserver erzwingen Ratenbegrenzungen. Wenn der Server HTTP 429 (Too Many Requests) zurückgibt, drosselt die App die Parallelität automatisch auf 2 Threads und wendet einen exponentiellen Backoff an, bevor sie reibungslos fortfährt.",
+        "type": "warning"
+      },
+      {
+        "heading": "Aktive Warteschlange vs. abgeschlossene Warteschlange",
+        "body": "Verwenden Sie die Filterleiste über der Warteschlangenliste, um zwischen den Elementen „Alle“, „Wird heruntergeladen“, „Abgeschlossen“ und „Fehlgeschlagen“ zu wechseln. Sie können Aufgaben im Handumdrehen anhalten, abbrechen oder priorisieren.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Automatische Wiederholung und Fehlerbehandlung",
+    "icon": "🔄",
+    "summary": "Das 5-Wiederholungslimit, der automatische Wiederholungsversuch und das Wiederholungsmodal.",
+    "content": [
+      {
+        "heading": "Obergrenze für automatische Wiederholungen (max. 5 Wiederholungen)",
+        "body": "Um endlose Wiederholungsschleifen bei defekten URLs oder fehlenden Dateien zu verhindern, werden bei der automatischen Wiederholung höchstens fünfmal Versuche für eine fehlgeschlagene Datei unternommen. Wenn es beim fünften Versuch fehlschlägt, wird es als „Nach 5 Wiederholungen gestoppt“ markiert und sicher übersprungen, damit Ihre Warteschlange beendet werden kann.",
+        "type": "info"
+      },
+      {
+        "heading": "Modal erneut versuchen (manuelle Steuerung)",
+        "body": "Alle fehlgeschlagenen Dateien werden im Wiederholungsmodus gespeichert (zugänglich über die rote Schaltfläche „Fehlgeschlagener Zähler“). In diesem Modus können Sie Fehlercodes überprüfen, auf „Beitrag öffnen“ klicken, um den Quellbeitrag anzuzeigen, auf „Link testen“ klicken oder bestimmte Dateien auswählen, um sie manuell erneut zu versuchen.",
+        "type": "tip"
+      },
+      {
+        "heading": "Automatischer Wiederholungsversuch am Ende der Warteschlange",
+        "body": "Wenn „Auto-Retry“ aktiviert ist, durchläuft der Downloader automatisch alle fehlgeschlagenen Dateien, sobald die Hauptwarteschlange 0 erreicht, und versucht sie bis zum Limit von 5 Versuchen erneut, bevor er den Vorgang abschließt.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Beobachtungsliste und automatische Überprüfung",
+    "icon": "👁️",
+    "summary": "Tracking von Künstlern, Startprüfungen, ungelesene Zähler und benutzerdefinierte Ordner.",
+    "content": [
+      {
+        "heading": "Ersteller zur Beobachtungsliste hinzufügen",
+        "body": "Klicken Sie neben einem beliebigen Ersteller auf die Schaltfläche „Lesezeichen/Beobachtungsliste“, um ihn Ihrer Beobachtungsliste hinzuzufügen. Die App merkt sich das Datum des letzten Downloads und den Post-Offset.",
+        "type": "info"
+      },
+      {
+        "heading": "Automatische Prüfung bei Start und Abzeichen",
+        "body": "Jeder Künstler, bei dem „Automatische Prüfung beim Start“ aktiviert ist, wird beim Öffnen der App im Hintergrund überprüft. Künstler mit neuen Beiträgen werden nach oben sortiert, mit einer lebendigen Benachrichtigungshervorhebung und einem genauen Zähler neuer Beiträge.",
+        "type": "tip"
+      },
+      {
+        "heading": "Benutzerdefinierte Ordner pro Ersteller",
+        "body": "Sie können jedem Künstler über das Ordnersymbol neben seiner Karte ein eigenes Download-Verzeichnis zuweisen. Der Dekomprimierer und die Warteschlange respektieren diese Pfade automatisch.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Massendekompressor",
+    "icon": "📦",
+    "summary": "7-Zip-Engine, rekursives Archiv-Scannen, Festplattenprüfungen vor dem Flug.",
+    "content": [
+      {
+        "heading": "7-Zip-Hochleistungsmotor",
+        "body": "Unterstützt von 7za mit Multithreading-Unterstützung (-mmt). Es erkennt 7za.exe automatisch in Ihrem Projektverzeichnis, Systempfad oder Standardprogramminstallationen.",
+        "type": "info"
+      },
+      {
+        "heading": "Rekursives Scannen und Multi-Volume-Erkennung",
+        "body": "Durchsucht alle Künstler-Download-Ordner rekursiv nach .zip-, .rar-, .7z-, .cbz- und .tar-Archiven. Sekundäre Teile von Archiven mit mehreren Volumes (.part2.rar, .002) werden intelligent herausgefiltert, sodass nur Teil 1 extrahiert wird.",
+        "type": "tip"
+      },
+      {
+        "heading": "Überprüfung des Speicherplatzes vor dem Flug",
+        "body": "Vor dem Extrahieren berechnet die Engine den erforderlichen unkomprimierten Speicherplatz pro Laufwerk und warnt Sie, wenn der freie Speicherplatz nicht ausreicht, um eingefrorene Schreibvorgänge oder beschädigte Laufwerke zu verhindern.",
+        "type": "warning"
+      },
+      {
+        "heading": "Archive nach der Extraktion löschen",
+        "body": "Wenn diese Option aktiviert ist, werden Archive nur dann sicher gelöscht, wenn 7-Zip mit Code 0 beendet wird (verifizierte Extraktion). Wenn ein Archiv beschädigt oder passwortgeschützt ist, bleibt die Originaldatei erhalten.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Post-Aktionen und Desktop-Berichte",
+    "icon": "🌙",
+    "summary": "Auslöser für Herunterfahren, Ruhezustand, Ruhezustand und der automatische Desktop-Zusammenfassungsbericht.",
+    "content": [
+      {
+        "heading": "Was ist nach der Fertigstellung zu tun?",
+        "body": "Wählen Sie aus dem Dropdown-Menü in der Fußzeile der Warteschlange eine automatische Aktion nach dem Download aus: „App schließen“, „Ruhezustand“, „Ruhezustand“, „Herunterfahren“ oder „Neustart“.",
+        "type": "info"
+      },
+      {
+        "heading": "15-Sekunden-Sicherheitscountdown",
+        "body": "Bevor Ihr Computer herunterfährt oder in den Ruhezustand wechselt, erscheint auf dem Bildschirm ein 15-sekündiger Countdown-Modus mit einer auffälligen Schaltfläche „Abbrechen“, sodass Sie die Aktion stoppen können, wenn Sie noch arbeiten.",
+        "type": "tip"
+      },
+      {
+        "heading": "Automatischer Desktop-Bericht (HTML & TXT)",
+        "body": "Immer wenn eine Post-Download-Aktion aktiv ist, erstellt die App einen umfassenden zusammenfassenden Bericht und speichert ihn direkt auf Ihrem Desktop. Der Bericht enthält abgeschlossene Ersteller, Speicherplatznutzung und vollständig anklickbare Links für alle fehlgeschlagenen Dateien.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "In-App-Updater",
+    "icon": "🔄",
+    "summary": "Quell- und kompilierte Updates, GitHub-Commit-Tracking und sichere Neustarts.",
+    "content": [
+      {
+        "heading": "Intelligente Erkennung (main.py vs. .exe)",
+        "body": "Der Updater erkennt, ob Sie die Python-Quelle oder eine kompilierte eigenständige EXE-Datei ausführen. Bei Quellausführungen werden Commits im Hauptzweig verfolgt, sodass Sie bei jedem Push Updates erhalten. Bei .exe-Ausführungen werden GitHub-Releases überprüft.",
+        "type": "info"
+      },
+      {
+        "heading": "Abzeichen und Benachrichtigungen aktualisieren",
+        "body": "Wenn ein neues Update gefunden wird, erscheint in der oberen Navigationsleiste ein leuchtendes „✨Update“-Symbol. Wenn Sie darauf klicken, wird das Update-Dialogfeld geöffnet, in dem Commit-Notizen und der Download-Fortschritt angezeigt werden.",
+        "type": "tip"
+      },
+      {
+        "heading": "Sichere Windows-Übergabe",
+        "body": "Durch die Aktualisierung werden alle Ihre persönlichen Dateien geschützt: Ihre Merkliste, Einstellungen und heruntergeladenen Dateien werden niemals überschrieben. Ein separates Hilfsskript wartet darauf, dass die App geschlossen wird, aktualisiert die Dateien und startet automatisch neu.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Permanenter Link-Tresor und Passwörter",
+    "icon": "🗝️",
+    "summary": "Unbegrenzte Cloud-Link-Archivierung, mehrsprachige Passwörter, Cross-Post-Rettung und Dekomprimierungssynchronisierung.",
+    "content": [
+      {
+        "heading": "Persistentes Klartextarchiv",
+        "body": "Der Link Vault speichert dauerhaft jeden Cloud-Link (Mega, Google Drive, Dropbox, Pixeldrain, Bunkr usw.), der über Ihre Download-Sitzungen hinweg extrahiert wurde, in config/link_vault.json mit automatischen atomaren Backups. Links werden in einer intuitiven Baumansicht „Ersteller > Beiträge > Links“ gruppiert.",
+        "type": "intro"
+      },
+      {
+        "heading": "Mehrsprachiger Passwortlöser",
+        "body": "Identifiziert automatisch Archivkennwörter in den Sprachen Englisch, Japanisch (パスワード), Chinesisch (密码), Russisch (пароль), Koreanisch (암호), Französisch und Deutsch mithilfe einer nähegewichteten Distanzbewertung. Zeigt Passwörter direkt neben jedem Link an und kann mit nur einem Klick kopiert werden.",
+        "type": "tip"
+      },
+      {
+        "heading": "1-Hop-Cross-Post- und Kommentar-Scraper",
+        "body": "Wenn Künstler Update-Ankündigungen veröffentlichen, die auf andere Beiträge verlinken, oder Passwörter in Kommentaren verstecken, folgt der Link Vault Cross-Post-Links (1-Hop) und analysiert die Kommentare des Erstellers, um alle versteckten Download-Ziele und Passwörter aufzudecken.",
+        "type": "info"
+      },
+      {
+        "heading": "Automatische Zuführung zum Massendekompressor",
+        "body": "Klicken Sie auf „Passwörter mit Decompressor synchronisieren“, um alle gesammelten Passwörter automatisch in die Passwortliste des Decompressors zu exportieren und so eine nahtlose Archivextraktion ohne Eingabeaufforderung zu ermöglichen.",
+        "type": "tip"
+      },
+      {
+        "heading": "Live Health Prober und Dead Link Cleanup",
+        "body": "Klicken Sie auf „Linkzustand prüfen“, um Links parallel und nicht blockierend zu prüfen. Tote oder entfernte Links werden rot markiert und mit „Tote Links bereinigen“ können Sie nicht funktionierende Links mit einem Klick bereinigen.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Speicherpools mit mehreren Laufwerken",
+    "icon": "💽",
+    "summary": "Automatisches Spannen über Backup-Festplatten, um Abstürze zu verhindern, bei denen kein Speicherplatz mehr auf dem Gerät vorhanden ist.",
+    "content": [
+      {
+        "heading": "Eliminierung von Festplattenausfällen",
+        "body": "Große Künstlerarchive können eine einzelne Festplatte schnell überfordern. Speicherpools überwachen die Festplattenkapazität, bevor sie jeden Dateistream schreiben. Wenn das primäre Laufwerk unter Ihren Sicherheitsspielraum (z. B. 10 GB) fällt, werden nachfolgende Dateien automatisch an sekundäre Laufwerke weitergeleitet.",
+        "type": "intro"
+      },
+      {
+        "heading": "Beibehaltung der Ordnerhierarchie",
+        "body": "Beim Überlauf auf ein sekundäres Laufwerk repliziert Pawchive die identische Ordnerhierarchie (z. B. „E:/Kemono/Patreon/Artist/Post/file.mp4“). Ihre Dateiorganisation bleibt auf allen physischen Laufwerken vollständig konsistent.",
+        "type": "info"
+      },
+      {
+        "heading": "Hinzufügen sekundärer Speicherpools",
+        "body": "Navigieren Sie zu Einstellungen -> Speicher und Dateiverarbeitung -> Überlauf mehrerer Laufwerke, aktivieren Sie die Funktion und klicken Sie auf „Überlauflaufwerk/-ordner hinzufügen“, um zusätzliche Festplatten oder Netzwerkfreigaben auszuwählen.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "1-Klick-Browser-Cookie-Importer",
+    "icon": "🍪",
+    "summary": "Direkte Sitzungsextraktion aus Chrome, Edge, Brave, Opera, Firefox und Ablaufüberwachung in Echtzeit.",
+    "content": [
+      {
+        "heading": "Keine DevTools erforderlich (Firefox, Edge, Brave)",
+        "body": "Es ist nicht erforderlich, die F12-Entwicklertools zu öffnen oder Sitzungscookies manuell zu kopieren. Pawchive liest die Cookie-Datenbank Ihres installierten Browsers sicher über Windows DPAPI und AES-256-GCM, ohne offene Browser-Tabs zu sperren.\n\nGehen Sie einfach zu Einstellungen → Netzwerk & Authentifizierung, wählen Sie Ihren Browser aus (oder lassen Sie die automatische Erkennung aktiviert) und klicken Sie auf ⚡ Aus Browser importieren. Für den automatischen Import werden Firefox, Edge und Opera GX empfohlen.",
+        "type": "intro"
+      },
+      {
+        "heading": "Echtzeit-Ablaufüberwachung",
+        "body": "Der Ablaufausweis verfolgt die verbleibende Sitzungsgültigkeit:\n🟢 Aktiv · Sitzung bestätigt – gesund, keine Aktion erforderlich\n🟡 Läuft bald ab (Xh links) – bald wieder importieren\n🔴 Sitzung abgelaufen – sofort erneut importieren\n\nDas Abzeichen wird alle 60 Sekunden aktualisiert, sodass Sie immer wissen, bevor ein Download mitten in der Sitzung fehlschlägt.",
+        "type": "info"
+      },
+      {
+        "heading": "⚠️ Google Chrome 127+: Manuelle Cookie-Extraktion erforderlich",
+        "body": "Mit Google Chrome 127 wurde die App-gebundene Verschlüsselung eingeführt, die verhindert, dass externe Tools die Cookie-Datenbank von Chrome lesen. Wenn Sie Chrome als primären Browser verwenden, haben Sie zwei Möglichkeiten:\n\n• Empfohlen: Melden Sie sich in Mozilla Firefox oder Microsoft Edge bei kemono.su / coomer.su an und verwenden Sie von dort aus den 1-Click-Importer.\n\n• Manuell (jeder Browser): Kopieren Sie Ihre Sitzungs-Cookie-Zeichenfolge manuell mit DevTools (eine Schritt-für-Schritt-Anleitung finden Sie auf der nächsten Karte).",
+        "type": "warning"
+      },
+      {
+        "heading": "Manuelle Extraktion – Chrome / Jeder Browser (Schritt für Schritt)",
+        "body": "1. Öffnen Sie Ihren Browser und melden Sie sich bei kemono.su oder coomer.su an.\n\n2. Drücken Sie F12, um die Entwicklertools zu öffnen (oder klicken Sie mit der rechten Maustaste auf die Seite → Untersuchen).\n\n3. Klicken Sie oben in DevTools auf die Registerkarte „Anwendung“ (möglicherweise müssen Sie auf ≫ klicken, um sie anzuzeigen).\n\n4. Erweitern Sie in der linken Seitenleiste Speicher → Cookies → https://kemono.su (oder coomer.su).\n\n5. Suchen Sie nach einem Cookie mit dem Namen „Sitzung“ – klicken Sie darauf und kopieren Sie den vollständigen Wert aus dem unteren Bereich.\n\n6. Gehen Sie in Pawchive zum Feld Einstellungen → Netzwerk & Authentifizierung → Sitzungscookie.\n\n7. Geben Sie „session=“ ein und fügen Sie Ihren Wert direkt danach ein. Beispiel:\n   session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n\n8. Fügen Sie optional cf_clearance auf die gleiche Weise hinzu, getrennt durch ein Semikolon:\n   Sitzung=ABC123; cf_clearance=XYZ789\n\n9. Klicken Sie auf Einstellungen speichern. Ihr Cookie ist jetzt aktiv.",
+        "type": "tip"
+      },
+      {
+        "heading": "Wo man die einzelnen Cookies findet",
+        "body": "• kemono.su / coomer.su → Cookie-Name: „Sitzung“\n• Patreon.com → Cookie-Name: „session_id“ (zu finden unter www.patreon.com)\n• Fanbox (fanbox.cc) → Cookie-Name: „FANBOXSESSID“\n• Cloudflare-Umgehung → Cookie-Name: „cf_clearance“ (dieselbe Domain wie die Website, auf die Sie zugreifen)\n\nSie benötigen nur ein Cookie für die Website, von der Sie herunterladen. Sie brauchen nicht alle davon.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Aufgabenplaner und Automatisierungs-Hub",
+    "icon": "⏰",
+    "summary": "Automatisierte Watchlist-Delta-Synchronisierung, geplante Ersteller-Backups, Night Owl-Fenster und gesperrte Thread-Limits.",
+    "content": [
+      {
+        "heading": "Freihändige Archivautomatisierung",
+        "body": "Erstellen Sie wiederkehrende Hintergrundaufgaben, um Ihre Beobachtungsliste alle paar Stunden nach neuen Beiträgen abzufragen, oder planen Sie regelmäßige Ersteller-Backups zu festen Tageszeiten (z. B. 03:00 Uhr).",
+        "type": "intro"
+      },
+      {
+        "heading": "Vom Benutzer gesperrte Threads und Verzögerungsmodus",
+        "body": "Wenn Sie die Anzahl der Worker-Threads und die Download-Verzögerung für Ihre Verbindung sorgfältig angepasst haben, aktivieren Sie „Benutzerdefinierte Threads und Verzögerung sperren“. Dadurch wird strikt verhindert, dass adaptive Algorithmen oder Hintergrund-Sweep-Aufgaben Ihre benutzerdefinierten Einstellungen ändern.",
+        "type": "tip"
+      },
+      {
+        "heading": "Nachteulen-Off-Peak-Fenster",
+        "body": "Konfigurieren Sie ein Download-Fenster außerhalb der Spitzenzeiten (z. B. 01:00 bis 07:00 Uhr). Geplante Aufgaben werden in die Warteschlange gestellt und angehalten, bis das Fenster außerhalb der Spitzenzeiten geöffnet wird. Dadurch werden die Download-Geschwindigkeiten maximiert, wenn die ISP-Bandbreite am günstigsten ist.",
+        "type": "info"
+      },
+      {
+        "heading": "Windows-Schlafschutz (Wach bleiben)",
+        "body": "Aktiviert die Windows-Kernel-Ausführungsstatusflags (ES_SYSTEM_REQUIRED), während automatisierte Aufgaben aktiv heruntergeladen werden, sodass Ihr PC auch bei Batches über Nacht wach bleibt, ohne die Windows-Energieeinstellungen zu ändern.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Vollständige Tooltip-Referenz",
+    "icon": "💡",
+    "summary": "Kurzes Spickzettel mit Erläuterungen zu allen Schaltflächen, Symbolen und Abzeichen auf der Benutzeroberfläche.",
+    "content": [
+      {
+        "heading": "Kopfnavigationssymbole",
+        "body": "• ❓ Tutorial: Öffnet diesen interaktiven Leitfaden.\n• ✨ Update: Zeigt an, dass eine neuere Version auf GitHub verfügbar ist.\n• ⚙️ Einstellungen: Öffnet App-Einstellungen (Download-Verzeichnis, Parallelität, Proxy).\n• 📜 Konsole: Öffnet Echtzeit-Aktivitäts- und Netzwerkprotokollfenster.",
+        "type": "info"
+      },
+      {
+        "heading": "Warteschlangen- und Filterschaltflächen",
+        "body": "• Auto-Retry: Startet fehlgeschlagene Downloads am Ende der Warteschlange automatisch neu.\n• Manga-Modus: Normalisiert Bilddateinamen für eine saubere sequentielle Lesereihenfolge.\n• Adaptive Parallelität: Passt Threads automatisch an, wenn Serverratenlimits erreicht werden.\n• 📂 Ordnersymbol: Öffnet den Ziel-Download-Ordner im Windows-Datei-Explorer.",
+        "type": "tip"
+      },
+      {
+        "heading": "Verknüpfen Sie Vault- und Scheduler-Steuerelemente",
+        "body": "• 🗝️ Link Vault: Permanentes Archiv aller gesammelten Cloud-Links und extrahierten Passwörter.\n• ⏰ Planer: Automatisierungszentrale für wiederkehrende Watchlist-Synchronisierungen und Night Owl-Aufgaben.\n• 🔒 Threads sperren: Schützt die benutzerdefinierte Thread-Anzahl und Netzwerkverzögerungen vor automatischer Drosselung.\n• 💽 Speicherpools: Repliziert Ordnerbäume auf sekundären Laufwerken, wenn der Speicherplatz knapp wird.\n• 🍪 Cookie-Importer: 1-Klick-Browser-Sitzungsextraktor mit Echtzeit-Ablaufüberwachung.",
+        "type": "info"
+      },
+      {
+        "heading": "Modale Aktionen wiederholen",
+        "body": "• 🔗 Beitrag öffnen: Öffnet den Quellbeitrag auf Kemono/Coomer in Ihrem Webbrowser.\n• 📥 Testlink: Testet oder lädt die Datei direkt in Ihrem Browser herunter.\n• 🔁 Versucht Nx: Zeigt an, wie oft die Datei erneut versucht wurde.\n• 🛑 5/5 maximale Wiederholungsversuche: Zeigt an, dass der automatische Wiederholungsversuch diese Datei nicht mehr versucht.",
+        "type": "info"
+      }
+    ]
+  }
+]

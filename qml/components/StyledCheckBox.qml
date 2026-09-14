@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 
 CheckBox {
     id: control
@@ -29,6 +30,8 @@ CheckBox {
     font.family: "Segoe UI, Inter, sans-serif"
     font.pixelSize: 12
     spacing: 8
+    Layout.fillWidth: true
+    Layout.minimumWidth: 0
 
     indicator: Rectangle {
         implicitWidth: 18
@@ -78,6 +81,8 @@ CheckBox {
         color: control.checked ? "#F1F5F9" : (control.hovered ? "#CBD5E1" : "#94A3B8")
         verticalAlignment: Text.AlignVCenter
         leftPadding: control.indicator.width + control.spacing
+        wrapMode: Text.WordWrap
+        elide: Text.ElideRight
 
         Behavior on color {
             ColorAnimation { duration: 140 }

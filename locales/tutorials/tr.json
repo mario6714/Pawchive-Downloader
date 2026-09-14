@@ -1,0 +1,394 @@
+[
+  {
+    "title": "Hızlı Başlangıç ​​ve Genel Bakış",
+    "icon": "🚀",
+    "summary": "Desteklenen siteler, arayüz turu ve hızlı ilk indirme.",
+    "content": [
+      {
+        "heading": "Pawchive İndiricisine Hoş Geldiniz",
+        "body": "Pawchive Downloader, özellikle sanatçılar ve içerik platformları için tasarlanmış, yüksek hızlı, çok iş parçacıklı bir arşivleme aracıdır. Yerleşik hız sınırlayıcı koruma, karakter tanıma, kopya atlama ve otomatik arşiv çıkarma özellikleriyle doğrudan API'lere ve ayna ağlara bağlanır.",
+        "type": "intro"
+      },
+      {
+        "heading": "Desteklenen Platformlar",
+        "body": "• Kemono ve Coomer (Patreon, Pixiv Fanbox, Fantia, Discord, Boosty, Gumroad, Afdian, DLsite, Abone Yıldızı)\n• Bunkr albümleri ve klasörleri\n• nHentai galerileri\n• Bulut Sunucuları: Gönderilerin içine yerleştirilmiş Mega.nz, Dropbox, Google Drive bağlantıları",
+        "type": "info"
+      },
+      {
+        "heading": "İlk Kez İndirme İş Akışı",
+        "body": "1. Üstteki arama çubuğuna yaratıcının URL'sini veya gönderi URL'sini yapıştırın (ör. https://kemono.su/patreon/user/123456).\n2. Sayfa aralığını seçin veya 'Tümü' olarak bırakın.\n3. 'Kazı ve Kuyruğa Al'a tıklayın veya Enter'a basın.\n4. Başlamak için sıra kontrollerinde 'İndirmeyi Başlat'ı tıklayın.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "URL Girişi ve Kazıyıcı Modları",
+    "icon": "📥",
+    "summary": "Yaratıcı kazıma, tek gönderi modu, sayfa aralıkları ve bağlantı toplama.",
+    "content": [
+      {
+        "heading": "İçerik Oluşturucu URL'si ve Tek Gönderi URL'si",
+        "body": "• Yaratıcı URL'leri (/user/ içeren): Tüm gönderilerdeki sanatçı arşivinin tamamını kazır. Yalnızca en son içeriği getirmek için sayfa aralıklarını (ör. 1..3) belirtebilirsiniz.\n• Tek Gönderi URL'leri (/post/ içeren): Yalnızca söz konusu gönderideki dosyaları ve bağlantıları anında sıyırır ve sıraya koyar.\n• Doğrudan Dosya URL'leri: Doğrudan medya veya bulut URL'leri yapıştırırsanız uygulama bunları algılar ve bulut bağlantı çözümleyicisini sorgular.",
+        "type": "info"
+      },
+      {
+        "heading": "Sayfa Aralığı Seçici",
+        "body": "Sayfa kaydırıcısı hangi sayfaların kazınacağını seçmenizi sağlar. Her sayfada 50 yazı bulunmaktadır. Sayfa 1 en güncel içeriktir. 'Tümü' seçeneğinin ayarlanması yaratıcı geçmişin tamamını siler.",
+        "type": "tip"
+      },
+      {
+        "heading": "Bulut Bağlantı Çıkarıcı Modu",
+        "body": "Gönderilerde genellikle Mega.nz, Google Drive veya Bunkr bağlantılarını içeren metin içeriği bulunur. Kazıyıcı, yazının gövde metnini ve yerleştirmeleri otomatik olarak inceleyerek ham bulut bağlantılarını indirme kuyruğuna veya bağlantı dışa aktarma sekmesine çıkarır.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Filtre Kuralları ve Kapsamları",
+    "icon": "🔍",
+    "summary": "Dosya türleri, içerik görselleri, dahil etme/hariç tutma sözcükleri ve kapsamlar.",
+    "content": [
+      {
+        "heading": "Dosya Kategorisi Filtreleri",
+        "body": "• Resimler: .png, .jpg, .jpeg, .webp, .gif, .bmp, .psd, .clip\n• Videolar: .mp4, .mkv, .webm, .mov, .avi, .m4v\n• Ses: .mp3, .wav, .flac, .ogg, .m4a\n• Arşivler: .zip, .rar, .7z, .tar, .gz\n• Metin/Belgeler: .pdf, .txt, .epub, .doc, .docx",
+        "type": "info"
+      },
+      {
+        "heading": "İçerik Görselleri Geçişi",
+        "body": "İçerik görselleri, gönderilerin metin gövdesine (eklerin aksine) yerleştirilmiş satır içi çizimler ve önizlemelerdir. Bunu AÇIK konuma getirmek, hiçbir gömülü çizimin geride kalmamasını sağlar.",
+        "type": "tip"
+      },
+      {
+        "heading": "Dahil Etme ve Hariç Tutma Anahtar Kelimeleri",
+        "body": "• Kelimeleri Sakla: Yalnızca bu virgülle ayrılmış anahtar kelimelerden herhangi biriyle eşleşen dosyalar indirilecektir.\n• Kelimeleri Atla: Bu anahtar kelimelerden herhangi birini içeren dosyalar atlanacaktır.\n• Kapsam (Dosyalar ve Karakter): 'Dosyalar' dosya adlarıyla eşleşir. 'Her ikisi de' dosya adlarıyla, yazı başlıklarıyla ve karakter etiketleriyle eşleşir.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Mega ve Bulut İndirmeler",
+    "icon": "☁️",
+    "summary": "'Yalnızca Bağlantılar' filtresini kullanma, Mega bağlantıları çıkarma, indirme ve dışa aktarma ve kota atlama.",
+    "content": [
+      {
+        "heading": "1. Adım: 'Yalnızca Bağlantılar' Filtresini Etkinleştirin",
+        "body": "İndirici sekmesinde, Dosya Türleri altında 'Yalnızca Bağlantılar' radyo filtresini seçin. Bu, Pawchive Downloader'a standart resim/video eklerini indirmeyi atlaması ve bunun yerine özellikle gömülü bulut bağlantıları için gönderi açıklamalarını, içerik gövdelerini ve yorumları ayrıştırması talimatını verir.",
+        "type": "tip"
+      },
+      {
+        "heading": "Adım 2: İçerik Oluşturucuyu veya Gönderiyi Kazıyın",
+        "body": "Yaratıcıyı veya gönderi URL'sini arama çubuğuna yapıştırın ve 'Kazıyın ve Kuyruğa Al'ı tıklayın. Kazıyıcı, Mega URL'leri (hem mega.nz/folder/... gibi klasör bağlantıları hem de mega.nz/file/... gibi tek dosya bağlantıları), Google Drive, Dropbox, Bunkr ve diğerlerini otomatik olarak algılar ve Harvested Links deponuza çıkarır.",
+        "type": "info"
+      },
+      {
+        "heading": "3. Adım: Doğrudan İndirme ve Bağlantı Dışa Aktarma Karşılaştırması",
+        "body": "• Seçenek A (Uygulama Yoluyla İndirme): Sırada veya gezinme çubuğunda 'Bulut İndirmeleri'ni tıklayın. Yerleşik bulut indirici, Mega API'yi yerel olarak sorgular, klasör hiyerarşisini çözer ve şifresi çözülmüş AES-CTR dosyalarını çok iş parçacıklı çalışanlarla doğrudan diskinize aktarır.\n• Seçenek B (Bağlantıları Dışa Aktar): Doğrudan JDownloader, MegaSync veya aria2'ye yapıştırmaya hazır, tüm ham Mega URL'leri içeren temiz bir .txt dosyasını kaydetmek için Dışa Aktar/Bağlantılar sekmesine gidin ve 'Harmanlanmış Bağlantıları Dışa Aktar'a tıklayın.",
+        "type": "info"
+      },
+      {
+        "heading": "Mega Bant Genişliği Kotalarını Atlamak (VPN ve Proxy)",
+        "body": "Mega, ücretsiz hesapları IP adresi başına her 6 saatte bir ~5 GB aktarımla sınırlar. Kota sınırına ulaşıldığında:\n• VPN Baypası: Yeni bir IP adresi almak için VPN sunucunuzu farklı bir şehre veya ülkeye değiştirin, ardından indirme işleminize devam edin.\n• Proxy Ayarı: Ayarlar -> Ağ ve Proxy'yi açın ve HTTP veya SOCKS5 proxy URL'nizi girin (örn. çorap5://127.0.0.1:1080). Pawchive, yığın isteklerini proxy üzerinden yönlendirerek kota bloğunu anında atlayacaktır.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Karakter Öğrenme ve Klasörler",
+    "icon": "🏷️",
+    "summary": "Akıllı karakter klasörü organizasyonu, sözlük eşleştirme ve öğrenme.",
+    "content": [
+      {
+        "heading": "Otomatik Alt Klasör Sıralama",
+        "body": "Karakter Organizasyonu etkinleştirildiğinde, dosyalar otomatik olarak algılanan karakterin adını taşıyan klasörlere (ör. 'Yaratıcı [hizmet] / Karakter Adı / dosya.png') sıralanır.",
+        "type": "info"
+      },
+      {
+        "heading": "Bilinen.txt Ana Veritabanı",
+        "body": "Uygulama, 100.000'den fazla anime, oyun ve çizgi roman karakterinden oluşan yerleşik bir ana sözlükle birlikte gelir. Belirteç, dosya adlarını parçalara ayırır ve en spesifik karakter adıyla eşleşir.",
+        "type": "info"
+      },
+      {
+        "heading": "Akıllı Karakter Öğrenme Sistemi",
+        "body": "Bir karakter adı gönderi başlıklarında veya etiketlerinde tekrar tekrar görünüyorsa uygulama onu dinamik olarak öğrenir ve karakter henüz Bilinen.txt dosyasında olmasa bile eşleşen klasörler oluşturur.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Kuyruk, Eşzamanlılık ve Hız Limitleri",
+    "icon": "⚡",
+    "summary": "Çalışan iş parçacıkları, hız sınırı tespiti ve hız optimizasyonu.",
+    "content": [
+      {
+        "heading": "Çalışan Konuları Kaydırıcısı",
+        "body": "Paralel indirme eşzamanlılığını ayarlar (1 ila 16 iş parçacığı). 3-5 iş parçacığı genellikle sunucu kısıtlamalarını tetiklemeden maksimum verim için en uygun noktadır.",
+        "type": "tip"
+      },
+      {
+        "heading": "Uyarlanabilir Eşzamanlılık ve 429 Koruması",
+        "body": "Kemono ayna sunucuları hız sınırlarını zorlar. Sunucu HTTP 429 (Çok Fazla İstek) döndürürse uygulama otomatik olarak eşzamanlılığı 2 iş parçacığına kadar azaltır ve sorunsuz bir şekilde devam etmeden önce üstel bir geri çekilme uygular.",
+        "type": "warning"
+      },
+      {
+        "heading": "Aktif Kuyruk ve Tamamlanmış Kuyruk Karşılaştırması",
+        "body": "'Tümü', 'İndiriliyor', 'Tamamlandı' ve 'Başarısız' öğeler arasında geçiş yapmak için kuyruk listesinin üzerindeki filtre çubuğunu kullanın. Görevleri anında duraklatabilir, iptal edebilir veya önceliklendirebilirsiniz.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Otomatik Yeniden Deneme ve Hata İşleme",
+    "icon": "🔄",
+    "summary": "5 yeniden deneme sınırı, otomatik yeniden deneme geçişi ve Yeniden Deneme Modu.",
+    "content": [
+      {
+        "heading": "Otomatik Yeniden Deneme Sınırı (Maks. 5 Yeniden Deneme)",
+        "body": "Bozuk URL'lerde veya eksik dosyalarda sonsuz yeniden deneme döngülerini önlemek için otomatik yeniden deneme, başarısız bir dosyayı en fazla 5 kez dener. 5. denemede başarısız olursa '5 yeniden denemeden sonra durduruldu' olarak işaretlenir ve güvenli bir şekilde atlanır, böylece sıranız tamamlanabilir.",
+        "type": "info"
+      },
+      {
+        "heading": "Modal'ı Yeniden Dene (Manuel Kontrol)",
+        "body": "Başarısız olan tüm dosyalar Yeniden Deneme Modunda saklanır (kırmızı Başarısız sayaç düğmesiyle erişilebilir). Bu modda, hata kodlarını inceleyebilir, kaynak gönderiyi görmek için 'Gönderiyi Aç'ı tıklayabilir, 'Bağlantıyı Test Et'i tıklayabilir veya manuel olarak yeniden denemek için belirli dosyaları seçebilirsiniz.",
+        "type": "tip"
+      },
+      {
+        "heading": "Sıra Sonunda Otomatik Yeniden Deneme",
+        "body": "'Otomatik Yeniden Deneme' AÇIK konuma getirildiğinde indirici, ana kuyruk 0'a ulaştığında tüm başarısız dosyalar arasında otomatik olarak geçiş yapar ve bitirmeden önce bunları 5 deneme sınırına kadar yeniden dener.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "İzleme Listesi ve Otomatik Kontrol",
+    "icon": "👁️",
+    "summary": "Sanatçıları, başlangıç ​​kontrollerini, okunmamış sayaçları ve özel klasörleri izleme.",
+    "content": [
+      {
+        "heading": "İçerik Oluşturucuları İzleme Listesine Ekleme",
+        "body": "Herhangi bir yaratıcıyı izleme listenize eklemek için yanındaki Yer İşareti/İzleme Listesi düğmesini tıklayın. Uygulama, son indirme tarihini ve gönderi ofsetini hatırlar.",
+        "type": "info"
+      },
+      {
+        "heading": "Başlangıç ​​ve Rozetlerde Otomatik Kontrol",
+        "body": "'Başlangıçta otomatik kontrol' özelliği etkin olan her sanatçı, uygulama açıldığında arka planda kontrol edilecektir. Yeni gönderileri olan sanatçılar, canlı bir bildirim vurgusu ve yeni gönderilerin tam sayacıyla en üstte sıralanır.",
+        "type": "tip"
+      },
+      {
+        "heading": "Yaratıcı Başına Özel Klasörler",
+        "body": "Kartlarının yanındaki klasör simgesini kullanarak her sanatçıya kendi özel indirme dizinini atayabilirsiniz. Açıcı ve sıra bu yolları otomatik olarak dikkate alır.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Toplu Dekompresör",
+    "icon": "📦",
+    "summary": "7-Zip motoru, özyinelemeli arşiv taraması, uçuş öncesi disk kontrolleri.",
+    "content": [
+      {
+        "heading": "7-Zip Yüksek Performanslı Motor",
+        "body": "Çoklu iş parçacığı desteği (-mmt) ile 7za tarafından desteklenmektedir. Proje dizininizde, sistem PATH'inizde veya varsayılan program kurulumlarınızda 7za.exe dosyasını otomatik olarak keşfeder.",
+        "type": "info"
+      },
+      {
+        "heading": "Yinelemeli Tarama ve Çoklu Hacim Tespiti",
+        "body": "Tüm sanatçı indirme klasörlerini .zip, .rar, .7z, .cbz ve .tar arşivleri için yinelemeli olarak tarar. Çok ciltli arşivlerin ikincil bölümleri (.part2.rar, .002) akıllıca filtrelenir, böylece yalnızca 1. bölüm çıkarılır.",
+        "type": "tip"
+      },
+      {
+        "heading": "Uçuş Öncesi Disk Alanı Kontrolü",
+        "body": "Çıkarmadan önce motor, sürücü başına gerekli sıkıştırılmamış disk alanını hesaplar ve boş disk alanının yetersiz olması durumunda sizi uyararak donmuş yazma işlemlerini veya bozuk sürücüleri önler.",
+        "type": "warning"
+      },
+      {
+        "heading": "Arşivleri Çıkardıktan Sonra Sil",
+        "body": "Etkinleştirildiğinde, arşivler yalnızca 7-Zip'in 0 koduyla (doğrulanmış çıkarma) çıkması durumunda güvenli bir şekilde silinir. Arşiv bozuksa veya parola korumalıysa orijinal dosya korunur.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "İşlem Sonrası ve Masaüstü Raporları",
+    "icon": "🌙",
+    "summary": "Kapatma, Uyku, Hazırda Bekletme tetikleyicileri ve otomatik Masaüstü özet raporu.",
+    "content": [
+      {
+        "heading": "Tamamlandıktan Sonra Ne Yapmalı?",
+        "body": "Sıra altbilgisindeki açılır menüden otomatik bir indirme sonrası eylemi seçin: 'Uygulamayı Kapat', 'Uyku', 'Hazırda Beklet', 'Kapat' veya 'Yeniden Başlat'.",
+        "type": "info"
+      },
+      {
+        "heading": "15 Saniyelik Güvenlik Geri Sayımı",
+        "body": "Bilgisayarınız kapanmadan veya uyku moduna geçmeden önce, ekranda belirgin bir 'İptal' düğmesiyle birlikte 15 saniyelik bir geri sayım modu görünür; böylece hala çalışıyorsanız eylemi durdurabilirsiniz.",
+        "type": "tip"
+      },
+      {
+        "heading": "Otomatik Masaüstü Raporu (HTML ve TXT)",
+        "body": "Bir indirme sonrası eylemi etkin olduğunda, uygulama kapsamlı bir özet raporu derler ve bunu doğrudan Masaüstünüze kaydeder. Rapor, tamamlanan oluşturucuları, disk alanı kullanımını ve başarısız olan tüm dosyalar için tam tıklanabilir bağlantıları içerir.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Uygulama İçi Güncelleyici",
+    "icon": "🔄",
+    "summary": "Kaynak ve derlenmiş güncellemeler, GitHub taahhüt takibi ve güvenli yeniden başlatmalar.",
+    "content": [
+      {
+        "heading": "Akıllı Algılama (main.py ve .exe)",
+        "body": "Güncelleyici, Python kaynağından mı yoksa derlenmiş bağımsız bir .exe dosyasından mı çalıştırdığınızı algılar. Kaynak çalıştırmaları için, ana daldaki taahhütleri izler, böylece her aktarımda güncellemeler alırsınız. .exe çalıştırmaları için GitHub Sürümlerini kontrol eder.",
+        "type": "info"
+      },
+      {
+        "heading": "Rozeti ve Bildirimleri Güncelle",
+        "body": "Yeni bir güncelleme bulunduğunda üst gezinme çubuğunda parlayan bir '✨ Güncelle' hapı görünür. Buna tıklamak, taahhüt notlarını ve indirme ilerlemesini gösteren Güncelleme iletişim kutusunu açar.",
+        "type": "tip"
+      },
+      {
+        "heading": "Güvenli Windows Aktarımı",
+        "body": "Güncelleme tüm kişisel dosyalarınızı korur: izleme listenizin, ayarlarınızın ve indirilen dosyalarınızın üzerine hiçbir zaman yazılmaz. Ayrılmış bir yardımcı komut dosyası, uygulamanın kapanmasını, dosyaları güncellemesini ve otomatik olarak yeniden başlatılmasını bekler.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Kalıcı Bağlantı Kasası ve Şifreler",
+    "icon": "🗝️",
+    "summary": "Sınırsız bulut bağlantısı arşivleme, çok dilli şifreler, çapraz gönderi kurtarma ve Sıkıştırıcı senkronizasyonu.",
+    "content": [
+      {
+        "heading": "Kalıcı Düz ​​Metin Arşivi",
+        "body": "Link Vault, indirme oturumlarınız boyunca çıkarılan her bulut bağlantısını (Mega, Google Drive, Dropbox, Pixeldrain, Bunkr, vb.) otomatik atomik yedeklemelerle config/link_vault.json dosyasında kalıcı olarak saklar. Bağlantılar sezgisel bir Oluşturucu > Gönderiler > Bağlantılar ağacı görünümünde gruplandırılmıştır.",
+        "type": "intro"
+      },
+      {
+        "heading": "Çok Dilli Şifre Çözücü",
+        "body": "Yakınlık ağırlıklı mesafe puanlamasını kullanarak İngilizce, Japonca (パスワード), Çince (密码), Rusça (пароль), Korece (암호), Fransızca ve Almanca genelinde arşiv şifrelerini otomatik olarak tanımlar. Tek tıklamayla kopyalamayla şifreleri her bağlantının hemen yanında gösterir.",
+        "type": "tip"
+      },
+      {
+        "heading": "1-Hop Çapraz Gönderi ve Yorum Kazıyıcı",
+        "body": "Sanatçılar diğer gönderilere bağlantı veren güncelleme duyuruları yayınladığında veya yorumların içindeki şifreleri gizlediğinde, Bağlantı Kasası çapraz gönderi bağlantılarını (1-atlama) takip eder ve tüm gizli indirme hedeflerini ve şifrelerini ortaya çıkarmak için yaratıcı yorumlarını ayrıştırır.",
+        "type": "info"
+      },
+      {
+        "heading": "Toplu Dekompresöre Otomatik Besleme",
+        "body": "Toplanan tüm şifreleri otomatik olarak Sıkıştırıcının şifre listesine aktarmak için 'Şifreleri Sıkıştırıcıya Senkronize Et' seçeneğini tıklayın, böylece sorunsuz sıfır komutla arşiv çıkarmayı mümkün kılın.",
+        "type": "tip"
+      },
+      {
+        "heading": "Canlı Sağlık Prober'ı ve Ölü Bağlantı Temizleme",
+        "body": "Bağlantıları paralel olarak engellemeden araştırmak için 'Bağlantı Sağlığını Kontrol Et'i tıklayın. Ölü veya kaldırılmış bağlantılar kırmızı renkle işaretlenir ve 'Ölü Bağlantıları Temizle', işlevsel olmayan bağlantıları tek tıklamayla budamanızı sağlar.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Çok Diskli Depolama Havuzları",
+    "icon": "💽",
+    "summary": "'Cihazda boş alan kalmadı' kilitlenmelerini önlemek için yedek sabit sürücüler arasında otomatik yayılma.",
+    "content": [
+      {
+        "heading": "Disk Dolu Arızalarının Ortadan Kaldırılması",
+        "body": "Büyük sanatçı arşivleri tek bir sabit sürücüyü kolaylıkla doldurabilir. Depolama Havuzları, her dosya akışını yazmadan önce disk kapasitesini izler. Birincil sürücü güvenlik marjınızın (ör. 10 GB) altına düştüğünde, sonraki dosyalar otomatik olarak ikincil sürücülere yönlendirilir.",
+        "type": "intro"
+      },
+      {
+        "heading": "Klasör Hiyerarşisini Koruma",
+        "body": "İkincil bir sürücüye taşma yapıldığında, Pawchive aynı klasör hiyerarşisini çoğaltır (örneğin, 'E:/Kemono/Patreon/Artist/Post/file.mp4'). Dosya organizasyonunuz tüm fiziksel sürücülerde tamamen tutarlı kalır.",
+        "type": "info"
+      },
+      {
+        "heading": "İkincil Depolama Havuzları Ekleme",
+        "body": "Ayarlar -> Depolama ve Dosya İşleme -> Çoklu Sürücü Taşması'na gidin, özelliği etkinleştirin ve ek sabit sürücüler veya ağ paylaşımları seçmek için 'Taşma Sürücüsü / Klasörü Ekle'yi tıklayın.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Tek Tıklamayla Tarayıcı Çerez Aktarıcısı",
+    "icon": "🍪",
+    "summary": "Chrome, Edge, Brave, Opera, Firefox'tan doğrudan oturum çıkarma ve gerçek zamanlı süre sonu izleme.",
+    "content": [
+      {
+        "heading": "Sıfır Geliştirici Aracı Gerekir (Firefox, Edge, Brave)",
+        "body": "F12 Geliştirici Araçlarını açmanıza veya oturum çerezlerini manuel olarak kopyalamanıza gerek yoktur. Pawchive, açık tarayıcı sekmelerini kilitlemeden, Windows DPAPI ve AES-256-GCM aracılığıyla yüklü tarayıcınızın çerez veritabanını güvenli bir şekilde okur.\n\nAyarlar → Ağ ve Kimlik Doğrulama'ya gidin, tarayıcınızı seçin (veya Otomatik Algılama'yı bırakın) ve ⚡ Tarayıcıdan İçe Aktar'a tıklayın. Otomatik içe aktarma için Firefox, Edge ve Opera GX önerilir.",
+        "type": "intro"
+      },
+      {
+        "heading": "Gerçek Zamanlı Sona Erme İzleyicisi",
+        "body": "Sona erme rozeti kalan oturumun geçerliliğini izler:\n🟢 Aktif · Oturum Doğrulandı — sağlıklı, herhangi bir işlem yapılmasına gerek yok\n🟡 Süresi Yakında Doluyor (Xh kaldı) — yakında yeniden içe aktarın\n🔴 Oturumun Süresi Doldu — hemen yeniden içe aktarın\n\nRozet her 60 saniyede bir güncellenir, böylece indirme işlemi oturum ortasında başarısız olmadan önce her zaman bilgi sahibi olursunuz.",
+        "type": "info"
+      },
+      {
+        "heading": "⚠️ Google Chrome 127+: Manuel Çerez Çıkarma Gerekli",
+        "body": "Google Chrome 127, herhangi bir harici aracın Chrome'un çerez veritabanını okumasını önleyen Uygulamaya Bağlı Şifreleme özelliğini tanıttı. Chrome'u birincil tarayıcınız olarak kullanıyorsanız iki seçeneğiniz vardır:\n\n• Önerilen: Mozilla Firefox veya Microsoft Edge'de kemono.su / coomer.su adresinde oturum açın ve buradan Tek Tıklamayla içe aktarıcıyı kullanın.\n\n• Manuel (herhangi bir tarayıcı): Oturum çerez dizinizi DevTools'u kullanarak manuel olarak kopyalayın (adım adım talimatlar için sonraki karta bakın).",
+        "type": "warning"
+      },
+      {
+        "heading": "Manuel Çıkarma - Chrome / Herhangi Bir Tarayıcı (Adım Adım)",
+        "body": "1. Tarayıcınızı açın ve kemono.su veya coomer.su'da oturum açın.\n\n2. Geliştirici Araçlarını açmak için F12 tuşuna basın (veya sayfaya sağ tıklayın → İncele).\n\n3. DevTools'un üst kısmındaki Uygulama sekmesine tıklayın (görmek için ≫ tuşuna tıklamanız gerekebilir).\n\n4. Sol kenar çubuğunda Depolama → Çerezler → https://kemono.su (veya coomer.su) öğesini genişletin.\n\n5. 'Oturum' adında bir çerez arayın; ona tıklayın ve alt paneldeki Değerin tamamını kopyalayın.\n\n6. Pawchive'da Ayarlar → Ağ ve Kimlik Doğrulama → Oturum Çerezi alanına gidin.\n\n7. Session= yazın ve değerinizi hemen arkasına yapıştırın. Örnek:\n   oturum=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n\n8. İsteğe bağlı olarak cf_clearance'ı noktalı virgülle ayırarak aynı şekilde ekleyin:\n   oturum=ABC123; cf_clearance=XYZ789\n\n9. Ayarları Kaydet'e tıklayın. Çereziniz artık aktif.",
+        "type": "tip"
+      },
+      {
+        "heading": "Her Çerez Nerede Bulunur?",
+        "body": "• kemono.su / coomer.su → Çerez adı: 'oturum'\n• Patreon.com → Çerez adı: 'session_id' (www.patreon.com adresinde bulunur)\n• Fanbox (fanbox.cc) → Çerez adı: 'FANBOXSESSID'\n• Cloudflare bypass → Çerez adı: 'cf_clearance' (eriştiğiniz siteyle aynı alan adı)\n\nHangi siteden indiriyor olursanız olun, yalnızca bir çereze ihtiyacınız vardır. Hepsine ihtiyacınız yok.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Görev Zamanlayıcı ve Otomasyon Merkezi",
+    "icon": "⏰",
+    "summary": "Otomatik İzleme Listesi delta senkronizasyonu, planlanmış içerik oluşturucu yedeklemeleri, Night Owl pencereleri ve kilitli konu sınırları.",
+    "content": [
+      {
+        "heading": "Eller Serbest Arşiv Otomasyonu",
+        "body": "Birkaç saatte bir yeni gönderiler için İzleme Listenizi yoklamak üzere yinelenen arka plan görevleri oluşturun veya sabit günlük saatlerde (ör. 03:00) düzenli içerik oluşturucu yedeklemeleri planlayın.",
+        "type": "intro"
+      },
+      {
+        "heading": "Kullanıcı Kilitli Konular ve Gecikme Modu",
+        "body": "Bağlantınız için çalışan iş parçacığı sayısını ve indirme gecikmesini dikkatli bir şekilde ayarladıysanız, 'Özel Konuları ve Gecikmeyi Kilitle' seçeneğini etkinleştirin. Bu, uyarlanabilir algoritmaların veya arka plan tarama görevlerinin özel ayarlarınızı değiştirmesini kesinlikle önler.",
+        "type": "tip"
+      },
+      {
+        "heading": "Gece Kuşu Yoğun Olmayan Pencere",
+        "body": "Yoğun olmayan bir indirme penceresi yapılandırın (ör. 01:00 - 07:00). Zamanlanmış görevler, yoğun olmayan zaman dilimi açılıncaya kadar sıraya girecek ve duraklatılacak ve ISP bant genişliğinin en ucuz olduğu zamanlarda indirme hızları en üst düzeye çıkarılacak.",
+        "type": "info"
+      },
+      {
+        "heading": "Windows Uyku Önleme (Uyanık Kalma)",
+        "body": "Otomatik görevler aktif olarak indirilirken Windows çekirdeği yürütme durumu işaretlerini (ES_SYSTEM_REQUIRED) devreye alır ve Windows güç ayarlarını değiştirmeden bilgisayarınızın gece boyunca yapılan toplu işlemlerde uyanık kalmasını sağlar.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Tam Araç İpucu Referansı",
+    "icon": "💡",
+    "summary": "Arayüzdeki her düğmeyi, simgeyi ve rozeti açıklayan hızlı kopya sayfası.",
+    "content": [
+      {
+        "heading": "Başlık Gezinme Simgeleri",
+        "body": "• ❓ Öğretici: Bu etkileşimli kılavuzu açar.\n• ✨ Güncelleme: GitHub'da daha yeni bir sürümün mevcut olduğunu belirtir.\n• ⚙️ Ayarlar: Uygulama ayarlarını açar (indirme dizini, eşzamanlılık, proxy).\n• 📜 Konsol: Gerçek zamanlı etkinlik ve ağ günlüğü penceresini açar.",
+        "type": "info"
+      },
+      {
+        "heading": "Sıra ve Filtre Düğmeleri",
+        "body": "• Otomatik Yeniden Deneme: Başarısız indirme işlemlerini kuyruğun sonunda otomatik olarak yeniden başlatır.\n• Manga Modu: Temiz sıralı okuma sırası için görüntü dosya adlarını normalleştirir.\n• Uyarlanabilir Eşzamanlılık: Sunucu hızı sınırlarına ulaşıldığında iş parçacıklarını otomatik olarak ayarlar.\n• 📂 Klasör Simgesi: Windows Dosya Gezgini'nde hedef indirme klasörünü açar.",
+        "type": "tip"
+      },
+      {
+        "heading": "Bağlantı Kasası ve Zamanlayıcı Kontrolleri",
+        "body": "• 🗝️ Bağlantı Kasası: Toplanan tüm bulut bağlantılarının ve çıkarılan şifrelerin kalıcı arşivi.\n• ⏰ Zamanlayıcı: Yinelenen İzleme Listesi senkronizasyonları ve Gece Kuşu görevleri için otomasyon merkezi.\n• 🔒 Konuları Kilitle: Özel iş parçacığı sayısını ve ağ gecikmelerini otomatik kısıtlamaya karşı korur.\n• 💽 Depolama Havuzları: Disk alanı az olduğunda klasör ağaçlarını ikincil sürücüler arasında çoğaltır.\n• 🍪 Çerez İçe Aktarıcı: Gerçek zamanlı süre sonu izleyicisine sahip tek tıklamayla tarayıcı oturumu çıkarıcı.",
+        "type": "info"
+      },
+      {
+        "heading": "Kalıcı Eylemleri Yeniden Dene",
+        "body": "• 🔗 Gönderiyi Aç: Kemono/Coomer'deki kaynak gönderiyi web tarayıcınızda açar.\n• 📥 Test Bağlantısı: Dosyayı doğrudan tarayıcınızda test eder veya indirir.\n• 🔁 Denenmiş Nx: Dosyanın kaç kez yeniden denendiğini gösterir.\n• 🛑 5/5 Maksimum Yeniden Deneme: Otomatik yeniden denemenin bu dosyayı denemeyi durdurduğunu belirtir.",
+        "type": "info"
+      }
+    ]
+  }
+]

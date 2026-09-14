@@ -77,7 +77,9 @@ SmoothFlickable {
 
                     ComboBox {
                         id: langCombo
-                        Layout.preferredWidth: 240
+                        Layout.fillWidth: true
+                        Layout.maximumWidth: 240
+                        Layout.minimumWidth: 130
                         Layout.preferredHeight: 32
                         model: Lang ? Lang.availableLanguages : []
                         textRole: "native"
@@ -109,7 +111,7 @@ SmoothFlickable {
 
                         contentItem: Text {
                             leftPadding: 10
-                            rightPadding: langCombo.indicator.width + 10
+                            rightPadding: (langCombo.indicator ? langCombo.indicator.width : 0) + 10
                             text: langCombo.displayText
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 12
@@ -155,8 +157,6 @@ SmoothFlickable {
                             }
                         }
                     }
-
-                    Item { Layout.fillWidth: true }
                 }
 
                 // AI Translation Disclaimer Banner
@@ -207,6 +207,8 @@ SmoothFlickable {
 
             ColumnLayout {
                 width: parent.width
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 10
 
                 Text {
@@ -214,6 +216,9 @@ SmoothFlickable {
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     color: "#94A3B8"
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    wrapMode: Text.WordWrap
                 }
 
                 StyledTextField {
@@ -260,18 +265,21 @@ SmoothFlickable {
                                 font.pixelSize: 11
                                 font.weight: Font.Bold
                                 color: "#F1F5F9"
+                                Layout.fillWidth: true
+                                elide: Text.ElideRight
                             }
-
-                            Item { Layout.fillWidth: true }
 
                             // Real-time Expiration Watchdog Badge
                             Rectangle {
                                 height: 20
-                                implicitWidth: watchdogLabel.implicitWidth + 16
+                                Layout.preferredWidth: Math.min(watchdogLabel.implicitWidth + 16, 180)
+                                Layout.minimumWidth: 0
+                                Layout.maximumWidth: 180
                                 radius: 10
                                 color: "#0F172A"
                                 border.color: root.bridge ? root.bridge.cookieWatchdogColor : "#64748B"
                                 border.width: 1
+                                clip: true
 
                                 Row {
                                     anchors.centerIn: parent
@@ -288,6 +296,8 @@ SmoothFlickable {
                                         font.weight: 600
                                         color: root.bridge ? root.bridge.cookieWatchdogColor : "#94A3B8"
                                         anchors.verticalCenter: parent.verticalCenter
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 1
                                     }
                                 }
                             }
@@ -304,13 +314,15 @@ SmoothFlickable {
 
                         // Browser selector row
                         Flow {
+                            width: parent.width
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 0
                             spacing: 8
 
                             ComboBox {
                                 id: browserSelector
-                                Layout.preferredWidth: 190
-                                Layout.preferredHeight: 30
+                                width: Math.min(parent.width, 190)
+                                height: 30
                                 model: [
                                     { id: "",         name: tr("browser_auto",    "Auto-Detect") },
                                     { id: "firefox",  name: tr("browser_firefox", "Mozilla Firefox (Recommended)") },
@@ -558,9 +570,9 @@ SmoothFlickable {
                         font.pixelSize: 12
                         font.weight: 600
                         color: "#F1F5F9"
+                        Layout.fillWidth: true
+                        wrapMode: Text.WordWrap
                     }
-
-                    Item { Layout.fillWidth: true }
 
                     StyledSwitch {
                         checked: storagePoolCol.poolData.enabled !== undefined ? storagePoolCol.poolData.enabled : false
@@ -581,36 +593,43 @@ SmoothFlickable {
                 }
 
                 // Safety Margin Row
-                RowLayout {
+                Flow {
+                    width: parent.width
                     Layout.fillWidth: true
-                    spacing: 10
+                    Layout.minimumWidth: 0
+                    spacing: 8
 
-                    Text {
-                        text: tr("label_safety_margin", "Safety Free Space Margin:")
-                        font.family: "Segoe UI, sans-serif"
-                        font.pixelSize: 11
-                        font.weight: 600
-                        color: "#CBD5E1"
-                    }
+                    RowLayout {
+                        spacing: 8
+                        Text {
+                            text: tr("label_safety_margin", "Safety Free Space Margin:")
+                            font.family: "Segoe UI, sans-serif"
+                            font.pixelSize: 11
+                            font.weight: 600
+                            color: "#CBD5E1"
+                        }
 
-                    StyledSpinBox {
-                        id: marginSpin
-                        from: 2
-                        to: 100
-                        value: storagePoolCol.poolData.safety_margin_gb || 10
-                        stepSize: 1
-                        suffix: " GB"
-                        accentColor: "#38BDF8"
-                        implicitWidth: 120
-                        onValueModified: function(v) {
-                            if (root.bridge) root.bridge.setStoragePoolMargin(v)
+                        StyledSpinBox {
+                            id: marginSpin
+                            from: 2
+                            to: 100
+                            value: storagePoolCol.poolData.safety_margin_gb || 10
+                            stepSize: 1
+                            suffix: " GB"
+                            accentColor: "#38BDF8"
+                            implicitWidth: 110
+                            onValueModified: function(v) {
+                                if (root.bridge) root.bridge.setStoragePoolMargin(v)
+                            }
                         }
                     }
 
                     Text {
                         text: "(" + tr("desc_margin_trigger", "triggers overflow when remaining space drops below this limit") + ")"
-                        font.pixelSize: 11
+                        font.pixelSize: 10
                         color: "#64748B"
+                        wrapMode: Text.WordWrap
+                        width: parent.width
                     }
                 }
 
@@ -673,7 +692,7 @@ SmoothFlickable {
                                             color: "#F1F5F9"
                                             elide: Text.ElideMiddle
                                             Layout.fillWidth: true
-                                            Layout.minimumWidth: 60
+                                            Layout.minimumWidth: 40
                                         }
 
                                         Rectangle {
@@ -711,9 +730,10 @@ SmoothFlickable {
                                         Item { Layout.fillWidth: true }
 
                                         Text {
-                                            text: modelData.free_gb + " GB free / " + modelData.total_gb + " GB (" + modelData.used_percent + "% used)"
+                                            text: driveCard.width > 340 ? (modelData.free_gb + " GB free / " + modelData.total_gb + " GB (" + modelData.used_percent + "% used)") : (modelData.free_gb + " GB free")
                                             font.pixelSize: 10
                                             color: modelData.is_low ? "#EF4444" : "#94A3B8"
+                                            elide: Text.ElideRight
                                         }
                                     }
 
@@ -805,6 +825,8 @@ SmoothFlickable {
 
             ColumnLayout {
                 width: parent.width
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 10
 
                 Text {
@@ -812,10 +834,15 @@ SmoothFlickable {
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     color: "#94A3B8"
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    wrapMode: Text.WordWrap
                 }
 
                 Flow {
+                    width: parent.width
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 8
 
                     FilterCheckbox {
@@ -851,6 +878,8 @@ SmoothFlickable {
                     font.family: "Segoe UI, sans-serif"
                     font.pixelSize: 11
                     color: "#64748B"
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
                 }
             }
         }
@@ -866,11 +895,15 @@ SmoothFlickable {
 
             ColumnLayout {
                 width: parent.width
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 spacing: 12
 
                 // Convenient checkboxes for notifications / folders
                 Flow {
+                    width: parent.width
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 16
 
                     StyledCheckBox {
@@ -899,14 +932,17 @@ SmoothFlickable {
                     Layout.fillWidth: true
                     spacing: 6
 
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
+                        spacing: 3
                         Text {
                             text: tr("label_what_to_do", "What to do after download finishes (one-time action):")
                             font.family: "Segoe UI, sans-serif"
                             font.pixelSize: 11
                             font.weight: 600
                             color: "#94A3B8"
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
                         }
                         Text {
                             text: tr("note_what_to_do", "• Resets to 'Do Nothing' after each task. Can also be set directly in the bottom action bar.")
@@ -914,11 +950,14 @@ SmoothFlickable {
                             font.pixelSize: 10
                             color: "#64748B"
                             Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
                         }
                     }
 
                     Flow {
+                        width: parent.width
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 8
 
                         FilterCheckbox {
@@ -980,7 +1019,9 @@ SmoothFlickable {
 
         // Action Buttons & About
         Flow {
+            width: parent.width
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             spacing: 8
             layoutDirection: Qt.RightToLeft
             opacity: root.entranceStage >= 7 ? 1.0 : 0.0

@@ -505,5 +505,13 @@
   "toast_harvest_success": "ดึงข้อมูลสำเร็จ ",
   "toast_harvest_success_links": " ลิงก์ใหม่จาก ",
   "toast_harvest_failed": "การดึงข้อมูลล้มเหลว: ",
-  "toast_probing_finished": "การตรวจสอบสถานะลิงก์เสร็จสมบูรณ์แล้ว"
+  "toast_probing_finished": "การตรวจสอบสถานะลิงก์เสร็จสมบูรณ์แล้ว",
+  "opt_skip_post_covers": "ข้ามภาพหน้าปกโพสต์",
+  "opt_skip_post_covers_tip": "ไม่ดาวน์โหลดภาพหน้าปกหลักเมื่อมีไฟล์แนบหรือเนื้อหาภาพอยู่แล้ว",
+  "tutorial_modal_title": "Pawchive Downloader — คู่มือการใช้งานและฟังก์ชันครบวงจร",
+  "tutorial_modal_subtitle": "เอกสารเชิงลึก คำอธิบายปุ่ม และคู่มือแนะนำการใช้งาน",
+  "tutorial_tag_tip": "คำแนะนำ",
+  "tutorial_tag_important": "สำคัญ",
+  "tutorial_tag_overview": "ภาพรวม",
+  "tutorial_tag_detail": "รายละเอียด"
 }

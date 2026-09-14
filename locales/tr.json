@@ -505,5 +505,13 @@
   "toast_harvest_success": "Başarıyla toplandı: ",
   "toast_harvest_success_links": " yeni bağlantı (Kaynak: ",
   "toast_harvest_failed": "Tarama başarısız oldu: ",
-  "toast_probing_finished": "Bağlantı durumu doğrulaması tamamlandı."
+  "toast_probing_finished": "Bağlantı durumu doğrulaması tamamlandı.",
+  "opt_skip_post_covers": "Gönderi Kapak Resimlerini Atla",
+  "opt_skip_post_covers_tip": "Ekler veya içerik mevcut olduğunda gönderinin öne çıkan kapak/küçük resmini indirme",
+  "tutorial_modal_title": "Pawchive Downloader — Kapsamlı Kullanım Kılavuzu ve Özellikler",
+  "tutorial_modal_subtitle": "Ayrıntılı belgeler, ipucu açıklamaları ve kullanım kılavuzları",
+  "tutorial_tag_tip": "İPUCU",
+  "tutorial_tag_important": "ÖNEMLİ",
+  "tutorial_tag_overview": "GENEL BAKIŞ",
+  "tutorial_tag_detail": "AYRINTI"
 }

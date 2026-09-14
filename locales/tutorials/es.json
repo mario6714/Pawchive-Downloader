@@ -1,0 +1,394 @@
+[
+  {
+    "title": "Inicio rápido y descripción general",
+    "icon": "🚀",
+    "summary": "Sitios compatibles, recorrido por la interfaz y primera descarga rápida.",
+    "content": [
+      {
+        "heading": "Bienvenido a Pawchive Descargador",
+        "body": "Pawchive Downloader es una herramienta de archivo multiproceso de alta velocidad creada específicamente para artistas y plataformas de contenido. Se conecta directamente a API y redes espejo con protección de limitación de velocidad incorporada, reconocimiento de caracteres, omisión de duplicados y extracción automática de archivos.",
+        "type": "intro"
+      },
+      {
+        "heading": "Plataformas compatibles",
+        "body": "• Kemono y Coomer (Patreon, Pixiv Fanbox, Fantia, Discord, Boosty, Gumroad, Afdian, DLsite, Subscribestar)\n• Álbumes y carpetas de Bunkr\n• nGalerías hentai\n• Hosts en la nube: Mega.nz, Dropbox, enlaces de Google Drive integrados dentro de las publicaciones",
+        "type": "info"
+      },
+      {
+        "heading": "Flujo de trabajo de descarga por primera vez",
+        "body": "1. Pegue la URL de un creador o la URL de una publicación en la barra de búsqueda superior (por ejemplo, https://kemono.su/patreon/user/123456).\n2. Elija el rango de páginas o déjelo como \"Todos\".\n3. Haga clic en 'Scrape & Queue' o presione Entrar.\n4. Haga clic en 'Iniciar descarga' en los controles de la cola para comenzar.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Modos de entrada de URL y raspador",
+    "icon": "📥",
+    "summary": "Scraping de creadores, modo de publicación única, rangos de páginas y recolección de enlaces.",
+    "content": [
+      {
+        "heading": "URL del creador frente a URL de publicación única",
+        "body": "• URL de creador (que contienen /usuario/): extrae archivos completos de artistas en todas las publicaciones. Puede especificar rangos de páginas (por ejemplo, 1..3) para recuperar solo contenido reciente.\n• URL de publicación única (que contienen /post/): inmediatamente extrae y pone en cola sólo archivos y enlaces de esa publicación específica.\n• URL de archivos directos: si pega medios directos o URL de la nube, la aplicación las detecta y consulta el solucionador de enlaces de la nube.",
+        "type": "info"
+      },
+      {
+        "heading": "Selector de rango de páginas",
+        "body": "El control deslizante de página le permite seleccionar qué páginas eliminar. Cada página contiene 50 publicaciones. La página 1 es el contenido más reciente. La configuración de 'Todos' elimina el historial completo del creador.",
+        "type": "tip"
+      },
+      {
+        "heading": "Modo extractor de enlaces en la nube",
+        "body": "Las publicaciones suelen tener contenido de texto que contiene enlaces de Mega.nz, Google Drive o Bunkr. El raspador inspecciona automáticamente el texto del cuerpo de la publicación y lo incrusta, extrayendo enlaces de nube sin procesar en la cola de descarga o en la pestaña de exportación de enlaces.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Filtrar reglas y alcances",
+    "icon": "🔍",
+    "summary": "Tipos de archivos, imágenes de contenido, palabras de inclusión/exclusión y alcances.",
+    "content": [
+      {
+        "heading": "Filtros de categorías de archivos",
+        "body": "• Imágenes: .png, .jpg, .jpeg, .webp, .gif, .bmp, .psd, .clip\n• Vídeos: .mp4, .mkv, .webm, .mov, .avi, .m4v\n• Audio: .mp3, .wav, .flac, .ogg, .m4a\n• Archivos: .zip, .rar, .7z, .tar, .gz\n• Texto/Documentos: .pdf, .txt, .epub, .doc, .docx",
+        "type": "info"
+      },
+      {
+        "heading": "Alternar imágenes de contenido",
+        "body": "Las imágenes de contenido son ilustraciones en línea y vistas previas integradas en el cuerpo del texto de las publicaciones (a diferencia de los archivos adjuntos). Al activarlo se garantiza que no queden dibujos incrustados.",
+        "type": "tip"
+      },
+      {
+        "heading": "Palabras clave de inclusión y exclusión",
+        "body": "• Conservar palabras: sólo se descargarán los archivos que coincidan con cualquiera de estas palabras clave separadas por comas.\n• Saltar palabras: se omitirán los archivos que contengan cualquiera de estas palabras clave.\n• Alcance (Archivos vs Carácter): 'Archivos' coincide con los nombres de archivos. 'Ambos' coincide con nombres de archivos, títulos de publicaciones y etiquetas de caracteres.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Descargas Mega y en la Nube",
+    "icon": "☁️",
+    "summary": "Uso del filtro 'Solo enlaces', extracción de mega enlaces, descarga versus exportación y omisión de cuotas.",
+    "content": [
+      {
+        "heading": "Paso 1: habilite el filtro \"Solo enlaces\"",
+        "body": "En la pestaña Descargador, en Tipos de archivos, seleccione el filtro de radio \"Solo enlaces\". Esto le indica a Pawchive Downloader que omita la descarga de archivos adjuntos de imágenes/videos estándar y, en su lugar, analice las descripciones de las publicaciones, los cuerpos del contenido y los comentarios específicamente para los enlaces incrustados en la nube.",
+        "type": "tip"
+      },
+      {
+        "heading": "Paso 2: elimine el creador o la publicación",
+        "body": "Pegue la URL del creador o de la publicación en la barra de búsqueda y haga clic en \"Scrape & Queue\". El raspador detecta y extrae automáticamente Mega URL (tanto enlaces de carpetas como mega.nz/folder/... como enlaces de archivos individuales como mega.nz/file/...), Google Drive, Dropbox, Bunkr y otros en su repositorio de enlaces cosechados.",
+        "type": "info"
+      },
+      {
+        "heading": "Paso 3: Descarga directa versus exportación de enlace",
+        "body": "• Opción A (Descargar a través de la aplicación): haga clic en 'Descargas en la nube' en la cola o barra de navegación. El descargador en la nube integrado consulta de forma nativa la Mega API, resuelve la jerarquía de carpetas y transmite los archivos AES-CTR descifrados directamente a su disco con trabajadores multiproceso.\n• Opción B (Exportar enlaces): Vaya a la pestaña Exportar/Enlaces y haga clic en 'Exportar enlaces cosechados' para guardar un archivo .txt limpio que contenga todas las Mega URL sin procesar, listo para pegar directamente en JDownloader, MegaSync o aria2.",
+        "type": "info"
+      },
+      {
+        "heading": "Eludir las cuotas de mega ancho de banda (VPN y Proxy)",
+        "body": "Mega limita las cuentas gratuitas a ~5 GB de transferencia cada 6 horas por dirección IP. Cuando se alcanza un límite de cuota:\n• VPN Bypass: cambie su servidor VPN a una ciudad o país diferente para obtener una nueva dirección IP y luego reanude sus descargas.\n• Configuración de proxy: abra Configuración -> Red y proxy e ingrese su URL de proxy HTTP o SOCKS5 (por ejemplo, calcetines5://127.0.0.1:1080). Pawchive enrutará las solicitudes de fragmentos a través del proxy, evitando instantáneamente el bloqueo de cuota.",
+        "type": "warning"
+      }
+    ]
+  },
+  {
+    "title": "Aprendizaje de personajes y carpetas",
+    "icon": "🏷️",
+    "summary": "Organización inteligente de carpetas de personajes, coincidencia de diccionarios y aprendizaje.",
+    "content": [
+      {
+        "heading": "Clasificación automática de subcarpetas",
+        "body": "Cuando la Organización de personajes está habilitada, los archivos se ordenan automáticamente en carpetas con el nombre del personaje detectado (por ejemplo, 'Creador [servicio] / Nombre del personaje / archivo.png').",
+        "type": "info"
+      },
+      {
+        "heading": "Base de datos maestra conocida.txt",
+        "body": "La aplicación viene con un diccionario maestro incorporado de más de 100.000 personajes de anime, juegos y cómics. El tokenizador desglosa los nombres de archivos y coincide con el nombre de personaje más específico.",
+        "type": "info"
+      },
+      {
+        "heading": "Sistema inteligente de aprendizaje de personajes",
+        "body": "Si el nombre de un personaje aparece repetidamente en los títulos o etiquetas de las publicaciones, la aplicación lo aprende dinámicamente y crea carpetas coincidentes incluso si el personaje aún no está en Known.txt.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Cola, simultaneidad y límites de velocidad",
+    "icon": "⚡",
+    "summary": "Hilos de trabajo, detección de límite de velocidad y optimización de velocidad.",
+    "content": [
+      {
+        "heading": "Control deslizante de subprocesos de trabajo",
+        "body": "Ajusta la simultaneidad de descarga paralela (1 a 16 subprocesos). Generalmente, entre 3 y 5 subprocesos es el punto ideal para obtener el máximo rendimiento sin activar la aceleración del servidor.",
+        "type": "tip"
+      },
+      {
+        "heading": "Simultaneidad adaptable y protección 429",
+        "body": "Los servidores espejo de Kemono imponen límites de velocidad. Si el servidor devuelve HTTP 429 (Demasiadas solicitudes), la aplicación reduce automáticamente la concurrencia a 2 subprocesos y aplica una reducción exponencial antes de reanudarse sin problemas.",
+        "type": "warning"
+      },
+      {
+        "heading": "Cola activa versus cola completada",
+        "body": "Utilice la barra de filtro encima de la lista de cola para alternar entre los elementos \"Todos\", \"Descargando\", \"Completado\" y \"Error\". Puede pausar, cancelar o priorizar tareas sobre la marcha.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Reintento automático y manejo de errores",
+    "icon": "🔄",
+    "summary": "El límite de 5 reintentos, el cambio de reintento automático y el modo de reintento.",
+    "content": [
+      {
+        "heading": "Límite de reintentos automáticos (máximo 5 reintentos)",
+        "body": "Para evitar bucles de reintento infinitos en URL rotas o archivos faltantes, el reintento automático intenta un archivo fallido como máximo 5 veces. Si falla en el quinto intento, se marca como \"Detenido después de 5 reintentos\" y se omite de forma segura para que la cola pueda finalizar.",
+        "type": "info"
+      },
+      {
+        "heading": "Reintentar modal (control manual)",
+        "body": "Todos los archivos fallidos se conservan en el modo Reintentar (accesible a través del botón rojo Contador de errores). En este modo, puede inspeccionar los códigos de error, hacer clic en \"Abrir publicación\" para ver la publicación fuente, hacer clic en \"Probar enlace\" o seleccionar archivos específicos para volver a intentarlo manualmente.",
+        "type": "tip"
+      },
+      {
+        "heading": "Reintento automático al final de la cola",
+        "body": "Cuando el 'Reintento automático' está activado, el descargador recorre automáticamente todos los archivos fallidos una vez que la cola principal llega a 0, reintentándolos hasta su límite de 5 intentos antes de concluir.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Lista de seguimiento y verificación automática",
+    "icon": "👁️",
+    "summary": "Seguimiento de artistas, comprobaciones de inicio, contadores no leídos y carpetas personalizadas.",
+    "content": [
+      {
+        "heading": "Agregar creadores a la lista de seguimiento",
+        "body": "Haga clic en el botón Marcador/Lista de seguimiento junto a cualquier creador para agregarlo a su lista de seguimiento. La aplicación recuerda la fecha de su última descarga y la compensación posterior.",
+        "type": "info"
+      },
+      {
+        "heading": "Comprobación automática de inicio e insignias",
+        "body": "Cada artista que tenga habilitada la 'Verificación automática al iniciar' se verificará en segundo plano cuando se abra la aplicación. Los artistas con publicaciones nuevas se ordenan en la parte superior con una notificación vibrante resaltada y un contador exacto de publicaciones nuevas.",
+        "type": "tip"
+      },
+      {
+        "heading": "Carpetas personalizadas por creador",
+        "body": "Puedes asignar a cada artista su propio directorio de descarga dedicado usando el ícono de carpeta al lado de su tarjeta. El descompresor y la cola respetan estos caminos automáticamente.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Descompresor a granel",
+    "icon": "📦",
+    "summary": "Motor 7-Zip, escaneo recursivo de archivos, verificaciones de disco previas al vuelo.",
+    "content": [
+      {
+        "heading": "Motor de alto rendimiento de 7 cremalleras",
+        "body": "Desarrollado por 7za con soporte multiproceso (-mmt). Descubre automáticamente 7za.exe en el directorio de su proyecto, la RUTA del sistema o las instalaciones predeterminadas del programa.",
+        "type": "info"
+      },
+      {
+        "heading": "Escaneo recursivo y detección de múltiples volúmenes",
+        "body": "Explora todas las carpetas de descarga de artistas de forma recursiva en busca de archivos .zip, .rar, .7z, .cbz y .tar. Las partes secundarias de archivos de varios volúmenes (.part2.rar, .002) se filtran de forma inteligente para que solo se extraiga la parte 1.",
+        "type": "tip"
+      },
+      {
+        "heading": "Comprobación de espacio en disco previa al vuelo",
+        "body": "Antes de extraer, el motor calcula el espacio en disco sin comprimir requerido por unidad y le avisa si el espacio libre en disco es insuficiente, evitando escrituras congeladas o unidades dañadas.",
+        "type": "warning"
+      },
+      {
+        "heading": "Eliminar archivos después de la extracción",
+        "body": "Cuando está habilitado, los archivos se eliminan de forma segura solo si 7-Zip sale con el código 0 (extracción verificada). Si un archivo está dañado o protegido con contraseña, se conserva el archivo original.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Informes de escritorio y posteriores a las acciones",
+    "icon": "🌙",
+    "summary": "Activadores de apagado, suspensión, hibernación y el informe resumido automático del escritorio.",
+    "content": [
+      {
+        "heading": "Qué hacer después de finalizar",
+        "body": "Elija una acción automática posterior a la descarga en el menú desplegable en el pie de página de la cola: \"Cerrar aplicación\", \"Suspender\", \"Hibernar\", \"Apagar\" o \"Reiniciar\".",
+        "type": "info"
+      },
+      {
+        "heading": "Cuenta regresiva de seguridad de 15 segundos",
+        "body": "Antes de que su computadora se apague o entre en suspensión, aparece una cuenta regresiva de 15 segundos en la pantalla con un botón destacado de \"Cancelar\" para que pueda detener la acción si aún está trabajando.",
+        "type": "tip"
+      },
+      {
+        "heading": "Informe de escritorio automático (HTML y TXT)",
+        "body": "Siempre que hay activa una acción posterior a la descarga, la aplicación compila un informe resumido completo y lo guarda directamente en su escritorio. El informe presenta creadores completos, uso de espacio en disco y enlaces completos en los que se puede hacer clic para cualquier archivo que falló.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Actualizador en la aplicación",
+    "icon": "🔄",
+    "summary": "Actualizaciones de código fuente versus compiladas, seguimiento de confirmaciones de GitHub y reinicios seguros.",
+    "content": [
+      {
+        "heading": "Detección inteligente (main.py vs .exe)",
+        "body": "El actualizador detecta si está ejecutando desde una fuente Python o desde un .exe independiente compilado. Para las ejecuciones de código fuente, realiza un seguimiento de las confirmaciones en la rama principal para que reciba actualizaciones en cada envío. Para ejecuciones .exe, verifica las versiones de GitHub.",
+        "type": "info"
+      },
+      {
+        "heading": "Actualizar insignia y notificaciones",
+        "body": "Cuando se encuentra una nueva actualización, aparece una pastilla brillante '✨ Actualización' en la barra de navegación superior. Al hacer clic en él, se abre el cuadro de diálogo Actualizar que muestra las notas de confirmación y el progreso de la descarga.",
+        "type": "tip"
+      },
+      {
+        "heading": "Traspaso seguro de Windows",
+        "body": "La actualización protege todos sus archivos personales: su lista de seguimiento, configuración y archivos descargados nunca se sobrescriben. Un script auxiliar independiente espera a que la aplicación se cierre, actualiza los archivos y se reinicia automáticamente.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Bóveda de enlaces permanentes y contraseñas",
+    "icon": "🗝️",
+    "summary": "Archivado de enlaces en la nube sin límite, contraseñas multilingües, rescate entre publicaciones y sincronización con Decompressor.",
+    "content": [
+      {
+        "heading": "Archivo persistente de texto sin formato",
+        "body": "Link Vault almacena permanentemente todos los enlaces de la nube (Mega, Google Drive, Dropbox, Pixeldrain, Bunkr, etc.) extraídos de sus sesiones de descarga en config/link_vault.json con copias de seguridad atómicas automáticas. Los enlaces se agrupan en una vista intuitiva de árbol Creador > Publicaciones > Enlaces.",
+        "type": "intro"
+      },
+      {
+        "heading": "Resolver contraseñas multilingües",
+        "body": "Identifica automáticamente contraseñas de archivo en inglés, japonés (パスワード), chino (密码), ruso (пароль), coreano (암호), francés y alemán mediante puntuación de distancia ponderada por proximidad. Muestra contraseñas junto a cada enlace con copia con 1 clic.",
+        "type": "tip"
+      },
+      {
+        "heading": "Raspador de comentarios y publicaciones cruzadas de 1 salto",
+        "body": "Cuando los artistas publican anuncios de actualización que enlazan con otras publicaciones u ocultan contraseñas dentro de los comentarios, Link Vault sigue enlaces entre publicaciones (1 salto) y analiza los comentarios de los creadores para descubrir todos los destinos de descarga y contraseñas ocultos.",
+        "type": "info"
+      },
+      {
+        "heading": "Alimentación automática al descompresor a granel",
+        "body": "Haga clic en 'Sincronizar contraseñas con Decompressor' para exportar automáticamente todas las contraseñas recopiladas a la lista de contraseñas de Decompressor, lo que permite una extracción de archivos sin problemas y sin problemas.",
+        "type": "tip"
+      },
+      {
+        "heading": "Live Health Prober y limpieza de enlaces muertos",
+        "body": "Haga clic en 'Verificar el estado del enlace' para sondear enlaces en paralelo sin bloqueo. Los enlaces inactivos o eliminados se marcan en rojo y \"Limpiar enlaces inactivos\" le permite eliminar enlaces no funcionales con un solo clic.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Grupos de almacenamiento de unidades múltiples",
+    "icon": "💽",
+    "summary": "Expansión automática entre discos duros de respaldo para evitar fallas del tipo \"No queda espacio en el dispositivo\".",
+    "content": [
+      {
+        "heading": "Eliminación de fallas de disco lleno",
+        "body": "Los archivos de artistas de gran tamaño pueden saturar fácilmente un solo disco duro. Los grupos de almacenamiento monitorean la capacidad del disco antes de escribir cada flujo de archivos. Cuando la unidad principal cae por debajo de su margen de seguridad (por ejemplo, 10 GB), los archivos posteriores se enrutan automáticamente a las unidades secundarias.",
+        "type": "intro"
+      },
+      {
+        "heading": "Preservación de la jerarquía de carpetas",
+        "body": "Cuando se desborda a una unidad secundaria, Pawchive replica la jerarquía de carpetas idéntica (por ejemplo, 'E:/Kemono/Patreon/Artist/Post/file.mp4'). La organización de sus archivos permanece completamente consistente en todas las unidades físicas.",
+        "type": "info"
+      },
+      {
+        "heading": "Agregar grupos de almacenamiento secundarios",
+        "body": "Vaya a Configuración -> Almacenamiento y procesamiento de archivos -> Desbordamiento de unidades múltiples, habilite la función y haga clic en 'Agregar unidad/carpeta de desbordamiento' para seleccionar discos duros adicionales o recursos compartidos de red.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Importador de cookies del navegador con 1 clic",
+    "icon": "🍪",
+    "summary": "Extracción directa de sesiones de Chrome, Edge, Brave, Opera, Firefox y monitoreo de caducidad en tiempo real.",
+    "content": [
+      {
+        "heading": "No se requieren herramientas de desarrollo (Firefox, Edge, Brave)",
+        "body": "No es necesario abrir F12 Developer Tools ni copiar manualmente las cookies de sesión. Pawchive lee de forma segura la base de datos de cookies de su navegador instalado a través de Windows DPAPI y AES-256-GCM sin bloquear las pestañas abiertas del navegador.\n\nSimplemente vaya a Configuración → Red y autenticación, seleccione su navegador (o déjelo en Detección automática) y haga clic en ⚡ Importar desde navegador. Se recomiendan Firefox, Edge y Opera GX para la importación automática.",
+        "type": "intro"
+      },
+      {
+        "heading": "Vigilancia de vencimientos en tiempo real",
+        "body": "La insignia de vencimiento rastrea la validez restante de la sesión:\n🟢 Activo · Sesión verificada: saludable, no es necesario realizar ninguna acción\n🟡 Vence pronto (Xh queda): vuelva a importar pronto\n🔴 Sesión caducada: vuelva a importarla inmediatamente\n\nLa insignia se actualiza cada 60 segundos para que siempre sepas antes de que falle una descarga a mitad de la sesión.",
+        "type": "info"
+      },
+      {
+        "heading": "⚠️ Google Chrome 127+: se requiere extracción manual de cookies",
+        "body": "Google Chrome 127 introdujo el cifrado vinculado a aplicaciones que evita que cualquier herramienta externa lea la base de datos de cookies de Chrome. Si utiliza Chrome como navegador principal, tiene dos opciones:\n\n• Recomendado: inicie sesión en kemono.su / coomer.su en Mozilla Firefox o Microsoft Edge y utilice el importador 1-Click desde allí.\n\n• Manual (cualquier navegador): copie la cadena de cookies de su sesión manualmente usando DevTools (consulte la siguiente tarjeta para obtener instrucciones paso a paso).",
+        "type": "warning"
+      },
+      {
+        "heading": "Extracción manual: Chrome/cualquier navegador (paso a paso)",
+        "body": "1. Abra su navegador e inicie sesión en kemono.su o coomer.su.\n\n2. Presione F12 para abrir Herramientas de desarrollador (o haga clic derecho en la página → Inspeccionar).\n\n3. Haga clic en la pestaña Aplicación en la parte superior de DevTools (es posible que deba hacer clic en ≫ para verla).\n\n4. En la barra lateral izquierda, expanda Almacenamiento → Cookies → https://kemono.su (o coomer.su).\n\n5. Busque una cookie llamada 'sesión'; haga clic en ella y copie el Valor completo del panel inferior.\n\n6. En Pawchive, vaya al campo Configuración → Red y autenticación → Cookie de sesión.\n\n7. Escriba: session= y pegue su valor justo después. Ejemplo:\n   sesión=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n\n8. Opcionalmente, agregue cf_clearance de la misma manera, separado por un punto y coma:\n   sesión=ABC123; cf_clearance=XYZ789\n\n9. Haga clic en Guardar configuración. Su cookie ahora está activa.",
+        "type": "tip"
+      },
+      {
+        "heading": "Dónde encontrar cada galleta",
+        "body": "• kemono.su / coomer.su → Nombre de la cookie: 'sesión'\n• Patreon.com → Nombre de la cookie: 'session_id' (que se encuentra en www.patreon.com)\n• Fanbox (fanbox.cc) → Nombre de la cookie: 'FANBOXSESSID'\n• Omisión de Cloudflare → Nombre de la cookie: 'cf_clearance' (mismo dominio que el sitio al que accede)\n\nSolo necesita una cookie para cualquier sitio desde el que esté descargando. No los necesitas todos.",
+        "type": "info"
+      }
+    ]
+  },
+  {
+    "title": "Programador de tareas y centro de automatización",
+    "icon": "⏰",
+    "summary": "Sincronización delta de lista de seguimiento automatizada, copias de seguridad programadas de creadores, ventanas Night Owl y límites de subprocesos bloqueados.",
+    "content": [
+      {
+        "heading": "Automatización de archivos manos libres",
+        "body": "Cree tareas recurrentes en segundo plano para sondear su lista de seguimiento en busca de nuevas publicaciones cada pocas horas o programe copias de seguridad periódicas de los creadores en horarios diarios fijos (por ejemplo, a las 03:00 a. m.).",
+        "type": "intro"
+      },
+      {
+        "heading": "Hilos bloqueados por el usuario y modo de retardo",
+        "body": "Si ha ajustado cuidadosamente el número de subprocesos de trabajo y el retraso de descarga para su conexión, habilite 'Bloquear subprocesos personalizados y retraso'. Esto evita estrictamente que los algoritmos adaptativos o las tareas de barrido en segundo plano alteren su configuración personalizada.",
+        "type": "tip"
+      },
+      {
+        "heading": "Ventana de no horas pico para noctámbulos",
+        "body": "Configure una ventana de descarga fuera de las horas pico (por ejemplo, de 01:00 a 07:00). Las tareas programadas se pondrán en cola y se pausarán hasta que se abra la ventana de menor actividad, maximizando las velocidades de descarga cuando el ancho de banda del ISP sea más barato.",
+        "type": "info"
+      },
+      {
+        "heading": "Prevención de suspensión de Windows (permanecer despierto)",
+        "body": "Activa los indicadores de estado de ejecución del kernel de Windows (ES_SYSTEM_REQUIRED) mientras se descargan activamente las tareas automatizadas, manteniendo su PC activa durante la noche sin cambiar la configuración de energía de Windows.",
+        "type": "tip"
+      }
+    ]
+  },
+  {
+    "title": "Referencia completa de información sobre herramientas",
+    "icon": "💡",
+    "summary": "Hoja de referencia rápida que explica cada botón, ícono e insignia en la interfaz.",
+    "content": [
+      {
+        "heading": "Iconos de navegación del encabezado",
+        "body": "• ❓ Tutorial: Abre esta guía interactiva.\n• ✨ Actualización: indica que hay una versión más nueva disponible en GitHub.\n• ⚙️ Configuración: abre la configuración de la aplicación (directorio de descarga, simultaneidad, proxy).\n• 📜 Consola: abre la ventana de registro de red y actividad en tiempo real.",
+        "type": "info"
+      },
+      {
+        "heading": "Botones de cola y filtro",
+        "body": "• Reintento automático: reinicia automáticamente las descargas fallidas al final de la cola.\n• Modo Manga: Normaliza los nombres de archivos de imágenes para un orden de lectura secuencial limpio.\n• Concurrencia adaptable: ajusta automáticamente los subprocesos cuando se alcanzan los límites de velocidad del servidor.\n• 📂 Icono de carpeta: abre la carpeta de descarga de destino en el Explorador de archivos de Windows.",
+        "type": "tip"
+      },
+      {
+        "heading": "Controles de Link Vault y Programador",
+        "body": "• 🗝️ Link Vault: archivo permanente de todos los enlaces de nube recopilados y contraseñas extraídas.\n• ⏰ Programador: centro de automatización para sincronizaciones recurrentes de listas de vigilancia y tareas de Night Owl.\n• 🔒 Bloquear subprocesos: protege el recuento de subprocesos personalizados y los retrasos de la red contra la aceleración automática.\n• 💽 Grupos de almacenamiento: replica árboles de carpetas en unidades secundarias cuando hay poco espacio en disco.\n• 🍪 Importador de cookies: extractor de sesión del navegador con 1 clic y control de caducidad en tiempo real.",
+        "type": "info"
+      },
+      {
+        "heading": "Reintentar acciones modales",
+        "body": "• 🔗 Abrir publicación: abre la publicación fuente en Kemono/Coomer en su navegador web.\n• 📥 Enlace de prueba: prueba o descarga el archivo directamente en su navegador.\n• 🔁 Probado Nx: muestra cuántas veces se ha reintentado el archivo.\n• 🛑 5/5 reintentos máximos: indica que el reintento automático dejó de intentar este archivo.",
+        "type": "info"
+      }
+    ]
+  }
+]

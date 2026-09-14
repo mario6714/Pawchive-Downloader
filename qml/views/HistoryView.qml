@@ -63,6 +63,8 @@ Rectangle {
                 font.pixelSize: 14
                 font.weight: Font.Bold
                 color: "#F8FAFC"
+                Layout.minimumWidth: 0
+                elide: Text.ElideRight
             }
 
             Rectangle {
@@ -79,18 +81,20 @@ Rectangle {
             Item { Layout.fillWidth: true }
 
             StyledButton {
-                text: root.tr("btn_refresh", "Refresh")
+                text: root.width < 450 ? "" : root.tr("btn_refresh", "Refresh")
                 iconText: "🔄"
                 variant: "outline"
                 implicitHeight: 28
+                tooltip: root.tr("btn_refresh", "Refresh")
                 onClicked: historyListModel.reload()
             }
 
             StyledButton {
-                text: root.tr("btn_clear_history", "Clear History")
+                text: root.width < 450 ? "" : root.tr("btn_clear_history", "Clear History")
                 iconText: "🗑"
                 variant: "ghost"
                 implicitHeight: 28
+                tooltip: root.tr("btn_clear_history", "Clear History")
                 onClicked: {
                     // Clear is not destructive to downloads, only the history list
                     historyListModel.clear()
@@ -118,11 +122,12 @@ Rectangle {
 
                 delegate: Rectangle {
                     width: historyList.width - 12
-                    height: 64
+                    height: (root.width < 400) ? 68 : 64
                     radius: 6
                     color: hoverArea.pressed ? "#161B28" : (hoverArea.containsMouse ? "#1E2436" : "#1A1E29")
                     border.color: hoverArea.containsMouse ? "#38BDF8" : "#282E3D"
                     border.width: 1
+                    clip: true
 
                     scale: hoverArea.pressed ? 0.98 : (hoverArea.containsMouse ? 1.012 : 1.0)
                     transformOrigin: Item.Center
@@ -148,16 +153,16 @@ Rectangle {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
                         anchors.topMargin: 8
                         anchors.bottomMargin: 8
-                        spacing: 12
+                        spacing: 8
 
                         // Service pill
                         Rectangle {
-                            width: Math.max(58, svcLabel.implicitWidth + 10)
-                            height: 22
+                            Layout.preferredWidth: Math.max(54, svcLabel.implicitWidth + 8)
+                            Layout.preferredHeight: 22
                             radius: 4
                             color: {
                                 var s = model.service.toLowerCase()
@@ -185,7 +190,8 @@ Rectangle {
                         // Creator info
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 3
+                            Layout.minimumWidth: 0
+                            spacing: 2
 
                             Text {
                                 text: model.creator
@@ -195,6 +201,7 @@ Rectangle {
                                 color: "#F1F5F9"
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                             }
 
                             Text {
@@ -204,13 +211,15 @@ Rectangle {
                                 color: "#38BDF8"
                                 elide: Text.ElideRight
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 opacity: 0.75
                             }
                         }
 
                         // Stats
                         ColumnLayout {
-                            spacing: 3
+                            Layout.minimumWidth: 0
+                            spacing: 2
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
 
                             Row {
@@ -230,7 +239,7 @@ Rectangle {
                                 Layout.alignment: Qt.AlignRight
                                 Text { text: "🕐"; font.pixelSize: 10 }
                                 Text {
-                                    text: model.date
+                                    text: (root.width < 420 && model.date) ? model.date.split(" ")[0] : (model.date || "")
                                     font.family: "Cascadia Code, monospace"
                                     font.pixelSize: 10
                                     color: "#64748B"
@@ -240,7 +249,11 @@ Rectangle {
 
                         // Re-download button
                         Rectangle {
-                            width: 28; height: 28; radius: 6
+                            Layout.preferredWidth: 28
+                            Layout.preferredHeight: 28
+                            Layout.minimumWidth: 28
+                            Layout.maximumWidth: 28
+                            radius: 6
                             color: reDownBtn.containsMouse ? "#0EA5E9" : "#1E2A38"
                             border.color: "#38BDF8"
                             border.width: 1

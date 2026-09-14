@@ -36,7 +36,7 @@ Flickable {
         id: vScrollBar
         active: flickRoot.moving || flickRoot.flicking || wheelAnim.running || vScrollHover.hovered
         policy: ScrollBar.AsNeeded
-        width: 8
+        width: 7
         onPressedChanged: {
             if (pressed) {
                 wheelAnim.stop()
@@ -44,6 +44,23 @@ Flickable {
             }
         }
         HoverHandler { id: vScrollHover }
+
+        contentItem: Rectangle {
+            implicitWidth: 7
+            radius: 3.5
+            color: vScrollBar.pressed ? "#38BDF8" : (vScrollBar.hovered ? "#0EA5E9" : (vScrollBar.active ? "#38BDF8" : "#64748B"))
+            opacity: vScrollBar.active ? 0.85 : (flickRoot.contentHeight > flickRoot.height ? 0.35 : 0.0)
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+            Behavior on color { ColorAnimation { duration: 150 } }
+        }
+
+        background: Rectangle {
+            implicitWidth: 7
+            radius: 3.5
+            color: "#0F172A"
+            opacity: flickRoot.contentHeight > flickRoot.height ? 0.25 : 0.0
+            Behavior on opacity { NumberAnimation { duration: 180 } }
+        }
     }
 
     WheelHandler {
