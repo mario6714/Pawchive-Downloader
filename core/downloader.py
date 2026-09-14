@@ -335,6 +335,10 @@ class KemonoDownloader:
         post_folder_registry: Dict[str, str] = {}
         # Track target paths already assigned in this build mapping to metadata: {post_id, post_title, rel_path}
         _batch_paths: Dict[str, Dict[str, Any]] = {}
+        # Guard against duplicate rel_paths within the same post (e.g. Pawchive mirrors
+        # post.file into attachments). With index prefix on, the two entries would otherwise
+        # get different seq_idx values and bypass the target_path collision check.
+        _seen_file_ids: set = set()
         _post_dup_counts: Dict[Tuple[str, str], int] = defaultdict(int)
 
         for post_idx, post in enumerate(posts_to_process, 1):
@@ -770,6 +774,21 @@ class KemonoDownloader:
                 file_url = candidate_urls[0] if candidate_urls else f"https://file.pawchive.pw/data{clean_rel}?f={sanitized_name}"
                 target_path = os.path.join(post_folder, sanitized_name)
                 file_id = f"{post_id}_{clean_rel}"
+
+                # Skip true duplicate files (same post + same rel_path) regardless of
+                # index prefix. Pawchive sometimes mirrors post.file into attachments so
+                # the same underlying file appears twice in files_to_process — with index
+                # prefix enabled they'd get different seq_idx values (001_ / 002_) and
+                # slip past the target_path collision check.
+                if file_id in _seen_file_ids:
+                    folder_file_counts[post_folder] -= 1  # reclaim the wasted index slot
+                    logger.debug(
+                        f"Skipping duplicate file '{clean_rel}' in post '{post_title}' "
+                        f"(same rel_path already queued — likely mirrored in both post.file and attachments).",
+                        category="file"
+                    )
+                    continue
+                _seen_file_ids.add(file_id)
 
                 # Resolve filename collisions: distinguish between duplicate attachments in the SAME post
                 # versus collisions from a DIFFERENT post (e.g. when subfolders are disabled).
