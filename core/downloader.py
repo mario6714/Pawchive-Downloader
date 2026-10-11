@@ -1991,10 +1991,12 @@ class KemonoDownloader:
         Automatic retries pass include_cancelled=False so files the user stopped stay stopped.
         """
         skip_404 = (
-            getattr(self.current_options, "skip_retry_404", False)
-            if self.current_options
-            else getattr(options, "skip_retry_404", False)
+            getattr(options, "skip_retry_404", False)
+            if options is not None
+            else getattr(self.current_options, "skip_retry_404", False)
         )
+        if self.current_options and options is not None:
+            self.current_options.skip_retry_404 = skip_404
         retry_statuses = ("failed", "cancelled") if include_cancelled else ("failed",)
         all_failed = [
             t for t in self.tasks
@@ -2066,10 +2068,17 @@ class KemonoDownloader:
             return 0
 
         skip_404 = (
-            getattr(self.current_options, "skip_retry_404", False)
-            if self.current_options
-            else getattr(options, "skip_retry_404", False)
+            getattr(options, "skip_retry_404", False)
+            if options is not None
+            else getattr(self.current_options, "skip_retry_404", False)
         )
+        if self.current_options and options is not None:
+            self.current_options.skip_retry_404 = skip_404
+
+        if skip_404:
+            for t in self.tasks:
+                if t.status == "pending" and ("404" in str(getattr(t, "error_msg", "")).lower() or getattr(t, "http_status", 0) == 404):
+                    t.status = "failed"
         selected_set = set(selected_ids)
         target_tasks = []
         for t in self.tasks:
@@ -2193,7 +2202,21 @@ class KemonoDownloader:
             lock_label = " (Locked)" if is_locked else ""
             logger.info(f"Starting download pool with {self.max_workers} worker threads{lock_label}...", category="downloader")
 
-        self._run_tasks = [t for t in self.tasks if t.status == "pending"]
+        skip_404_active = (
+            getattr(options, "skip_retry_404", False)
+            if options is not None
+            else getattr(self.current_options, "skip_retry_404", False)
+        )
+        if skip_404_active:
+            for t in self.tasks:
+                if t.status == "pending" and ("404" in str(getattr(t, "error_msg", "")).lower() or getattr(t, "http_status", 0) == 404):
+                    t.status = "failed"
+            self._run_tasks = [
+                t for t in self.tasks
+                if t.status == "pending" and not ("404" in str(getattr(t, "error_msg", "")).lower() or getattr(t, "http_status", 0) == 404)
+            ]
+        else:
+            self._run_tasks = [t for t in self.tasks if t.status == "pending"]
         self._already_there = Counter()          # files found downloaded already (counted in the log file)
         logger.debug("Download settings saved to the log file.", category="downloader",
                      details=self._describe_run(options, cookie_str, len(self._run_tasks)))
@@ -2385,7 +2408,7 @@ class KemonoDownloader:
                         if auto_retry_active and not self._cancel_event.is_set():
                             skip_404 = (
                                 getattr(self.current_options, "skip_retry_404", False)
-                                if self.current_options
+                                if self.current_options is not None
                                 else getattr(options, "skip_retry_404", False)
                             )
                             all_failed = [t for t in self.tasks if t.status == "failed"]

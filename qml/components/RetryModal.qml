@@ -54,8 +54,12 @@ Rectangle {
 
         function appendPage(list) {
             var rows = []
+            var skip404 = modalRoot.bridge ? modalRoot.bridge.skipRetry404 : false
             for (var i = 0; i < list.length; i++) {
                 var item = list[i]
+                if (skip404 && item.errorMsg && item.errorMsg.indexOf("404") !== -1) {
+                    continue
+                }
                 rows.push({
                     fileId: item.fileId || "",
                     filename: item.filename || "",
@@ -84,9 +88,13 @@ Rectangle {
 
         function getSelectedIds() {
             var res = []
+            var skip404 = modalRoot.bridge ? modalRoot.bridge.skipRetry404 : false
             for (var i = 0; i < count; i++) {
                 var item = get(i)
                 if (item.isSelected) {
+                    if (skip404 && item.errorMsg && item.errorMsg.indexOf("404") !== -1) {
+                        continue
+                    }
                     res.push(item.fileId || item.url || item.filename)
                 }
             }
@@ -314,6 +322,7 @@ Rectangle {
                             if (modalRoot.bridge) {
                                 modalRoot.bridge.skipRetry404 = val
                             }
+                            failedItemsModel.populate()
                         }
                     }
 

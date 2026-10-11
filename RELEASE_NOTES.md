@@ -2,6 +2,7 @@
 
 * **Cleared failed files stay cleared**: Files you removed in the Retry Failed window no longer come back after restarting the app, whether you cleared all of them or only some.
 * **Resuming a download doesn't bring them back either**: Continuing an interrupted download no longer adds the failed files you already cleared back into Retry Failed.
+* **Skipping 404 errors in the retry window now works reliably**: Turning on "Skip 404s" strictly prevents those missing files from being re-attempted, even if they were already selected before you flipped the switch.
 
 ---
 

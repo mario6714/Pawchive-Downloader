@@ -1,8 +1,8 @@
 {
-    "version": "1.2.6",
-    "commit": "05170271d302f024fa50e5acce46de9524fc23db",
-    "short_commit": "0517027",
-    "date": "2026-10-10",
+    "version": "1.2.7",
+    "commit": "",
+    "short_commit": "",
+    "date": "2026-10-11",
     "channel": "release",
     "history": [
         {
@@ -139,6 +139,11 @@
             "version": "1.2.6",
             "date": "2026-10-10",
             "notes": "Huge-library performance overhaul (archive, queue, Retry Failed, Watchlist, Link Vault, Known Series, Decompressor), compress pictures, videos and animated pictures from the Decompressor or the Gallery, change an artist's download folder, Windows/Linux shared paths, browser sign-in for embedded videos, and many fixes."
+        },
+        {
+            "version": "1.2.7",
+            "date": "2026-10-11",
+            "notes": "Fix Retry Failed cleared items reappearing after restart or resumed downloads, and strictly ignore 404 errors during retry when Skip 404s is enabled."
         }
     ]
 }

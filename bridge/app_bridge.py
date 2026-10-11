@@ -1212,6 +1212,19 @@ class AppBridge(QObject):
             self.saveSettings()
             if hasattr(self.downloader, "current_options") and self.downloader.current_options:
                 self.downloader.current_options.skip_retry_404 = val
+            if val:
+                tasks_to_update = []
+                if hasattr(self, "_queue_model") and self._queue_model:
+                    for t in self._queue_model.getTasks():
+                        if t.status == "pending" and ("404" in str(getattr(t, "error_msg", "")).lower() or getattr(t, "http_status", 0) == 404):
+                            t.status = "failed"
+                            tasks_to_update.append(t)
+                    for t in tasks_to_update:
+                        self._queue_model.updateTask(t)
+                if hasattr(self, "downloader") and self.downloader:
+                    for t in self.downloader.tasks:
+                        if t.status == "pending" and ("404" in str(getattr(t, "error_msg", "")).lower() or getattr(t, "http_status", 0) == 404):
+                            t.status = "failed"
             if hasattr(self, "_queue_model") and self._queue_model:
                 self._queue_model.failedCountChanged.emit()
 
@@ -4030,7 +4043,19 @@ class AppBridge(QObject):
     @Slot("QVariantList")
     def retrySelectedTasks(self, selected_ids: list):
         """Retries only selected failed tasks."""
-        self._start_retry([str(i) for i in (selected_ids or []) if i], True)
+        ids = [str(i) for i in (selected_ids or []) if i]
+        if self._skip_retry_404 and ids:
+            queue_tasks = self._queue_model.getTasks() if self._queue_model else []
+            key = KemonoDownloader.task_key
+            non_404_ids = set()
+            for t in (queue_tasks or self.downloader.tasks):
+                k = key(t)
+                if k in ids:
+                    is_404 = "404" in str(getattr(t, "error_msg", "")).lower() or getattr(t, "http_status", 0) == 404
+                    if not is_404:
+                        non_404_ids.add(k)
+            ids = [i for i in ids if i in non_404_ids]
+        self._start_retry(ids, True)
 
     @Slot(str)
     def retrySingleTask(self, file_id: str):

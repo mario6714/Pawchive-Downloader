@@ -1095,11 +1095,15 @@ class QueueModel(QAbstractListModel):
     def retryBatch(self, batch_id: str):
         if not batch_id:
             return
+        p = self.parent()
+        skip_404 = bool(getattr(p, "skipRetry404", False)) if p else False
         self.beginResetModel()
         self._counts_timer.stop()
         for t in self._tasks:
             bid = getattr(t, "batch_id", "") or f"{t.service}_{t.creator_name}_{t.post_id}".strip("_")
             if bid == batch_id and (t.status in ("failed", "cancelled") or t.status == "pending"):
+                if skip_404 and self._is_404(t):
+                    continue
                 t.status = "pending"
                 t.error_msg = ""
                 t.retry_count = getattr(t, "retry_count", 0) + 1
@@ -1272,10 +1276,13 @@ class QueueModel(QAbstractListModel):
     @Slot()
     def retryFailed(self):
         """Flags all failed and cancelled tasks as pending and emits retryRequested."""
+        p = self.parent()
+        skip_404 = bool(getattr(p, "skipRetry404", False)) if p else False
         failed = [
             t for t in self._tasks
-            if t.status in ("failed", "cancelled")
-            or (t.status == "pending" and (getattr(t, "retry_count", 0) > 0 or getattr(t, "error_msg", "")))
+            if (t.status in ("failed", "cancelled")
+                or (t.status == "pending" and (getattr(t, "retry_count", 0) > 0 or getattr(t, "error_msg", ""))))
+            and not (skip_404 and self._is_404(t))
         ]
         if not failed:
             return
@@ -1412,9 +1419,13 @@ class QueueModel(QAbstractListModel):
     @Slot("QVariantList")
     def retrySelected(self, selected_file_ids: List[str]):
         """Flags only the user-selected failed/cancelled tasks for retry."""
+        p = self.parent()
+        skip_404 = bool(getattr(p, "skipRetry404", False)) if p else False
         selected_set = set(selected_file_ids)
         for t in self._tasks:
             if (t.status in ("failed", "cancelled") or t.status == "pending") and ((t.file_id or t.url or t.filename) in selected_set):
+                if skip_404 and self._is_404(t):
+                    continue
                 t.retry_count = getattr(t, "retry_count", 0) + 1
                 t.retry_capped = False
                 t.status = "pending"
