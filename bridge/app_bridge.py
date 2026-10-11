@@ -4109,33 +4109,44 @@ class AppBridge(QObject):
 
         The failed files saved on disk are updated first (and not in the background): the Retry
         Failed button counts them when the queue has none, so updating the queue first made it
-        recount while the old file was still there and keep showing "Retry Failed (1)" (#28)."""
+        recount while the old file was still there and keep showing "Retry Failed (1)" (#28).
+        Cleared files are also taken out of the crash journal, and a save of the failed files still
+        waiting in the background is dropped: either brought them back after a restart."""
+        s_set = set(selected_ids) if selected_ids else None
+
+        def cleared(t) -> bool:
+            if t.status not in ("failed", "cancelled"):
+                return False
+            return s_set is None or t.file_id in s_set or t.url in s_set or t.filename in s_set
+
+        queue_tasks = self._queue_model.getTasks() if self._queue_model else []
+        gone = {id(t): t for t in queue_tasks if cleared(t)}
+        if self.downloader:
+            gone.update((id(t), t) for t in self.downloader.tasks if cleared(t))
+        # What the Retry Failed list holds after this: the queue's failed files, else the saved ones
+        left_in_queue = [t for t in queue_tasks if t.status in ("failed", "cancelled") and id(t) not in gone]
+
         if self.recovery_manager:
-            if selected_ids:
+            if left_in_queue:
+                self.recovery_manager.dump_retries(left_in_queue, async_write=True)
+            elif s_set:
                 spilled = self.recovery_manager.load_retries()
-                if spilled:
-                    s_set = set(selected_ids)
-                    remaining = [
-                        item for item in spilled
-                        if not ((item.get("file_id") if isinstance(item, dict) else getattr(item, "file_id", "")) in s_set
-                                or (item.get("url") if isinstance(item, dict) else getattr(item, "url", "")) in s_set
-                                or (item.get("filename") if isinstance(item, dict) else getattr(item, "filename", "")) in s_set)
-                    ]
-                    if remaining:
-                        self.recovery_manager.dump_retries(remaining, async_write=False)
-                    else:
-                        self.recovery_manager.clear_retries()
+                remaining = [
+                    item for item in spilled
+                    if not ((item.get("file_id") if isinstance(item, dict) else getattr(item, "file_id", "")) in s_set
+                            or (item.get("url") if isinstance(item, dict) else getattr(item, "url", "")) in s_set
+                            or (item.get("filename") if isinstance(item, dict) else getattr(item, "filename", "")) in s_set)
+                ]
+                if remaining:
+                    self.recovery_manager.dump_retries(remaining, async_write=False)
+                else:
+                    self.recovery_manager.clear_retries()
             else:
                 self.recovery_manager.clear_retries()
+            if gone:
+                self.recovery_manager.forget_tasks(list(gone.values()))
         if self.downloader:
-            if selected_ids:
-                s_set = set(selected_ids)
-                self.downloader.tasks = [
-                    t for t in self.downloader.tasks
-                    if not (t.status in ("failed", "cancelled") and (t.file_id in s_set or t.url in s_set or t.filename in s_set))
-                ]
-            else:
-                self.downloader.tasks = [t for t in self.downloader.tasks if t.status not in ("failed", "cancelled")]
+            self.downloader.tasks = [t for t in self.downloader.tasks if not cleared(t)]
         if self._queue_model:
             self._queue_model.clearFailedTasks(selected_ids)
         if self._active_queue_model:

@@ -211,6 +211,22 @@ class QueueJournal:
                         conn.execute("DELETE FROM tasks;")
                         conn.execute("DELETE FROM meta;")
 
+    def remove(self, tasks: Iterable[Any]) -> int:
+        """Removes these files from the saved queue (cleared from Retry Failed: resuming the download
+        brought them back). Returns the number of rows removed."""
+        keys = [(self.task_key(t),) for t in tasks]
+        if not keys or not os.path.exists(self.path):
+            return 0
+        with self._lock:
+            for (k,) in keys:
+                self._fp.pop(k, None)
+            self._saved_len = -1                 # the next save compares the whole queue
+            with self._db() as conn:
+                with conn:
+                    before = conn.total_changes
+                    conn.executemany("DELETE FROM tasks WHERE key = ?;", keys)
+                    return conn.total_changes - before
+
     # ── Reading ───────────────────────────────────────────────────────────────
     def _meta(self, conn) -> Dict[str, str]:
         return {k: v for k, v in conn.execute("SELECT k, v FROM meta;")}

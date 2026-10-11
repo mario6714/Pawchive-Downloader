@@ -38,6 +38,9 @@ class RecoveryManager:
         self._async_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="recovery_writer")
         self._async_checkpoint_busy = threading.Event()   # a background checkpoint write is queued / running
         self._generation = 0   # bumped by discard_recovery(); stale background writes are skipped
+        # Bumped by every change to the failed files saved for Retry Failed: a background save queued
+        # before a newer one (or before the user cleared them) is skipped instead of writing them back
+        self._retry_generation = 0
         # The failed files saved for Retry Failed, kept in memory: the button counts them all the time,
         # and reading the whole file on the window thread each time stalled it (#28 / scaling plan)
         self._cache_lock = threading.Lock()
@@ -323,9 +326,14 @@ class RecoveryManager:
         """Dumps failed retry tasks to disk in compact JSON to keep memory low during long sessions."""
         if not failed_tasks:
             return False
+        with self._write_lock:
+            self._retry_generation += 1
+            generation = self._retry_generation
 
         def _do_dump(tasks_list):
             with self._write_lock:
+                if generation != self._retry_generation:
+                    return False                 # a newer save or a clear came after this one
                 try:
                     raw_tasks = [t.to_dict() if hasattr(t, "to_dict") else t for t in tasks_list]
                     tmp = f"{self.retry_spillover_file}.tmp"
@@ -422,6 +430,7 @@ class RecoveryManager:
     def clear_retries(self) -> bool:
         """Removes the retry spillover file when user manually clears retries or upon app exit."""
         with self._write_lock:
+            self._retry_generation += 1          # a background save still queued mustn't bring them back
             if os.path.exists(self.retry_spillover_file):
                 try:
                     os.remove(self.retry_spillover_file)
@@ -432,6 +441,23 @@ class RecoveryManager:
                     logger.debug(f"Could not remove retry spillover file: {ex}", category="session")
             self._set_retry_cache([])
             return False
+
+    def forget_tasks(self, tasks: List[Any]) -> None:
+        """Removes files cleared from Retry Failed from the crash journal too: resuming an interrupted
+        download put them back. Runs after the journal saves already queued, in the background."""
+        tasks = list(tasks or [])
+        if not tasks:
+            return
+
+        def _job():
+            with self._write_lock:
+                try:
+                    removed = safe_journal_call(lambda: self.journal.remove(tasks), 0)
+                    if removed:
+                        logger.debug(f"Removed {removed} cleared file(s) from the recovery journal.", category="session")
+                except Exception as e:
+                    logger.debug(f"Couldn't remove cleared files from the recovery journal: {e}", category="session")
+        self._async_executor.submit(_job)
 
     def load_checkpoint(self) -> Optional[Dict[str, Any]]:
         """
