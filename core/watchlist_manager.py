@@ -987,17 +987,26 @@ class WatchlistManager:
         if cutoff_id:
             known_day_ids.add(cutoff_id)
 
-        # Auto-heal numeric name if needed
-        if (entry.creator_name == entry.user_id or not entry.creator_name) and hasattr(api_client, "resolve_creator_name"):
+        # Auto-heal creator name if missing, numeric, or if duplicate names exist across distinct accounts
+        has_duplicate_name = any(
+            e is not entry and e.service.lower() == entry.service.lower() and e.creator_name and e.creator_name.lower() == entry.creator_name.lower()
+            for e in self.entries
+        )
+        if (entry.creator_name == entry.user_id or not entry.creator_name or has_duplicate_name) and hasattr(api_client, "resolve_creator_name"):
             try:
                 resolved = api_client.resolve_creator_name(parsed)
-                if resolved and resolved != entry.user_id:
+                if resolved and resolved != entry.user_id and resolved != entry.creator_name:
+                    old_name = entry.creator_name
                     self.add_entry(
                         url=entry.url,
                         creator_name=resolved,
                         user_id=entry.user_id,
                         service=entry.service,
                         domain=entry.domain
+                    )
+                    logger.info(
+                        f"Auto-healed creator name for [{entry.service}] {entry.user_id}: {old_name!r} -> {resolved!r}",
+                        category="watchlist"
                     )
             except Exception:
                 pass
@@ -1108,6 +1117,16 @@ class WatchlistManager:
 
     def to_json_list(self) -> str:
         """Return JSON string of all entries (for QML consumption)."""
+        def _post_file_count(p: dict) -> int:
+            f = p.get("file")
+            atts = [a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]
+            f_path = (f.get("path") or f.get("storageKey") or "").strip().lower() if isinstance(f, dict) else ""
+            att_paths = {(a.get("path") or a.get("storageKey") or "").strip().lower() for a in atts}
+            unique = len(att_paths)
+            if f_path and f_path not in att_paths:
+                unique += 1
+            return unique or (1 if f else len(atts))
+
         data = []
         for e in self.entries:
             data.append({
@@ -1128,7 +1147,7 @@ class WatchlistManager:
                         "id": str(p.get("id", "")),
                         "title": (p.get("title") or "Untitled").strip(),
                         "published": str(p.get("published") or p.get("added") or "")[:10],
-                        "fileCount": (1 if (p.get("file") and isinstance(p.get("file"), dict) and (p.get("file").get("path") or p.get("file").get("storageKey"))) else 0) + len([a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]),
+                        "fileCount": _post_file_count(p),
                     }
                     for p in getattr(e, "cached_new_posts", [])
                 ],

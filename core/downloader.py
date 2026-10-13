@@ -1061,7 +1061,7 @@ class KemonoDownloader:
                         for _att in (post.get("attachments") or []):
                             if isinstance(_att, dict) and (_att.get("path") or _att.get("storageKey")):
                                 _k = self.extract_norm_rel_key(_att)
-                                if not options.keep_duplicates and _k and _k in seen_info_keys:
+                                if _k and _k in seen_info_keys:
                                     continue
                                 if _k:
                                     seen_info_keys.add(_k)
@@ -1205,7 +1205,7 @@ class KemonoDownloader:
                                 continue
 
                         k = self.extract_norm_rel_key(att)
-                        if not options.keep_duplicates and k and k in seen_post_file_keys:
+                        if k and k in seen_post_file_keys:
                             # Upgrade metadata if att has non-preview or better name
                             idx = seen_post_file_keys[k]
                             existing = files_to_process[idx]
@@ -1229,7 +1229,7 @@ class KemonoDownloader:
                     for ci in content_imgs:
                         ci_dict = {"name": os.path.basename(ci), "path": ci}
                         k = self.extract_norm_rel_key(ci_dict)
-                        if not options.keep_duplicates and k and k in seen_post_file_keys:
+                        if k and k in seen_post_file_keys:
                             continue
                         if k:
                             seen_post_file_keys[k] = len(files_to_process)
@@ -1517,7 +1517,7 @@ class KemonoDownloader:
                     prev_rel = prev_entry.get("rel_path", "")
 
                     # Check if identical file attached twice in the same post
-                    if prev_post_id == post_id and prev_rel == clean_rel and not options.keep_duplicates:
+                    if prev_post_id == post_id and prev_rel == clean_rel:
                         logger.debug(
                             f"Skipping identical duplicate attachment: '{sanitized_name}' in post '{post_title}'",
                             category="file", to_file=False

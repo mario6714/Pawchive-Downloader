@@ -2864,10 +2864,14 @@ class AppBridge(QObject):
                                     break
 
                     post_files = []
+                    seen_selection_keys = set()
                     # 1. Main post file
                     if f and isinstance(f, dict) and (f.get("path") or f.get("storageKey")):
                         mf_name = f.get("name") or os.path.basename(f.get("path", "") or "main_file")
                         mf_path = f.get("path") or ""
+                        mf_key = KemonoDownloader.extract_norm_rel_key(f) or mf_path.lower()
+                        if mf_key:
+                            seen_selection_keys.add(mf_key)
                         mf_thumb = ""
                         if mf_path and (_is_image(mf_path) or _is_image(mf_name)):
                             clean_p = mf_path if mf_path.startswith("/") else f"/{mf_path}"
@@ -2886,6 +2890,16 @@ class AppBridge(QObject):
                     # 2. Attachments
                     for att in p.get("attachments", []) or []:
                         if isinstance(att, dict) and (att.get("path") or att.get("storageKey")):
+                            att_key = KemonoDownloader.extract_norm_rel_key(att) or (att.get("path") or "").lower()
+                            if att_key and att_key in seen_selection_keys:
+                                # Identical file already listed from post.file (Kemono API schema duplicate)
+                                att_name = att.get("name") or os.path.basename(att.get("path", "") or "")
+                                if att_name and not att_name.lower().startswith("cover") and not att_name.lower().startswith("preview") and post_files:
+                                    if post_files[0].get("is_main"):
+                                        post_files[0]["name"] = att_name
+                                continue
+                            if att_key:
+                                seen_selection_keys.add(att_key)
                             att_name = att.get("name") or os.path.basename(att.get("path", "") or "attachment")
                             att_path = att.get("path") or ""
                             att_thumb = ""
@@ -3003,7 +3017,14 @@ class AppBridge(QObject):
 
                     p_service = p.get("service") or "post"
                     p_user = p.get("username") or p.get("user") or ""
-                    post_files_count = (1 if p.get("file") else 0) + len(p.get("attachments") or [])
+                    f_dict = p.get("file")
+                    atts = [a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]
+                    f_key = KemonoDownloader.extract_norm_rel_key(f_dict) if isinstance(f_dict, dict) else ""
+                    att_keys = {KemonoDownloader.extract_norm_rel_key(a) for a in atts if KemonoDownloader.extract_norm_rel_key(a)}
+                    unique_count = len(att_keys)
+                    if f_key and f_key not in att_keys:
+                        unique_count += 1
+                    post_files_count = unique_count or (1 if f_dict else len(atts))
                     cards.append({
                         "id": pid,
                         "title": f"[{p_user}] {title}" if p_user else title,
@@ -5729,6 +5750,32 @@ class AppBridge(QObject):
                         if not existing:
                             t0 = c_tasks[0]
                             existing = next((e for e in self._watchlist_manager.entries if e.service.lower() == svc and (e.creator_name.lower() == t0.creator_name.lower() or e.user_id.lower() == t0.creator_name.lower())), None)
+                            if not existing:
+                                t_uid = (getattr(t0, "user_id", "") or uid).strip()
+                                t_svc = (getattr(t0, "service", "") or svc).strip()
+                                is_external = getattr(t0, "is_ytdlp", False) or getattr(t0, "is_telegram", False) or t_svc.lower() in ("bunkr", "coomer_bunkr", "kemono_bunkr", "external")
+                                if t_uid and t_svc and not is_external:
+                                    t_name = getattr(t0, "creator_name", "").strip() or t_uid
+                                    t_domain = getattr(t0, "domain", "") or ("coomer.st" if t_svc.lower() in ("onlyfans", "fansly", "candfans") else "pawchive.pw")
+                                    t_url = getattr(t0, "artist_url", "") or f"https://{t_domain}/{t_svc}/user/{t_uid}"
+                                    t_dir = self.extract_artist_folder_from_path(
+                                        t0.target_path,
+                                        t_name,
+                                        t_svc,
+                                        fallback_dir=self._download_dir
+                                    )
+                                    self._watchlist_manager.add_entry(
+                                        url=t_url,
+                                        creator_name=t_name,
+                                        user_id=t_uid,
+                                        service=t_svc,
+                                        domain=t_domain,
+                                        last_post_id=eff_pid,
+                                        last_post_date=eff_date,
+                                        download_dir=t_dir,
+                                        options=self._get_filter_options().to_dict(),
+                                    )
+                                    existing = self._watchlist_manager._find(t_uid, t_svc)
 
                         if existing:
                             done_posts += self._watchlist_pending_updates.pop((existing.service.lower(), existing.user_id.lower()), None) or []
@@ -5770,31 +5817,6 @@ class AppBridge(QObject):
                                     fallback_dir=self._download_dir
                                 )
                                 self._watchlist_manager.set_download_dir(existing.user_id, existing.service, t_dir)
-
-                    url_clean = (self._current_url or "").strip()
-                    from core.parser import KemonoURLParser
-                    _parsed = KemonoURLParser.parse(url_clean) if url_clean else None
-                    if _parsed and _parsed.is_valid and not _parsed.is_external_provider and not _parsed.is_single_post:
-                        c_key = (_parsed.service.lower(), _parsed.user_id.lower())
-                        c_tasks = grouped.get(c_key, tasks_done)
-                        c_latest_pid, c_latest_date = cutoffs.get(c_key, ("", ""))
-                        t_dir = self.extract_artist_folder_from_path(
-                            c_tasks[0].target_path,
-                            self._creator_name or _parsed.user_id,
-                            _parsed.service,
-                            fallback_dir=self._download_dir
-                        )
-                        self._watchlist_manager.add_entry(
-                            url=url_clean,
-                            creator_name=self._creator_name or _parsed.user_id,
-                            user_id=_parsed.user_id,
-                            service=_parsed.service,
-                            domain=_parsed.domain,
-                            last_post_id=c_latest_pid,
-                            last_post_date=c_latest_date,
-                            download_dir=t_dir,
-                            options=self._get_filter_options().to_dict(),
-                        )
 
                     self._watchlist_pending_updates.clear()
                     self._watchlist_model.update_new_counts()
@@ -5927,6 +5949,22 @@ class AppBridge(QObject):
 
         def _run():
             try:
+                # Auto-heal creator name if profile resolves to a different name
+                from core.parser import KemonoURLParser
+                parsed = KemonoURLParser.parse(entry.url or f"https://{entry.domain}/{entry.service}/user/{entry.user_id}")
+                if parsed.is_valid and hasattr(self.api_client, "resolve_creator_name"):
+                    try:
+                        resolved = self.api_client.resolve_creator_name(parsed)
+                        if resolved and resolved != entry.user_id and resolved != entry.creator_name:
+                            old_name = entry.creator_name
+                            entry.creator_name = resolved
+                            self._watchlist_manager.save(entry)
+                            self._watchlist_model.entry_changed(entry)
+                            self.watchlistChanged.emit()
+                            logger.info(f"Auto-healed creator name in watchlist: {old_name!r} -> {resolved!r}", category="watchlist")
+                    except Exception as e:
+                        logger.debug(f"Could not auto-heal creator name for {entry.user_id}: {e}", category="watchlist")
+
                 count = self._check_watchlist_entry(entry)
                 entry.last_checked_at = time.time()
                 self._watchlist_manager.save(entry)

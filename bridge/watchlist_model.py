@@ -17,8 +17,13 @@ from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt, Signal, Slot, Pr
 
 def _file_count(p: dict) -> int:
     f = p.get("file")
-    n = 1 if (f and isinstance(f, dict) and (f.get("path") or f.get("storageKey"))) else 0
-    return n + len([a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))])
+    atts = [a for a in (p.get("attachments") or []) if isinstance(a, dict) and (a.get("path") or a.get("storageKey"))]
+    f_path = (f.get("path") or f.get("storageKey") or "").strip().lower() if isinstance(f, dict) else ""
+    att_paths = {(a.get("path") or a.get("storageKey") or "").strip().lower() for a in atts}
+    unique = len(att_paths)
+    if f_path and f_path not in att_paths:
+        unique += 1
+    return unique or (1 if f else len(atts))
 
 
 def _posts_for_qml(e) -> list:

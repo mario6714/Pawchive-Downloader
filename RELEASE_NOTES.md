@@ -1,8 +1,8 @@
 ### 🛠️ Fixes
 
-* **Cleared failed files stay cleared**: Files you removed in the Retry Failed window no longer come back after restarting the app, whether you cleared all of them or only some.
-* **Resuming a download doesn't bring them back either**: Continuing an interrupted download no longer adds the failed files you already cleared back into Retry Failed.
-* **Skipping 404 errors in the retry window now works reliably**: Turning on "Skip 404s" strictly prevents those missing files from being re-attempted, even if they were already selected before you flipped the switch.
+* **Duplicate files in single posts fixed**: Single-file posts no longer display two copies in the Post Selector or download phantom duplicate files when "Keep Duplicates" is enabled.
+* **Accurate post file counters**: File counts across the Post Selector, Favorites selection, and Watchlist new post drawers now accurately show the true number of unique files.
+* **Watchlist creator names stay accurate on re-download**: Re-downloading all creators or completing a download session no longer overwrites an account's displayed name with another creator's name from the list.
 
 ---
 

@@ -1,8 +1,8 @@
 {
-    "version": "1.2.7",
+    "version": "1.2.8",
     "commit": "",
     "short_commit": "",
-    "date": "2026-10-11",
+    "date": "2026-10-13",
     "channel": "release",
     "history": [
         {
@@ -144,6 +144,11 @@
             "version": "1.2.7",
             "date": "2026-10-11",
             "notes": "Fix Retry Failed cleared items reappearing after restart or resumed downloads, and strictly ignore 404 errors during retry when Skip 404s is enabled."
+        },
+        {
+            "version": "1.2.8",
+            "date": "2026-10-13",
+            "notes": "Fix duplicate files in single posts downloading twice and showing twice in post selector, accurate post file counters, and fix Watchlist creator names being overwritten on re-download."
         }
     ]
 }
