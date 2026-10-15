@@ -5,6 +5,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Callable, Dict, Tuple
 import requests
+from core.bandwidth_limiter import bandwidth_limiter
 
 CHUNK_BUFFER_SIZE = 64 * 1024  # 64 KB read buffer
 MIN_MULTIPART_SIZE = 20 * 1024 * 1024  # Only use multipart for files >= 20 MB
@@ -246,6 +247,8 @@ def _do_download_multipart_file(
                                     time.sleep(0.5)
 
                                 if chunk:
+                                    if not bandwidth_limiter.wait_for(len(chunk), cancel_event, pause_event):
+                                        return False, "Cancelled"
                                     f.write(chunk)
                                     written += len(chunk)
                                     if written > expected_len:
@@ -413,6 +416,13 @@ def _fallback_single_download(
                     time.sleep(0.5)
 
                 if chunk:
+                    if not bandwidth_limiter.wait_for(len(chunk), cancel_event, pause_event):
+                        if os.path.exists(temp_target):
+                            try:
+                                os.remove(temp_target)
+                            except OSError:
+                                pass
+                        return False, "Download cancelled"
                     f.write(chunk)
                     downloaded += len(chunk)
                     if progress_callback:

@@ -16,7 +16,6 @@ Item {
     property string label: ""
     property string tooltip: ""
     property color accentColor: "#38BDF8"
-    property bool enabled: true
 
     signal toggled(bool isChecked)
 

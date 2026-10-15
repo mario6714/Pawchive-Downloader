@@ -17,6 +17,7 @@ from urllib.parse import urlparse, parse_qs
 from threading import Lock, Event
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
+from core.bandwidth_limiter import bandwidth_limiter
 
 try:
     from Crypto.Cipher import AES
@@ -337,6 +338,15 @@ def download_and_decrypt_mega_file(
                                 except OSError:
                                     pass
                             return
+
+                    if not bandwidth_limiter.wait_for(len(chunk), cancel_event, pause_event):
+                        log_func(f"   [Mega] Download cancelled for '{file_name}'.")
+                        if os.path.exists(tmp_path):
+                            try:
+                                os.remove(tmp_path)
+                            except OSError:
+                                pass
+                        return
 
                     decrypted = cipher.decrypt(chunk)
                     f.write(decrypted)
@@ -870,6 +880,15 @@ def download_dropbox_link(
                                         pass
                                 return False
 
+                        if not bandwidth_limiter.wait_for(len(chunk), cancel_event, pause_event):
+                            log_func("   [Dropbox] Download cancelled.")
+                            if os.path.exists(full_path):
+                                try:
+                                    os.remove(full_path)
+                                except OSError:
+                                    pass
+                            return False
+
                         f.write(chunk)
                         downloaded += len(chunk)
                         if time.time() - last_log >= 1.0:
@@ -1035,6 +1054,14 @@ def download_gofile_link(
                                             except OSError:
                                                 pass
                                         return
+
+                                if not bandwidth_limiter.wait_for(len(chunk), cancel_event, pause_event):
+                                    if os.path.exists(fpath):
+                                        try:
+                                            os.remove(fpath)
+                                        except OSError:
+                                            pass
+                                    return
 
                                 f.write(chunk)
                                 downloaded += len(chunk)

@@ -68,6 +68,7 @@ from bridge.archive_creators_model import ArchiveCreatorsModel, RecordListModel
 from core import folder_naming
 from core.folder_naming import pick_creator_folder, is_creator_folder
 from bridge.decompressor_bridge import DecompressorBridge
+from core.bandwidth_limiter import bandwidth_limiter
 from core.watchlist_manager import WatchlistManager
 from services.batch_loader import BatchLoader
 from services.link_extractor import LinkExtractor
@@ -141,6 +142,10 @@ class AppBridge(QObject):
     postSelectionReady = Signal(list, str, int)
     postSelectionError = Signal(str)
     proxyUrlChanged = Signal()
+    bandwidthLimitEnabledChanged = Signal()
+    bandwidthLimitValueChanged = Signal()
+    bandwidthLimitUnitChanged = Signal()
+    bandwidthLimitSummaryChanged = Signal()
     threadsCountChanged = Signal()
     threadsLockedChanged = Signal()
     maxCpuThreadsChanged = Signal()
@@ -369,6 +374,19 @@ class AppBridge(QObject):
         if not self._gallery_bookmarks:
             self._gallery_bookmarks = self._get_default_gallery_bookmarks()
         self._proxy_url = saved_settings.get("proxy_url", "")
+        self._bandwidth_limit_enabled = bool(saved_settings.get("bandwidth_limit_enabled", False))
+        try:
+            self._bandwidth_limit_value = float(saved_settings.get("bandwidth_limit_value", 10.0))
+        except (ValueError, TypeError):
+            self._bandwidth_limit_value = 10.0
+        self._bandwidth_limit_unit = str(saved_settings.get("bandwidth_limit_unit", "MB/s")).strip()
+        if self._bandwidth_limit_unit not in ("MB/s", "mbps"):
+            self._bandwidth_limit_unit = "MB/s"
+        bandwidth_limiter.update(
+            self._bandwidth_limit_enabled,
+            self._bandwidth_limit_value,
+            self._bandwidth_limit_unit
+        )
         self._max_cpu_threads = max(4, os.cpu_count() or 16)
         self._threads_count = int(saved_settings.get("threads", min(8, self._max_cpu_threads)))
         self.downloader.max_workers = self._threads_count
@@ -1276,6 +1294,70 @@ class AppBridge(QObject):
             self.api_client.set_proxy(val)
             self.proxyUrlChanged.emit()
             self.saveSettings()
+
+    @Property(bool, notify=bandwidthLimitEnabledChanged)
+    def bandwidthLimitEnabled(self) -> bool:
+        return self._bandwidth_limit_enabled
+
+    @bandwidthLimitEnabled.setter
+    def bandwidthLimitEnabled(self, val: bool):
+        val = bool(val)
+        if self._bandwidth_limit_enabled != val:
+            self._bandwidth_limit_enabled = val
+            bandwidth_limiter.update(self._bandwidth_limit_enabled, self._bandwidth_limit_value, self._bandwidth_limit_unit)
+            self.bandwidthLimitEnabledChanged.emit()
+            self.bandwidthLimitSummaryChanged.emit()
+            self.saveSettings()
+
+    @Property(float, notify=bandwidthLimitValueChanged)
+    def bandwidthLimitValue(self) -> float:
+        return self._bandwidth_limit_value
+
+    @bandwidthLimitValue.setter
+    def bandwidthLimitValue(self, val: float):
+        try:
+            val_f = max(0.1, round(float(val), 2))
+        except (ValueError, TypeError):
+            val_f = 10.0
+        if self._bandwidth_limit_value != val_f:
+            self._bandwidth_limit_value = val_f
+            bandwidth_limiter.update(self._bandwidth_limit_enabled, self._bandwidth_limit_value, self._bandwidth_limit_unit)
+            self.bandwidthLimitValueChanged.emit()
+            self.bandwidthLimitSummaryChanged.emit()
+            self.saveSettings()
+
+    @Property(str, notify=bandwidthLimitUnitChanged)
+    def bandwidthLimitUnit(self) -> str:
+        return self._bandwidth_limit_unit
+
+    @bandwidthLimitUnit.setter
+    def bandwidthLimitUnit(self, val: str):
+        unit = "mbps" if "mbps" in str(val).lower() else "MB/s"
+        if self._bandwidth_limit_unit != unit:
+            self._bandwidth_limit_unit = unit
+            bandwidth_limiter.update(self._bandwidth_limit_enabled, self._bandwidth_limit_value, self._bandwidth_limit_unit)
+            self.bandwidthLimitUnitChanged.emit()
+            self.bandwidthLimitSummaryChanged.emit()
+            self.saveSettings()
+
+    @Property(str, notify=bandwidthLimitSummaryChanged)
+    def bandwidthLimitSummary(self) -> str:
+        return bandwidth_limiter.get_summary()
+
+    @Slot(bool, float, str)
+    def setBandwidthLimit(self, enabled: bool, value: float, unit: str):
+        self._bandwidth_limit_enabled = bool(enabled)
+        try:
+            self._bandwidth_limit_value = max(0.1, round(float(value), 2))
+        except (ValueError, TypeError):
+            self._bandwidth_limit_value = 10.0
+        self._bandwidth_limit_unit = "mbps" if "mbps" in str(unit).lower() else "MB/s"
+        bandwidth_limiter.update(self._bandwidth_limit_enabled, self._bandwidth_limit_value, self._bandwidth_limit_unit)
+        self.bandwidthLimitEnabledChanged.emit()
+        self.bandwidthLimitValueChanged.emit()
+        self.bandwidthLimitUnitChanged.emit()
+        self.bandwidthLimitSummaryChanged.emit()
+        self.saveSettings()
 
     @Property(int, notify=threadsCountChanged)
     def threadsCount(self) -> int:
@@ -5008,7 +5090,10 @@ class AppBridge(QObject):
             "skip_retry_404": self._skip_retry_404,
             "group_file_type": self._group_file_type,
             "file_order": self._file_order,
-            "watchlist_apply_global_settings": self._watchlist_apply_global_settings
+            "watchlist_apply_global_settings": self._watchlist_apply_global_settings,
+            "bandwidth_limit_enabled": self._bandwidth_limit_enabled,
+            "bandwidth_limit_value": self._bandwidth_limit_value,
+            "bandwidth_limit_unit": self._bandwidth_limit_unit
         }
         self.session_manager.save_settings(settings_dict, silent=True)
 
@@ -5087,6 +5172,9 @@ class AppBridge(QObject):
         self._active_queue_model.updateTask(task)
         if task.status == "completed":
             self._invalidate_folder_stats(getattr(task, "target_path", ""))
+            if self.recovery_manager and self.recovery_manager.retry_counts_cached()[0] > 0:
+                if self.recovery_manager.remove_completed_tasks([task], async_write=True):
+                    self._queue_model.failedCountChanged.emit()
         if task.status == "completed" and self._enable_download_archive:
             now = time.time()
             if now - self._last_archive_emit_time >= 2.0:
@@ -5644,9 +5732,15 @@ class AppBridge(QObject):
         if tasks:
             completed_c = sum(1 for t in tasks if t.status == "completed")
             failed_c = sum(1 for t in tasks if t.status in ("failed", "cancelled"))
-            if failed_c > 0:
-                failed_tasks = [t for t in tasks if t.status in ("failed", "cancelled")]
-                self.recovery_manager.dump_retries(failed_tasks, async_write=True)
+            if self.recovery_manager:
+                completed_tasks = [t for t in tasks if t.status == "completed"]
+                if completed_tasks:
+                    self.recovery_manager.remove_completed_tasks(completed_tasks, async_write=False)
+                if failed_c > 0:
+                    failed_tasks = [t for t in tasks if t.status in ("failed", "cancelled")]
+                    self.recovery_manager.dump_retries(failed_tasks, async_write=True)
+                elif not self.recovery_manager.load_retries():
+                    self.recovery_manager.clear_retries()
             self._overall_progress = int(completed_c / len(tasks) * 100)
             if failed_c > 0:
                 self._status_text = f"Finished with {failed_c} error(s) ({completed_c}/{len(tasks)} completed)"
@@ -5656,6 +5750,9 @@ class AppBridge(QObject):
         else:
             self._overall_progress = 100 if success else self._overall_progress
             self._status_text = f"Progress: {message}"
+
+        if self._queue_model:
+            self._queue_model.failedCountChanged.emit()
 
         if self._enable_download_archive:
             self.archiveRecordCountChanged.emit()
@@ -5746,6 +5843,17 @@ class AppBridge(QObject):
                         done_posts = [(d, p) for p, (d, ok) in posts_state.items() if ok]
                         open_posts = [(d, p) for p, (d, ok) in posts_state.items() if not ok]
 
+                        if done_posts:
+                            newest_done_date, newest_done_pid = max(done_posts, key=lambda dp: _post_order_key(dp[0], dp[1]))
+                            done_day_ids = sorted({p for d, p in done_posts if d == newest_done_date and p})
+                        else:
+                            newest_done_date, newest_done_pid, done_day_ids = "", "", []
+
+                        c_latest_pid, c_latest_date, c_day_ids = watchlist_cutoff(done_posts, open_posts)
+                        eff_pid = c_latest_pid or newest_done_pid
+                        eff_date = c_latest_date or newest_done_date
+                        eff_day_ids = c_day_ids or done_day_ids
+
                         existing = self._watchlist_manager._find(uid, svc)
                         if not existing:
                             t0 = c_tasks[0]
@@ -5778,18 +5886,16 @@ class AppBridge(QObject):
                                     existing = self._watchlist_manager._find(t_uid, t_svc)
 
                         if existing:
-                            done_posts += self._watchlist_pending_updates.pop((existing.service.lower(), existing.user_id.lower()), None) or []
+                            extra_done = self._watchlist_pending_updates.pop((existing.service.lower(), existing.user_id.lower()), None) or []
+                            if extra_done:
+                                done_posts += extra_done
+                                newest_done_date, newest_done_pid = max(done_posts, key=lambda dp: _post_order_key(dp[0], dp[1]))
+                                done_day_ids = sorted({p for d, p in done_posts if d == newest_done_date and p})
+                                c_latest_pid, c_latest_date, c_day_ids = watchlist_cutoff(done_posts, open_posts)
+                                eff_pid = c_latest_pid or newest_done_pid
+                                eff_date = c_latest_date or newest_done_date
+                                eff_day_ids = c_day_ids or done_day_ids
 
-                        if done_posts:
-                            newest_done_date, newest_done_pid = max(done_posts, key=lambda dp: _post_order_key(dp[0], dp[1]))
-                            done_day_ids = sorted({p for d, p in done_posts if d == newest_done_date and p})
-                        else:
-                            newest_done_date, newest_done_pid, done_day_ids = "", "", []
-
-                        c_latest_pid, c_latest_date, c_day_ids = watchlist_cutoff(done_posts, open_posts)
-                        eff_pid = c_latest_pid or newest_done_pid
-                        eff_date = c_latest_date or newest_done_date
-                        eff_day_ids = c_day_ids or done_day_ids
                         cutoffs[(svc, uid)] = (eff_pid, eff_date)
 
                         if existing:

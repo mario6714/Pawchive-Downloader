@@ -36,6 +36,7 @@ from core.path_utils import post_id_tag, post_info_name
 from core.known_manager import KnownManager
 from core.session_manager import SessionManager
 from core.archive_manager import ArchiveManager
+from core.bandwidth_limiter import bandwidth_limiter
 
 # Services hosted on Coomer rather than Kemono (used to pick the right mirror for Pawchive files)
 COOMER_SERVICES = {"onlyfans", "fansly", "candfans"}
@@ -3498,6 +3499,13 @@ class KemonoDownloader:
 
                         if not chunk:
                             continue
+
+                        if not bandwidth_limiter.wait_for(len(chunk), self._cancel_event, self._pause_event):
+                            try:
+                                resp.close()
+                            except Exception:
+                                pass
+                            return False, "Cancelled"
 
                         f.write(chunk)
                         if hasher is not None:

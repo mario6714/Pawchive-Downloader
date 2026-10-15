@@ -2021,6 +2021,216 @@ SmoothFlickable {
                     }
                 }
 
+                // Download Speed Cap / Bandwidth Limiter
+                CardSection {
+                    Layout.fillWidth: true
+                    interactive: !root.isScrolling
+                    title: tr("section_bandwidth_limit", "Download Speed Cap / Bandwidth Limiter")
+                    iconText: "⚡"
+                    entranceOffsetY: root.tabEntranceOffsetY
+                    entranceOpacity: root.tabEntranceOpacity
+
+                    ColumnLayout {
+                        width: parent.width
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        // Row 1: Enable Toggle Switch
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                Text {
+                                    text: tr("opt_bandwidth_limit_title", "Limit Maximum Download Speed")
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    color: "#F1F5F9"
+                                }
+
+                                Text {
+                                    text: tr("opt_bandwidth_limit_desc", "Restricts aggregate download throughput across all threads, multipart chunks, and external tools to stay strictly below your cap.")
+                                    font.family: "Segoe UI, sans-serif"
+                                    font.pixelSize: 11
+                                    color: "#94A3B8"
+                                    wrapMode: Text.WordWrap
+                                    Layout.fillWidth: true
+                                }
+                            }
+
+                            StyledSwitch {
+                                id: bandwidthSwitch
+                                checked: root.bridge ? root.bridge.bandwidthLimitEnabled : false
+                                onToggled: function(isChecked) {
+                                    if (root.bridge) root.bridge.bandwidthLimitEnabled = isChecked
+                                }
+                            }
+                        }
+
+                        // Row 2: Speed input, unit selector, and quick presets (active when switch is on)
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: limitConfigCol.implicitHeight + 20
+                            radius: 8
+                            color: "#141A26"
+                            border.color: root.bridge && root.bridge.bandwidthLimitEnabled ? "#38BDF8" : "#233147"
+                            border.width: 1
+                            opacity: (root.bridge && root.bridge.bandwidthLimitEnabled) ? 1.0 : 0.5
+                            enabled: root.bridge && root.bridge.bandwidthLimitEnabled
+
+                            Behavior on border.color { ColorAnimation { duration: 160 } }
+                            Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                            ColumnLayout {
+                                id: limitConfigCol
+                                anchors.fill: parent
+                                anchors.margins: 12
+                                spacing: 10
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 10
+
+                                    Text {
+                                        text: tr("label_max_speed", "Maximum Speed:")
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                        color: "#E2E8F0"
+                                    }
+
+                                    StyledTextField {
+                                        id: limitValField
+                                        Layout.preferredWidth: 100
+                                        text: root.bridge ? ("" + root.bridge.bandwidthLimitValue) : "10"
+                                        placeholderText: "10"
+                                        onEditingFinished: {
+                                            if (root.bridge) {
+                                                var v = parseFloat(text)
+                                                if (!isNaN(v) && v > 0) {
+                                                    root.bridge.bandwidthLimitValue = v
+                                                } else {
+                                                    text = "" + root.bridge.bandwidthLimitValue
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    StyledComboBox {
+                                        id: unitCombo
+                                        Layout.preferredWidth: 160
+                                        model: [
+                                            { text: "MB/s (MegaBytes)", value: "MB/s" },
+                                            { text: "mbps (Megabits)", value: "mbps" }
+                                        ]
+                                        value: root.bridge ? root.bridge.bandwidthLimitUnit : "MB/s"
+                                        onValuePicked: function(val) {
+                                            if (root.bridge) root.bridge.bandwidthLimitUnit = val
+                                        }
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+                                }
+
+                                // Quick Presets Row
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    Text {
+                                        text: tr("label_presets", "Quick Presets:")
+                                        font.family: "Segoe UI, sans-serif"
+                                        font.pixelSize: 10
+                                        color: "#64748B"
+                                    }
+
+                                    Repeater {
+                                        model: (root.bridge && root.bridge.bandwidthLimitUnit === "mbps")
+                                            ? [ { l: "10 mbps", v: 10 }, { l: "25 mbps", v: 25 }, { l: "50 mbps", v: 50 }, { l: "100 mbps", v: 100 }, { l: "250 mbps", v: 250 } ]
+                                            : [ { l: "2 MB/s", v: 2 }, { l: "5 MB/s", v: 5 }, { l: "10 MB/s", v: 10 }, { l: "25 MB/s", v: 25 }, { l: "50 MB/s", v: 50 } ]
+
+                                        Rectangle {
+                                            implicitWidth: presetLabel.implicitWidth + 14
+                                            implicitHeight: 24
+                                            radius: 12
+                                            color: presetMouse.containsMouse ? "#1E293B" : "#0F172A"
+                                            border.color: (root.bridge && Math.abs(root.bridge.bandwidthLimitValue - modelData.v) < 0.01) ? "#38BDF8" : "#334155"
+                                            border.width: 1
+
+                                            Text {
+                                                id: presetLabel
+                                                anchors.centerIn: parent
+                                                text: modelData.l
+                                                font.family: "Segoe UI, sans-serif"
+                                                font.pixelSize: 10
+                                                font.bold: (root.bridge && Math.abs(root.bridge.bandwidthLimitValue - modelData.v) < 0.01)
+                                                color: (root.bridge && Math.abs(root.bridge.bandwidthLimitValue - modelData.v) < 0.01) ? "#38BDF8" : "#94A3B8"
+                                            }
+
+                                            MouseArea {
+                                                id: presetMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    if (root.bridge) {
+                                                        root.bridge.bandwidthLimitValue = modelData.v
+                                                        limitValField.text = "" + modelData.v
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Live Summary Indicator Badge
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: 28
+                                    radius: 6
+                                    color: "#0B1120"
+                                    border.color: "#1E293B"
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        spacing: 6
+
+                                        Text {
+                                            text: "⚡"
+                                            font.pixelSize: 11
+                                        }
+
+                                        Text {
+                                            text: tr("label_effective_limit", "Effective Limit:")
+                                            font.family: "Segoe UI, sans-serif"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: "#94A3B8"
+                                        }
+
+                                        Text {
+                                            text: root.bridge ? root.bridge.bandwidthLimitSummary : "Unlimited"
+                                            font.family: "Segoe UI, sans-serif"
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            color: "#38BDF8"
+                                        }
+
+                                        Item { Layout.fillWidth: true }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 }
             }
         }

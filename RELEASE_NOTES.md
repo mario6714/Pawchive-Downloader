@@ -1,8 +1,14 @@
+### ⚡ Bandwidth Limiter & Download Speed Cap
+
+* **Global download speed limits**: You can now cap download speeds in Settings → Network & Connection in either MB/s or Mbps, ensuring downloads never exceed your chosen limit regardless of how many worker threads or connections are active.
+* **Active speed limit badge**: A compact indicator in the live download panel now displays your active cap and its equivalent network speed.
+
+---
+
 ### 🛠️ Fixes
 
-* **Duplicate files in single posts fixed**: Single-file posts no longer display two copies in the Post Selector or download phantom duplicate files when "Keep Duplicates" is enabled.
-* **Accurate post file counters**: File counts across the Post Selector, Favorites selection, and Watchlist new post drawers now accurately show the true number of unique files.
-* **Watchlist creator names stay accurate on re-download**: Re-downloading all creators or completing a download session no longer overwrites an account's displayed name with another creator's name from the list.
+* **Retry Failed button resets cleanly**: Retrying failed tasks now properly clears the failed counter and resets the button once all tasks succeed.
+* **Clean Linux startup**: Resolved component property override warnings on application launch.
 
 ---
 

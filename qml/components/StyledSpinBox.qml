@@ -18,7 +18,6 @@ Item {
     property string suffix: ""
     property string prefix: ""
     property color accentColor: "#38BDF8"
-    property bool enabled: true
 
     signal valueModified(int newValue)
 

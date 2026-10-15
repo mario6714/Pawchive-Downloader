@@ -1,8 +1,8 @@
 {
-    "version": "1.2.8",
+    "version": "1.2.9",
     "commit": "",
     "short_commit": "",
-    "date": "2026-10-13",
+    "date": "2026-10-15",
     "channel": "release",
     "history": [
         {
@@ -149,6 +149,11 @@
             "version": "1.2.8",
             "date": "2026-10-13",
             "notes": "Fix duplicate files in single posts downloading twice and showing twice in post selector, accurate post file counters, and fix Watchlist creator names being overwritten on re-download."
+        },
+        {
+            "version": "1.2.9",
+            "date": "2026-10-15",
+            "notes": "Added global bandwidth limiter with support for MB/s and mbps speed caps across all concurrent workers and download streams, live speed limit indicator badge, fix Retry Failed button staying active after successful retries, and clean Linux startup warnings."
         }
     ]
 }

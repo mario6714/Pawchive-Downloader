@@ -36,6 +36,7 @@ except ImportError:
 from core.crypto_utils import encrypt_credential, decrypt_credential, patch_telethon_crypto
 from core.text_utils import safe_file_name
 from core.logger import logger
+from core.bandwidth_limiter import bandwidth_limiter
 
 # Automatically apply hardware-accelerated OpenSSL AES-IGE cryptography
 if HAS_TELEGRAM:
@@ -1031,6 +1032,10 @@ class TelegramService:
                     delta = received_bytes - last_bytes[0]
                     last_bytes[0] = received_bytes
                     bytes_since_speed[0] += max(0, delta)
+
+                    if delta > 0:
+                        if not bandwidth_limiter.wait_for(delta, cancel_event, pause_event):
+                            raise asyncio.CancelledError("Download cancelled by user")
 
                     now = time.time()
                     is_finished = (total_bytes > 0 and received_bytes >= total_bytes)

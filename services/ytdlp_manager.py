@@ -12,6 +12,7 @@ import subprocess
 import requests
 from typing import Optional, Callable, Tuple
 from core.logger import logger
+from core.bandwidth_limiter import bandwidth_limiter
 
 # Browsers yt-dlp can read a sign-in from (Settings: "Use browser sign-in" for embedded videos)
 COOKIE_BROWSERS = ("firefox", "chrome", "edge", "brave", "opera", "vivaldi", "chromium", "safari")
@@ -306,6 +307,10 @@ class YtDlpManager:
             "-o", out_template,
             "--progress-template", "download:PROGRESS:%(progress.downloaded_bytes)s/%(progress.total_bytes_estimate|progress.total_bytes)s:%(progress.speed)s:%(progress.eta)s",
         ]
+        if bandwidth_limiter.is_enabled():
+            rate_bps = int(bandwidth_limiter.get_rate_bps())
+            if rate_bps > 0:
+                cmd += ["--limit-rate", f"{rate_bps}"]
         # Domain-locked Vimeo embeds only play when the request says it comes from the creator's site
         if referer and "vimeo.com" in url.lower():
             cmd += ["--referer", referer]

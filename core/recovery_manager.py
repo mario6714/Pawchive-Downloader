@@ -442,6 +442,48 @@ class RecoveryManager:
             self._set_retry_cache([])
             return False
 
+    def remove_completed_tasks(self, completed_tasks: List[Any], async_write: bool = True) -> int:
+        """Removes completed tasks from the retry spillover file and memory cache.
+        Returns the number of tasks removed.
+        """
+        if not completed_tasks:
+            return 0
+        spilled = self.load_retries()
+        if not spilled:
+            return 0
+
+        done_keys = set()
+        for t in completed_tasks:
+            fid = getattr(t, "file_id", "") or (t.get("file_id") if isinstance(t, dict) else "")
+            url = getattr(t, "url", "") or (t.get("url") if isinstance(t, dict) else "")
+            fn = getattr(t, "filename", "") or (t.get("filename") if isinstance(t, dict) else "")
+            if fid:
+                done_keys.add(str(fid))
+            if url:
+                done_keys.add(str(url))
+            if fn:
+                done_keys.add(str(fn))
+
+        if not done_keys:
+            return 0
+
+        remaining = [
+            item for item in spilled
+            if not ((str(item.get("file_id") if isinstance(item, dict) else getattr(item, "file_id", "")) in done_keys)
+                    or (str(item.get("url") if isinstance(item, dict) else getattr(item, "url", "")) in done_keys)
+                    or (str(item.get("filename") if isinstance(item, dict) else getattr(item, "filename", "")) in done_keys))
+        ]
+
+        removed_count = len(spilled) - len(remaining)
+        if removed_count == 0:
+            return 0
+
+        if not remaining:
+            self.clear_retries()
+        else:
+            self.dump_retries(remaining, async_write=async_write)
+        return removed_count
+
     def forget_tasks(self, tasks: List[Any]) -> None:
         """Removes files cleared from Retry Failed from the crash journal too: resuming an interrupted
         download put them back. Runs after the journal saves already queued, in the background."""

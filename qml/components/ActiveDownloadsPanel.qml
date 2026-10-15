@@ -181,6 +181,42 @@ Rectangle {
             // Spacer
             Item { Layout.fillWidth: true }
 
+            // Bandwidth limit indicator badge
+            Rectangle {
+                id: limitPill
+                implicitHeight: 18
+                implicitWidth: limitTextLabel.implicitWidth + 14
+                radius: 9
+                color: "#1E1B4B"
+                border.color: "#4338CA"
+                border.width: 1
+                visible: bridge && bridge.bandwidthLimitEnabled
+                Layout.alignment: Qt.AlignVCenter
+
+                Text {
+                    id: limitTextLabel
+                    anchors.centerIn: parent
+                    text: "⚡ " + (bridge ? (bridge.bandwidthLimitValue + " " + bridge.bandwidthLimitUnit) : "")
+                    font.family: "Cascadia Code, Consolas, monospace"
+                    font.pixelSize: 10
+                    font.weight: 600
+                    color: "#A5B4FC"
+                }
+
+                ToolTip {
+                    id: limitToolTip
+                    visible: limitMouse.containsMouse
+                    delay: 300
+                    text: bridge ? ("Bandwidth Limit Active: " + bridge.bandwidthLimitSummary) : ""
+                }
+
+                MouseArea {
+                    id: limitMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                }
+            }
+
             // Aggregate speed pill with fluid elasticity
             Rectangle {
                 id: speedPill

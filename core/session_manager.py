@@ -233,7 +233,10 @@ class SessionManager:
             "cookie_watchdog_enabled": True,
             "exact_extensions": "",
             "saved_custom_extensions": [],
-            "gallery_bookmarks": []
+            "gallery_bookmarks": [],
+            "bandwidth_limit_enabled": False,
+            "bandwidth_limit_value": 10.0,
+            "bandwidth_limit_unit": "MB/s"
         }
 
         if os.path.exists(self.settings_file):
